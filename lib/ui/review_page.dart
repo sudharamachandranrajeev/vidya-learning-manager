@@ -289,13 +289,14 @@ extension on String {
   String ifEmpty(String other) => isEmpty ? other : this;
 }
 
-Future<void> startReview(BuildContext context) =>
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ReviewSession()));
+Future<void> startReview(BuildContext context, {String? deck}) =>
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReviewSession(deck: deck)));
 
-/// Goes through today's due cards one at a time. A card marked Again comes
-/// back at the end of the queue.
+/// Goes through today's due cards one at a time, or only those of [deck].
+/// A card marked Again comes back at the end of the queue.
 class ReviewSession extends ConsumerStatefulWidget {
-  const ReviewSession({super.key});
+  const ReviewSession({super.key, this.deck});
+  final String? deck;
 
   @override
   ConsumerState<ReviewSession> createState() => _ReviewSessionState();
@@ -325,7 +326,14 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
   void initState() {
     super.initState();
     ref.read(statsProvider.future).then((s) {
-      if (mounted) setState(() => _queue = s.dueCards);
+      if (mounted) {
+        setState(
+          () => _queue = [
+            for (final c in s.dueCards)
+              if (widget.deck == null || c.deck == widget.deck) c,
+          ],
+        );
+      }
     });
   }
 

@@ -1,0 +1,159 @@
+{
+  "format": "vidya-curriculum",
+  "version": 1,
+  "part": "1 of 1",
+  "program": {
+    "title": "Interview ready: Clinical Informatics Nurse",
+    "goal": "Be ready to apply and interview with confidence: a story for each competency, the job gaps closed or explained, and the planned learning done."
+  },
+  "courses": [
+    {
+      "title": "Interview stories",
+      "kind": "practice",
+      "startWeek": 0,
+      "dueWeek": 2,
+      "summary": "A true example from your own work for each thing a panel scores. Write each one in Udyoga's story bank (situation, task, action, result) and say it aloud until it takes about two minutes.",
+      "topics": [
+        {
+          "title": "Prioritising a heavy workload",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: What was the most urgent thing today, and how did you decide what came first? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Accuracy and data quality",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: Did you find or fix a mistake in any record or list today? What was it? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Communication",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: Who was the hardest person to talk to today, and how did you handle it? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Working with others",
+          "minutes": 30,
+          "details": "Readiness 25%. To find one, ask yourself: Who did you help today, or who helped you? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Solving problems",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: What problem did you solve today, and what did you try first? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Initiative and improving things",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: What would you change about how your team works, and why? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Patients, customers and service users",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: Tell me about one patient, customer or service user you helped today. Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Confidentiality and following policy",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: Did anything today need care with confidential information? What did you do? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Learning and using systems",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: What did you do in a system today that a new starter would find hard? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Training and supporting colleagues",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: Did you show anyone how to do something today? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Working under pressure",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: When was today busiest, and what did you do to stay on top of it? Answer in the first person with what you did and what changed."
+        },
+        {
+          "title": "Values and attitude",
+          "minutes": 30,
+          "details": "Readiness 0%. To find one, ask yourself: What went well today that you are proud of? Answer in the first person with what you did and what changed."
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Prioritising a heavy workload",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Accuracy and data quality",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Communication",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Working with others",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Solving problems",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Initiative and improving things",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Patients, customers and service users",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Confidentiality and following policy",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Learning and using systems",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Training and supporting colleagues",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Working under pressure",
+      "category": "Interview",
+      "target": 4
+    },
+    {
+      "name": "Values and attitude",
+      "category": "Interview",
+      "target": 4
+    }
+  ],
+  "cards": [
+    {
+      "deck": "Interview stories",
+      "front": "Tell your story: Fixture story (Working with others)",
+      "back": "Action: I did the thing."
+    }
+  ],
+  "notes": [
+    {
+      "title": "From Udyoga",
+      "body": "Made by Udyoga from your story bank, job assessments and learning list.\n\n- Prioritising a heavy workload: 0% ready\n- Accuracy and data quality: 0% ready\n- Communication: 0% ready\n- Working with others: 25% ready\n- Solving problems: 0% ready\n- Initiative and improving things: 0% ready\n- Patients, customers and service users: 0% ready\n- Confidentiality and following policy: 0% ready\n- Learning and using systems: 0% ready\n- Training and supporting colleagues: 0% ready\n- Working under pressure: 0% ready\n- Values and attitude: 0% ready\n\nWhen you finish something here, export your portfolio from Vidya and import it on Udyoga's Coach page, so your profile shows it.",
+      "tags": [
+        "udyoga",
+        "interview"
+      ]
+    }
+  ]
+}

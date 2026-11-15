@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:brahma_core/brahma_core.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vidya/app/app.dart';
 import 'package:vidya/app/modules.dart';
 import 'package:vidya/app/providers.dart';
+import 'package:vidya/domain/curriculum.dart';
 
 import 'app_harness.dart';
 import 'seed.dart';
@@ -52,6 +54,24 @@ void main() {
     await app.tapText('Programming fundamentals');
     await app.tap(find.byType(Checkbox).first);
     expect(find.textContaining('Achievement earned: First step'), findsOneWidget);
+    await app.close();
+  });
+
+  testWidgets('a plan from Udyoga shows interview readiness and rehearses only the stories', (tester) async {
+    final app = AppHarness(tester)..phone();
+    await app.open(
+      seed: (b) async {
+        final plan = parseCurriculum(File('test/fixtures/udyoga-plan.json').readAsStringSync());
+        await b.importCurriculum(plan, today: today());
+        await b.saveCard('Other deck', 'x', today: today());
+      },
+    );
+    await app.run();
+    expect(find.text('Interview readiness'), findsOneWidget);
+    await app.tapText('Rehearse 1');
+    expect(find.textContaining('Tell your story: Fixture story'), findsOneWidget);
+    expect(find.text('Other deck'), findsNothing);
+    expect(tester.takeException(), isNull);
     await app.close();
   });
 

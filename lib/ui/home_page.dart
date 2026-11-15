@@ -114,6 +114,7 @@ class _Body extends ConsumerWidget {
                   ),
                   child: BarChart(values: week, labels: labels, unit: ' min', height: 90),
                 ),
+                if (s.skills.any((k) => k.category == interviewCategory)) _InterviewReadiness(s),
                 if (next.isNotEmpty)
                   SectionCard(
                     title: 'Up next',
@@ -302,4 +303,64 @@ class _Quests extends ConsumerWidget {
       ],
     ),
   );
+}
+
+/// The skill category and deck a plan from Udyoga (the career app) uses.
+const interviewCategory = 'Interview', interviewDeck = 'Interview stories';
+
+/// How ready the learner is to interview: each competency's level against
+/// its target, and their own stories to rehearse on a spaced schedule.
+class _InterviewReadiness extends StatelessWidget {
+  const _InterviewReadiness(this.s);
+  final Stats s;
+
+  @override
+  Widget build(BuildContext context) {
+    final skills = s.skills.where((k) => k.category == interviewCategory).toList()
+      ..sort((a, b) => (a.level / a.target).compareTo(b.level / b.target));
+    final stories = s.cards.where((c) => c.deck == interviewDeck).length;
+    final due = s.dueCards.where((c) => c.deck == interviewDeck).length;
+    final t = Theme.of(context).textTheme;
+    return SectionCard(
+      title: 'Interview readiness',
+      trailing: due == 0
+          ? null
+          : FilledButton.tonalIcon(
+              icon: const Icon(Icons.record_voice_over_outlined),
+              label: Text('Rehearse $due'),
+              onPressed: () => startReview(context, deck: interviewDeck),
+            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            stories == 0
+                ? 'Rate yourself on each competency on the Skills page as your stories get stronger.'
+                : '$stories of your own stories to rehearse; say each one aloud in about two minutes. Rate '
+                      'yourself on the Skills page as they get stronger.',
+            style: t.bodyMedium?.copyWith(color: muted(context)),
+          ),
+          const SizedBox(height: 8),
+          for (final k in skills.take(6))
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Expanded(flex: 3, child: Text(k.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: LinearProgressIndicator(
+                      value: k.target == 0 ? 0 : (k.level / k.target).clamp(0, 1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('${k.level}/${k.target}', style: t.labelMedium),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }

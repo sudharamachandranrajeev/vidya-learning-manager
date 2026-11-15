@@ -175,6 +175,19 @@ Good luck!''');
       expect(again.programId, program.id);
     });
 
+    test('a plan from Udyoga imports: interview stories, competencies and story cards', () async {
+      // Written by Udyoga's tests (test/fixtures/udyoga-plan.json there).
+      final p = parseCurriculum(File('test/fixtures/udyoga-plan.json').readAsStringSync());
+      expect(p.title, startsWith('Interview ready'));
+      expect(p.courses.first.title, 'Interview stories');
+      expect(p.courses.first.kind, 'practice');
+      expect(p.skills.every((k) => k.category == 'Interview' && k.target == 4), isTrue);
+      final r = await book.importCurriculum(p, today: today);
+      expect((r.courses, r.cards, r.skills), (p.courses.length, p.cards.length, p.skills.length));
+      final s = await book.stats(today);
+      expect(s.cards.where((c) => c.deck == 'Interview stories'), isNotEmpty);
+    });
+
     test('parts merge into one program; a topic added to a known course joins it', () async {
       Future<CurriculumImport> part(List<Map<String, Object?>> courses) =>
           book.importCurriculum(parseCurriculum(plan({'courses': courses})), today: today);
