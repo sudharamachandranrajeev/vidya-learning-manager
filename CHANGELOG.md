@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 (2026-11-15)
+
+- Interview readiness: import the study plan Udyoga (the career app) makes from your gaps, and Home shows each interview competency against its target, with a button to rehearse only your own interview stories when they are due.
+- Review sessions can be limited to one deck.
+
 ## 0.3.1 (2026-11-10)
 
 - Windows: the installer has its own id. Before, it shared one with other Brahma apps, so Windows could install it into another app's folder and replace its Start menu shortcut. Install this version to move it to its own folder; your data is not touched.
