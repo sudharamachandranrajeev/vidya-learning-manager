@@ -145,6 +145,13 @@ Good luck!''');
     });
   });
 
+  test('the ELMS2 continence ordering example parses whole', () {
+    final p = parseCurriculum(File('docs/examples/2026-11-18-elms2-continence-ordering.json').readAsStringSync());
+    expect((p.courses.length, p.topicCount, p.cards.length, p.skills.length), (6, 26, 27, 5));
+    expect(p.targetDate, isNull);
+    expect(p.cards.every((c) => p.courses.any((k) => k.title == c.course)), isTrue);
+  });
+
   group('importCurriculum', () {
     late LearningBook book;
     setUp(() async => book = LearningBook(await Store.open(memoryDatabase())));

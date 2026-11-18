@@ -170,6 +170,8 @@ Each course's topic details and resources land in a study-guide note. Due dates 
 day you import. Importing the same plan again, or a part you left out, adds only what is new.
 See [`docs/examples/2026-11-08-car-inspector-7612.json`](docs/examples/2026-11-08-car-inspector-7612.json)
 for a full example: a plan for NYC Transit's Car Inspector exam 7612.
+[`docs/examples/2026-11-18-elms2-continence-ordering.json`](docs/examples/2026-11-18-elms2-continence-ordering.json)
+is a smaller one: on-the-job training in ELMS2 continence product ordering.
 
 ### Step 4 (optional) – Use it on more than one device
 

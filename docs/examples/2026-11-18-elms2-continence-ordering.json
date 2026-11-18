@@ -1,0 +1,290 @@
+{
+  "format": "vidya-curriculum",
+  "version": 1,
+  "part": "1 of 1",
+  "program": {
+    "title": "ELMS2 and BSO continence product ordering (Western Trust)",
+    "goal": "Process community continence product orders, changes and stops in ELMS2 accurately and confidently, and explain how BSO PaLS delivers, reorders and collects, in line with the Western Trust continence guidelines."
+  },
+  "courses": [
+    {
+      "title": "The continence product chain in the Western Trust",
+      "kind": "course",
+      "hours": 3,
+      "provider": "Western Trust — Continence Guidelines for Assessment and Provision of Containment Products (v3, Sep 2024)",
+      "url": "https://westerntrust.hscni.net/download/25/annual-reports/21255/continence-guidelines-for-assessment-and-provision-of-products-in-adults-for-community-nursing-final-draft-v3-25-09-24-002-004.pdf",
+      "startWeek": 0,
+      "dueWeek": 1,
+      "summary": "Before touching the system, know who does what: the nurse assesses, the caseload holder approves, the Continence Admin team processes, BSO delivers. Every order and every stop passes through admin.",
+      "topics": [
+        {
+          "title": "Read the Western Trust continence guidelines",
+          "minutes": 60,
+          "details": "Read the whole document once, then re-read sections 9.2 (reviews and stopping), 10.0 (assessment and quantities), 10.1 (delivery and ring back), 12.0 (ordering and buffer stock), 13 (product types) and 14 (referral and contacts). Note every rule that admin must check or act on.",
+          "resources": [{ "title": "Western Trust continence guidelines v3 (Sep 2024)", "url": "https://westerntrust.hscni.net/download/25/annual-reports/21255/continence-guidelines-for-assessment-and-provision-of-products-in-adults-for-community-nursing-final-draft-v3-25-09-24-002-004.pdf" }]
+        },
+        {
+          "title": "Who does what",
+          "minutes": 30,
+          "details": "A trained nurse completes the Continence Assessment Form; the caseload holder (District Nurse) approves it; it is emailed to the Community Continence Service, where the Continence Admin team processes it. All orders go through the Community Continence Team. BSO PaLS delivers to the home and runs the Ring Back Service.",
+          "resources": []
+        },
+        {
+          "title": "Product limits admin should recognise",
+          "minutes": 30,
+          "details": "Regional benchmark: generally no more than 4 pads per 24 hours. Products up to 3,000 ml absorbency per 24 hours. Pull-up pants and maxi pads: up to 2 per 24 hours, with Continence Service Nurse Co-ordinator approval. Washable pants: up to 5 pairs a year. Net pants: up to 5 pairs every 6 months. Admin does not judge clinical need, but should query an order that breaks these limits without the right approval.",
+          "resources": []
+        },
+        {
+          "title": "BSO PaLS and its Community Equipment and Continence Service",
+          "minutes": 30,
+          "details": "PaLS is the sole procurement and logistics provider for HSC in Northern Ireland. Its Community Equipment and Continence Service collates prescriptions, builds daily delivery runs and delivers to patients' homes from two facilities, one in the east and one in the west of NI. The Western Trust Community Equipment Loan Service is run jointly with BSO.",
+          "resources": [
+            { "title": "BSO — Community Equipment and Continence Service", "url": "https://bso.hscni.net/directorates/operations/procurement-and-logistics-service/community-equipment-and-continence-service/" },
+            { "title": "Western Trust — text reminder service (29 Apr 2026)", "url": "https://westerntrust.hscni.net/?p=24957" }
+          ]
+        },
+        {
+          "title": "What patients say about delivery",
+          "minutes": 30,
+          "details": "The Patient and Client Council's 2020 report found some patients felt doorstep delivery was not private, wanted notice of delivery times, or ran out between deliveries. It linked high DNA and cancellation rates to pad reviews some patients see as unnecessary. Keep this in mind when booking reviews and handling delivery queries.",
+          "resources": [{ "title": "PCC — Accessibility and Quality of Continence Services in NI (2020)", "url": "https://pcc-ni.net/media/fj4amkrb/accessibility-and-quality-of-continence-services-in-northern-ireland-2020.pdf" }]
+        }
+      ]
+    },
+    {
+      "title": "ELMS2 fundamentals",
+      "kind": "course",
+      "hours": 3,
+      "provider": "Ethitec — ELMS2",
+      "url": "https://www.ethitec.com/elms2/",
+      "startWeek": 1,
+      "dueWeek": 2,
+      "summary": "ELMS2 (Equipment Loans Management System) is Ethitec's browser-based system for community equipment, wheelchair and continence services. The Western Trust uses it to tell BSO about orders and stops. Learn its parts and vocabulary before your hands-on session.",
+      "topics": [
+        {
+          "title": "What ELMS2 is and who uses it in NI",
+          "minutes": 30,
+          "details": "Made by Ethitec, Leicester; first written in 1990 for the British Red Cross Community Equipment Service. In NI it is used by the Northern, Southern, Western and South Eastern Trusts' community equipment services and the Regional Wheelchair Service. It is CECOPS-approved software.",
+          "resources": [
+            { "title": "Ethitec — SEHSCT now live on ELMS2", "url": "https://www.ethitec.com/sehsct-now-live-on-elms2/" },
+            { "title": "Ethitec — ELMS2", "url": "https://www.ethitec.com/elms2/" }
+          ]
+        },
+        {
+          "title": "The modules",
+          "minutes": 30,
+          "details": "Core module: purchasing, stock, distribution and collection. Online Ordering Module: prescribers order online, with a manager authorisation step. ELMS2app (Android and iOS): deliveries, collections and stock moves recorded in the field, with e-signatures. Also appointments and waiting lists, a patient record, reporting (standard reports, scheduler, dashboards) and automated SMS and email.",
+          "resources": [{ "title": "G-Cloud — ELMS2 for Community Equipment and TEC", "url": "https://www.applytosupply.digitalmarketplace.service.gov.uk/g-cloud/services/407986685521510" }]
+        },
+        {
+          "title": "Anatomy of an ELMS2 order",
+          "minutes": 45,
+          "details": "From NHS Lothian's public ELMS2 guide (their set-up may differ from ours): an order list where urgent orders show red and standard ones white; an order ID such as UR00003566; an order screen with client details (name, address, date of birth, next of kin), a voucher with nurse notes, and order lines with pack size, required units and required packs. An order is fulfilled in full, in part or cancelled, and can be redeemed only once.",
+          "resources": [{ "title": "NHS Lothian — ELMS2 guide for community pharmacy (v1.2, June 2026)", "url": "https://www.communitypharmacy.scot.nhs.uk/nhs-lothian/wp-content/uploads/sites/14/support-doc-for-community-pharmacy-1.pdf" }]
+        },
+        {
+          "title": "Vocabulary",
+          "minutes": 20,
+          "details": "Client = the patient. Prescriber/referrer = the ordering clinician. Voucher/order = one request; order lines = its items. Pack size, required units, required packs = items per pack, total items, packs to send. Collection = uplifting stock no longer needed. Ring back = the patient phones BSO for the next delivery. Scheduled cycle = automatic delivery every 12 weeks.",
+          "resources": []
+        },
+        {
+          "title": "Logging in and browser use",
+          "minutes": 15,
+          "details": "ELMS2 runs in a browser (Edge, Chrome, Firefox, Safari, Opera); nothing is installed. Admin screens are designed for a large screen. Ask locally for your login, your role and the password rules, and never share an account.",
+          "resources": []
+        }
+      ]
+    },
+    {
+      "title": "Processing orders in ELMS2 (hands-on with your trainer)",
+      "kind": "practice",
+      "hours": 5,
+      "startWeek": 2,
+      "dueWeek": 4,
+      "summary": "The screens and steps for the Western Trust's set-up are not published. Do each task with your trainer or an experienced colleague, ideally in a test environment, and write your own step-by-step note for each one.",
+      "topics": [
+        {
+          "title": "Find a client and read their record",
+          "minutes": 45,
+          "details": "Search by name, date of birth and any patient number your set-up uses. Check you have the right person before any change: two identifiers at least. Read current products, quantities, delivery type (ring back or cycle) and history.",
+          "resources": []
+        },
+        {
+          "title": "Turn an approved assessment form into a new order",
+          "minutes": 60,
+          "details": "Check the form is signed off by the caseload holder, the products and quantities are within the guideline limits (or carry the approvals needed), and the address and contact details are right. Enter the order, choose ring back or scheduled cycle, and note anything BSO needs to know for delivery.",
+          "resources": []
+        },
+        {
+          "title": "Change an existing prescription",
+          "minutes": 45,
+          "details": "Product, size or quantity changes after a review. Confirm who authorised it, update the order lines, and check how the change affects the next delivery.",
+          "resources": []
+        },
+        {
+          "title": "Switch between ring back and the 12-week cycle",
+          "minutes": 30,
+          "details": "Patients who cannot manage ring back, or have no relative or carer to take responsibility for delivery, can move to scheduled cycle deliveries. Cycle deliveries to private homes need caseload holder authorisation, and BSO must be told of delivery changes.",
+          "resources": []
+        },
+        {
+          "title": "Stop supply and arrange a collection",
+          "minutes": 45,
+          "details": "When products are no longer needed, BSO is informed via ELMS2, stating the quantity to be collected (guidelines s.9.2). Learn the local process for deaths, hospital admissions, care-home moves and changes of address — the guidelines don't cover these.",
+          "resources": []
+        },
+        {
+          "title": "Write your own quick-reference sheet",
+          "minutes": 60,
+          "details": "For each task above, write the screens, fields and checks in your own words, with no patient data. Keep it in Vidya Notes and ask your trainer to check it.",
+          "resources": []
+        }
+      ]
+    },
+    {
+      "title": "Delivery, ring back and exceptions",
+      "kind": "course",
+      "hours": 2,
+      "startWeek": 3,
+      "dueWeek": 4,
+      "summary": "Most queries admin gets are about deliveries. Know the rules well enough to answer a patient or carer, and to know when to pass a query to BSO or a nurse.",
+      "topics": [
+        {
+          "title": "Ring Back Service",
+          "minutes": 30,
+          "details": "All patients should be on ring back. The patient or carer phones BSO on 028 9536 1500 when they have about 10 days' supply left.",
+          "resources": []
+        },
+        {
+          "title": "Scheduled cycle and suspension",
+          "minutes": 20,
+          "details": "Scheduled cycle deliveries go to the home every 12 weeks. If a patient does not reorder for 6 months, supply is suspended and needs a nurse reassessment to restart.",
+          "resources": []
+        },
+        {
+          "title": "Wrong or missing deliveries",
+          "minutes": 20,
+          "details": "Patients or carers check products on arrival and contact BSO if the order is wrong. Find out locally how admin should log and follow up a delivery complaint.",
+          "resources": []
+        },
+        {
+          "title": "Buffer stock and urgent need",
+          "minutes": 20,
+          "details": "Buffer stock is only for palliative or deteriorating patients and is ordered through the Community Continence Team. Approved items are Tena Flex Plus Medium (CXP000245) and Large (CXP000246), Tena Comfort Super (CXP000271), and Tena Fix net pants Medium (CXP000320) and Large (CXP000321). Cost codes: E0P084 Northern Sector, E0P083 Southern Sector.",
+          "resources": []
+        },
+        {
+          "title": "Reviews admin books",
+          "minutes": 20,
+          "details": "Containment product prescriptions are reviewed at least yearly. Skin checks are every 6 months, or every 3 months if at risk. The patient or carer should ask for reassessment when needs change.",
+          "resources": []
+        }
+      ]
+    },
+    {
+      "title": "Reporting, data quality and information governance",
+      "kind": "course",
+      "hours": 2,
+      "startWeek": 4,
+      "dueWeek": 5,
+      "summary": "ELMS2 holds personal data and feeds service reporting. Accurate entry and safe handling of exports matter as much as speed.",
+      "topics": [
+        {
+          "title": "Reports that support your role",
+          "minutes": 45,
+          "details": "ELMS2 has hundreds of standard reports, a scheduler and dashboards, and exports to Excel. Ask which reports the service uses for active patients, suspensions, stops and activity, and how they tie in with waiting list and discharge reporting.",
+          "resources": []
+        },
+        {
+          "title": "Data quality checks",
+          "minutes": 30,
+          "details": "Build a habit of checking identifiers, address, products, quantities and delivery type before saving. A wrong address or quantity sends products to the wrong place or leaves a patient short.",
+          "resources": []
+        },
+        {
+          "title": "Exports, printouts and confidentiality",
+          "minutes": 30,
+          "details": "Follow Trust information governance rules for any export. As an example of good practice, NHS Lothian's ELMS2 guide says to keep exports only as long as needed and to remove client names from any kept over 3 months.",
+          "resources": []
+        }
+      ]
+    },
+    {
+      "title": "Competence sign-off",
+      "kind": "practice",
+      "hours": 2,
+      "startWeek": 5,
+      "dueWeek": 6,
+      "summary": "Show your trainer or line manager you can do each task alone, and record it.",
+      "topics": [
+        {
+          "title": "Observed tasks",
+          "minutes": 60,
+          "details": "Under observation: a new order from an approved form, a prescription change, a ring back to cycle switch, and a stop with collection. Ask for any errors to be named and correct your quick-reference sheet.",
+          "resources": []
+        },
+        {
+          "title": "Record the training",
+          "minutes": 30,
+          "details": "Ask how ELMS2 training is recorded for you (for example on HSC Learning or your training record) and add it to Vidya's portfolio as a certificate or project.",
+          "resources": []
+        }
+      ]
+    }
+  ],
+  "skills": [
+    { "name": "ELMS2 order processing", "category": "Systems", "target": 4 },
+    { "name": "Continence product guidelines (Western Trust)", "category": "Service knowledge", "target": 4 },
+    { "name": "BSO delivery and ring back process", "category": "Service knowledge", "target": 4 },
+    { "name": "Data quality and information governance", "category": "Governance", "target": 4 },
+    { "name": "ELMS2 reporting", "category": "Systems", "target": 3 }
+  ],
+  "cards": [
+    { "course": "The continence product chain in the Western Trust", "front": "Who approves a Continence Assessment Form before admin processes it?", "back": "The caseload holder (District Nurse)." },
+    { "course": "The continence product chain in the Western Trust", "front": "Where is an approved Continence Assessment Form sent?", "back": "By email to the Community Continence Service, for the Continence Admin team to process." },
+    { "course": "The continence product chain in the Western Trust", "front": "Regional benchmark for disposable pads per 24 hours?", "back": "Generally no more than 4." },
+    { "course": "The continence product chain in the Western Trust", "front": "Maximum absorbency of products per 24 hours?", "back": "3,000 ml (the average bladder passes about 1,500 ml in 24 hours)." },
+    { "course": "The continence product chain in the Western Trust", "front": "Pull-up pants or maxi pads: limit and approval?", "back": "Up to 2 per 24 hours, with Continence Service Nurse Co-ordinator approval." },
+    { "course": "The continence product chain in the Western Trust", "front": "Washable pants and net pants allowances?", "back": "Washable: up to 5 pairs a year. Net: up to 5 pairs every 6 months." },
+    { "course": "The continence product chain in the Western Trust", "front": "Which BSO directorate delivers continence products?", "back": "Procurement and Logistics Service (PaLS), through its Community Equipment and Continence Service." },
+    { "course": "The continence product chain in the Western Trust", "front": "How many BSO facilities supply equipment and continence products?", "back": "Two: one in the east and one in the west of Northern Ireland." },
+    { "course": "ELMS2 fundamentals", "front": "What does ELMS stand for?", "back": "Equipment Loans Management System (ELMS2, by Ethitec)." },
+    { "course": "ELMS2 fundamentals", "front": "Which NI organisations use ELMS2?", "back": "The Northern, Southern, Western and South Eastern Trusts' community equipment services and the Regional Wheelchair Service." },
+    { "course": "ELMS2 fundamentals", "front": "What is ELMS2app used for?", "back": "Recording deliveries, collections and stock moves in the field on Android or iOS, with e-signatures." },
+    { "course": "ELMS2 fundamentals", "front": "Required units vs required packs?", "back": "Required units = total items; required packs = packs to send (units ÷ pack size)." },
+    { "course": "ELMS2 fundamentals", "front": "In the Lothian ELMS2 order list, what does a red background mean?", "back": "An urgent order. White = standard." },
+    { "course": "ELMS2 fundamentals", "front": "Does ELMS2 need software installed?", "back": "No. It runs in a web browser; admin screens work best on a large screen." },
+    { "course": "Processing orders in ELMS2 (hands-on with your trainer)", "front": "When products are no longer needed, how is BSO told?", "back": "Via ELMS2, stating the quantity to be collected (guidelines s.9.2)." },
+    { "course": "Processing orders in ELMS2 (hands-on with your trainer)", "front": "Who can move to scheduled cycle deliveries?", "back": "Patients who have difficulty with ring back, or have no relative or carer to take responsibility for delivery." },
+    { "course": "Processing orders in ELMS2 (hands-on with your trainer)", "front": "What authorisation do cycle deliveries to private homes need?", "back": "The caseload holder's." },
+    { "course": "Processing orders in ELMS2 (hands-on with your trainer)", "front": "Minimum checks before saving a new order?", "back": "Caseload holder sign-off, products and quantities within limits or approved, right patient (two identifiers), address and contact details, delivery type." },
+    { "course": "Delivery, ring back and exceptions", "front": "Ring Back Service phone number?", "back": "028 9536 1500 (BSO)." },
+    { "course": "Delivery, ring back and exceptions", "front": "When should a patient ring back?", "back": "When about 10 days' supply is left." },
+    { "course": "Delivery, ring back and exceptions", "front": "How often are scheduled cycle deliveries?", "back": "Every 12 weeks." },
+    { "course": "Delivery, ring back and exceptions", "front": "What happens after 6 months with no reorder?", "back": "Supply is suspended; a nurse must reassess to restart it." },
+    { "course": "Delivery, ring back and exceptions", "front": "Who is buffer stock for?", "back": "Only palliative or deteriorating patients, ordered through the Community Continence Team." },
+    { "course": "Delivery, ring back and exceptions", "front": "Southern Sector cost code for buffer stock?", "back": "E0P083 (Northern Sector: E0P084)." },
+    { "course": "Delivery, ring back and exceptions", "front": "How often are containment product prescriptions reviewed?", "back": "At least yearly. Skin checks every 6 months, or 3 if at risk." },
+    { "course": "Reporting, data quality and information governance", "front": "What can ELMS2 reports be exported to?", "back": "Excel." },
+    { "course": "Reporting, data quality and information governance", "front": "Good practice for keeping ELMS2 exports (NHS Lothian guide)?", "back": "Keep only as long as needed; remove client names from any kept over 3 months. Follow Trust IG rules first." }
+  ],
+  "notes": [
+    {
+      "title": "Roadmap",
+      "body": "# ELMS2 and BSO continence ordering — roadmap\n\nAbout 3 hours a week for 6 weeks. Week 0 is the week you import this plan.\n\n| Week | Focus |\n|---|---|\n| 0 | Read the Western Trust continence guidelines. Who does what. |\n| 1 | Product limits, BSO PaLS, patient feedback. Start ELMS2 fundamentals. |\n| 2 | Finish fundamentals. **Book hands-on time with your trainer.** Find a client; new order. |\n| 3 | Prescription changes, ring back vs cycle. Delivery rules and exceptions. |\n| 4 | Stops and collections. Quick-reference sheet. Start reporting and IG. |\n| 5 | Finish reporting and IG. Observed tasks. |\n| 6 | Sign-off and record the training. |\n\nEvery day: clear the flashcard queue on Review (5–10 minutes).",
+      "tags": ["plan"]
+    },
+    {
+      "title": "Questions for my trainer",
+      "body": "# Questions for my ELMS2 trainer\n\n- Do continence admin staff get their own ELMS2 login, and with which role?\n- Who runs ELMS2 training: the Trust, BSO or Ethitec? Is there a local user guide?\n- Which screens do we use for client set-up, new order, change, suspend, stop and collection?\n- How does an emailed assessment form become an ELMS2 order, and who checks the limits?\n- How do we switch a patient between ring back and the 12-week cycle?\n- What is the process for deaths, hospital admissions, care-home moves and address changes?\n- How is the 6-month no-reorder suspension flagged, and which report shows it?\n- Which reports support our waiting list, discharge and service reporting?\n- Is there a test environment to practise in?\n- What are the IG rules for exports and printouts?\n- Who do we contact at BSO for a wrong or missed delivery?",
+      "tags": ["questions"]
+    },
+    {
+      "title": "Contacts",
+      "body": "# Contacts\n\n- **BSO Ring Back Service:** 028 9536 1500\n- **BSO PaLS HQ:** 0300 555 0206\n- **Continence Advisory Service, Southern Sector:** Coleshill House, 2 Coleshill Road, Enniskillen BT74 7HG — 028 6634 4057\n- **Continence Advisory Service, Northern Sector:** Rectory Field Offices, 19b Limavady Road, Londonderry BT47 6JU — 028 7134 9355\n\nFrom the Western Trust continence guidelines (v3, Sep 2024), s.10.1 and s.14.1, and BSO's website. Check they are current.",
+      "tags": ["reference"]
+    }
+  ]
+}
