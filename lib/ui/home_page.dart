@@ -252,7 +252,8 @@ class _OfferedPlansState extends ConsumerState<_OfferedPlans> {
                             showMessage(
                               context,
                               '${o.plan.title}: ${r.courses} courses, ${r.topics} topics, ${r.cards} cards, '
-                              '${r.skills} skills and ${r.notes} notes added.',
+                              '${r.skills} skills and ${r.notes} notes added.'
+                              '${r.updatedCards > 0 ? ' ${r.updatedCards} changed cards updated, reviews kept.' : ''}',
                             );
                           }
                         },

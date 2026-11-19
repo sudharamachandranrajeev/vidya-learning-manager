@@ -44,7 +44,9 @@ class PlanCourse {
 }
 
 typedef PlanSkill = ({String name, String category, int target});
-typedef PlanCard = ({String deck, String course, String front, String back});
+/// [id] is the sender's stable id for the card, '' when it has none: a
+/// card with one is updated in place when the plan comes again.
+typedef PlanCard = ({String id, String deck, String course, String front, String back});
 typedef PlanNote = ({String title, String body, String tags});
 
 class CurriculumPlan {
@@ -227,6 +229,7 @@ CurriculumPlan parseCurriculum(String text) {
     final course = _str(c['course'], _maxTitle);
     final deck = _str(c['deck'], _maxTitle);
     cards.add((
+      id: _str(c['id'], 200),
       deck: deck.isNotEmpty ? deck : (course.isNotEmpty ? course : title),
       course: course,
       front: front,

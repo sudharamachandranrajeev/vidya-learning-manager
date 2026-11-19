@@ -41,7 +41,7 @@ Good luck!''');
       expect(c.topics.map((t) => (t.title, t.minutes)), [('Greetings', 30), ('Numbers', 600)]);
       expect(c.topics[1].resources, ['Book — https://x', 'Site']);
       expect(c.hours, 11); // from topic minutes when not given
-      expect(p.cards.single, (deck: 'Basics', course: 'Basics', front: 'Hola', back: 'Hello'));
+      expect(p.cards.single, (id: '', deck: 'Basics', course: 'Basics', front: 'Hola', back: 'Hello'));
     });
 
     test('cloze cards need no back; duplicate course titles keep the first', () {

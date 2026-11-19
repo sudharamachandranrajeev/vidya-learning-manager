@@ -156,7 +156,7 @@ Future<void> importPlanDialog(BuildContext context, WidgetRef ref) async {
       if (plans.isEmpty) return problem ?? 'Paste the AI reply first.';
       final parts = plans;
       final r = await ref.mutate((s) async {
-        var total = (courses: 0, topics: 0, skills: 0, cards: 0, notes: 0);
+        var total = (courses: 0, topics: 0, skills: 0, cards: 0, updatedCards: 0, notes: 0);
         // Parts merge by title, so importing them one by one builds one program.
         for (final p in parts) {
           final x = await s.book.importCurriculum(p, today: today());
@@ -165,6 +165,7 @@ Future<void> importPlanDialog(BuildContext context, WidgetRef ref) async {
             topics: total.topics + x.topics,
             skills: total.skills + x.skills,
             cards: total.cards + x.cards,
+            updatedCards: total.updatedCards + x.updatedCards,
             notes: total.notes + x.notes,
           );
         }
@@ -173,6 +174,7 @@ Future<void> importPlanDialog(BuildContext context, WidgetRef ref) async {
       done =
           '${parts.first.title}: ${r.courses} courses, ${r.topics} topics, ${r.cards} cards, '
           '${r.skills} skills and ${r.notes} notes added.'
+          '${r.updatedCards > 0 ? ' ${r.updatedCards} changed cards updated, reviews kept.' : ''}'
           '${r.notes > 0 ? ' Topic details are in Notes.' : ''}';
       return null;
     },

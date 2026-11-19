@@ -53,7 +53,7 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   ];
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -78,6 +78,11 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
       if (from < 4) {
         await m.createTable(bridgeStudyPlans);
         await m.createTable(bridgeStudyProgress);
+      }
+      if (from < 5) {
+        // A plan card's stable id. A cards table made above already has it.
+        final have = await customSelect('PRAGMA table_info(learn_cards)').map((r) => r.read<String>('name')).get();
+        if (!have.contains(learnCards.ref.name)) await m.addColumn(learnCards, learnCards.ref);
       }
     },
   );
