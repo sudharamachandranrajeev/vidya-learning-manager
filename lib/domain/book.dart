@@ -30,7 +30,8 @@ const portfolioKinds = {
 const skillLevels = ['None', 'Aware', 'Learning', 'Competent', 'Proficient', 'Expert'];
 
 /// What importing a study plan added (things already there are not counted).
-/// What an import added; [updatedCards] counts plan cards changed in place.
+/// What an import added; [updatedCards] counts plan cards changed in place,
+/// [retiredCards] the plan's cards it no longer sends (kept, not shown).
 typedef CurriculumImport = ({
   String programId,
   int courses,
@@ -38,6 +39,7 @@ typedef CurriculumImport = ({
   int skills,
   int cards,
   int updatedCards,
+  int retiredCards,
   int notes,
 });
 
@@ -359,11 +361,13 @@ class LearningBook {
   /// deleted one stays deleted. A card from before refs, matched by deck
   /// and front, takes the ref. Anything else is added, and cards with no id
   /// merge by deck and front as before.
-  Future<({int added, int updated})> _savePlanCards(
-    List<PlanCard> cards,
+  Future<({int added, int updated, int retired})> _savePlanCards(
+    CurriculumPlan plan,
     Map<String, String> courseIds,
     String today,
   ) async {
+    final cards = plan.cards;
+    final planKey = plan.title.toLowerCase();
     final all = await db.select(db.learnCards).get();
     final byRef = {
       for (final c in all)
@@ -390,6 +394,9 @@ class LearningBook {
           deck: c.deck,
           courseId: Value(courseId ?? known.courseId),
           ref: c.id,
+          plan: planKey,
+          // Sent again after being retired: back in use, schedule kept.
+          retired: '',
         );
         if (next != known) {
           await save(db.learnCards, next, known.id);
@@ -410,13 +417,33 @@ class LearningBook {
           due: today,
           created: today,
           ref: Value(c.id),
+          plan: Value(planKey),
         ),
         id,
       );
       byRef[c.id] = (await (db.select(db.learnCards)..where((r) => r.id.equals(id))).getSingle());
       added++;
     }
-    return (added: added + await _addNewCards(plain, today), updated: updated);
+    // A card this plan sent before and no longer sends (the story was
+    // deleted in the sending app) is retired: kept with its reviews, no
+    // longer shown. Only for a whole plan: one part of a long plan holds
+    // only some of its cards.
+    var retired = 0;
+    if (_wholePlan(plan.part)) {
+      final sent = {for (final c in cards) c.id};
+      for (final c in all) {
+        if (c.deleted || c.ref.isEmpty || c.plan != planKey || c.retired.isNotEmpty) continue;
+        if (sent.contains(c.ref)) continue;
+        await save(db.learnCards, c.copyWith(retired: today), c.id);
+        retired++;
+      }
+    }
+    return (added: added + await _addNewCards(plain, today), updated: updated, retired: retired);
+  }
+
+  static bool _wholePlan(String part) {
+    final p = part.trim();
+    return p.isEmpty || RegExp(r'^1\s*of\s*1$').hasMatch(p);
   }
 
   /// Adds a study plan (see curriculum.dart). Everything merges by title, so
@@ -506,7 +533,7 @@ class LearningBook {
       skills++;
     }
 
-    final (added: cards, updated: updatedCards) = await _savePlanCards(plan.cards, courseIds, today);
+    final (added: cards, updated: updatedCards, retired: retiredCards) = await _savePlanCards(plan, courseIds, today);
 
     return (
       programId: pid,
@@ -515,6 +542,7 @@ class LearningBook {
       skills: skills,
       cards: cards,
       updatedCards: updatedCards,
+      retiredCards: retiredCards,
       notes: notes,
     );
   });
@@ -548,7 +576,8 @@ class LearningBook {
       skills: await (db.select(db.learnSkills)..where((r) => r.deleted.not())).get(),
       portfolio: await (db.select(db.learnPortfolio)..where((r) => r.deleted.not())).get(),
       notes: await (db.select(db.learnNotes)..where((r) => r.deleted.not())).get(),
-      cards: await (db.select(db.learnCards)..where((r) => r.deleted.not())).get(),
+      cards: await (db.select(db.learnCards)..where((r) => r.deleted.not() & r.retired.equals(''))).get(),
+      retiredCards: await (db.select(db.learnCards)..where((r) => r.deleted.not() & r.retired.equals('').not())).get(),
       reviews: await (db.select(db.learnReviews)..where((r) => r.deleted.not())).get(),
       unlocked: unlocks.length,
     );

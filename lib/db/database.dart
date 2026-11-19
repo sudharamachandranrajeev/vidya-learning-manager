@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:brahma_core/brahma_core.dart';
 import 'package:drift/drift.dart';
 
@@ -53,7 +55,7 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   ];
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -84,8 +86,44 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
         final have = await customSelect('PRAGMA table_info(learn_cards)').map((r) => r.read<String>('name')).get();
         if (!have.contains(learnCards.ref.name)) await m.addColumn(learnCards, learnCards.ref);
       }
+      if (from < 6) {
+        // Which plan a card came from, and whether it was retired from it.
+        final have = await customSelect('PRAGMA table_info(learn_cards)').map((r) => r.read<String>('name')).get();
+        if (!have.contains(learnCards.plan.name)) await m.addColumn(learnCards, learnCards.plan);
+        if (!have.contains(learnCards.retired.name)) await m.addColumn(learnCards, learnCards.retired);
+        await backfillCardPlans();
+      }
     },
   );
+
+  /// Marks each plan card with the plan it came from, read from the plans
+  /// received through sync. Cards from a plan imported as a file get theirs
+  /// the next time that plan is imported.
+  Future<void> backfillCardPlans() async {
+    final rows = await customSelect('SELECT plan FROM bridge_study_plans WHERE deleted = 0').get();
+    for (final r in rows) {
+      try {
+        final j = jsonDecode(r.read<String>('plan'));
+        if (j is! Map) continue;
+        final program = j['program'] is Map ? j['program'] as Map : j;
+        final title = program['title'];
+        final cards = j['cards'];
+        if (title is! String || cards is! List) continue;
+        final ids = [
+          for (final c in cards)
+            if (c is Map && c['id'] is String && (c['id'] as String).isNotEmpty) c['id'] as String,
+        ];
+        if (ids.isEmpty) continue;
+        await customUpdate(
+          "UPDATE learn_cards SET plan = ? WHERE plan = '' AND ref IN (${List.filled(ids.length, '?').join(', ')})",
+          variables: [Variable(title.trim().toLowerCase()), for (final id in ids) Variable(id)],
+          updates: {learnCards},
+        );
+      } on FormatException {
+        continue;
+      }
+    }
+  }
 
   static const _indexes = [
     'CREATE INDEX learn_courses_program ON learn_courses (program_id)',

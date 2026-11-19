@@ -4652,6 +4652,28 @@ class $LearnCardsTable extends LearnCards
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _planMeta = const VerificationMeta('plan');
+  @override
+  late final GeneratedColumn<String> plan = GeneratedColumn<String>(
+    'plan',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _retiredMeta = const VerificationMeta(
+    'retired',
+  );
+  @override
+  late final GeneratedColumn<String> retired = GeneratedColumn<String>(
+    'retired',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4670,6 +4692,8 @@ class $LearnCardsTable extends LearnCards
     lapses,
     created,
     ref,
+    plan,
+    retired,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4786,6 +4810,18 @@ class $LearnCardsTable extends LearnCards
         ref.isAcceptableOrUnknown(data['ref']!, _refMeta),
       );
     }
+    if (data.containsKey('plan')) {
+      context.handle(
+        _planMeta,
+        plan.isAcceptableOrUnknown(data['plan']!, _planMeta),
+      );
+    }
+    if (data.containsKey('retired')) {
+      context.handle(
+        _retiredMeta,
+        retired.isAcceptableOrUnknown(data['retired']!, _retiredMeta),
+      );
+    }
     return context;
   }
 
@@ -4859,6 +4895,14 @@ class $LearnCardsTable extends LearnCards
         DriftSqlType.string,
         data['${effectivePrefix}ref'],
       )!,
+      plan: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plan'],
+      )!,
+      retired: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}retired'],
+      )!,
     );
   }
 
@@ -4895,10 +4939,19 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
   final String created;
 
   /// The sending app's stable id for a card that came in a study plan
-  /// (for example "udyoga.story.<id>"), '' otherwise. When the plan comes
+  /// (for example `udyoga.story.<id>`), '' otherwise. When the plan comes
   /// again, the card with the same ref is updated in place and keeps its
   /// schedule and reviews.
   final String ref;
+
+  /// The plan a [ref] card came from (its title in lower case), '' for the
+  /// user's own cards.
+  final String plan;
+
+  /// The day the card's plan came again without it (the story was deleted
+  /// in the sending app), '' while it is in use. A retired card is kept
+  /// with its reviews but no longer shown for review.
+  final String retired;
   const Flashcard({
     required this.id,
     required this.hlc,
@@ -4916,6 +4969,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
     required this.lapses,
     required this.created,
     required this.ref,
+    required this.plan,
+    required this.retired,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4938,6 +4993,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
     map['lapses'] = Variable<int>(lapses);
     map['created'] = Variable<String>(created);
     map['ref'] = Variable<String>(ref);
+    map['plan'] = Variable<String>(plan);
+    map['retired'] = Variable<String>(retired);
     return map;
   }
 
@@ -4961,6 +5018,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
       lapses: Value(lapses),
       created: Value(created),
       ref: Value(ref),
+      plan: Value(plan),
+      retired: Value(retired),
     );
   }
 
@@ -4986,6 +5045,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
       lapses: serializer.fromJson<int>(json['lapses']),
       created: serializer.fromJson<String>(json['created']),
       ref: serializer.fromJson<String>(json['ref']),
+      plan: serializer.fromJson<String>(json['plan']),
+      retired: serializer.fromJson<String>(json['retired']),
     );
   }
   @override
@@ -5008,6 +5069,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
       'lapses': serializer.toJson<int>(lapses),
       'created': serializer.toJson<String>(created),
       'ref': serializer.toJson<String>(ref),
+      'plan': serializer.toJson<String>(plan),
+      'retired': serializer.toJson<String>(retired),
     };
   }
 
@@ -5028,6 +5091,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
     int? lapses,
     String? created,
     String? ref,
+    String? plan,
+    String? retired,
   }) => Flashcard(
     id: id ?? this.id,
     hlc: hlc ?? this.hlc,
@@ -5045,6 +5110,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
     lapses: lapses ?? this.lapses,
     created: created ?? this.created,
     ref: ref ?? this.ref,
+    plan: plan ?? this.plan,
+    retired: retired ?? this.retired,
   );
   Flashcard copyWithCompanion(LearnCardsCompanion data) {
     return Flashcard(
@@ -5064,6 +5131,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
       lapses: data.lapses.present ? data.lapses.value : this.lapses,
       created: data.created.present ? data.created.value : this.created,
       ref: data.ref.present ? data.ref.value : this.ref,
+      plan: data.plan.present ? data.plan.value : this.plan,
+      retired: data.retired.present ? data.retired.value : this.retired,
     );
   }
 
@@ -5085,7 +5154,9 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
           ..write('reps: $reps, ')
           ..write('lapses: $lapses, ')
           ..write('created: $created, ')
-          ..write('ref: $ref')
+          ..write('ref: $ref, ')
+          ..write('plan: $plan, ')
+          ..write('retired: $retired')
           ..write(')'))
         .toString();
   }
@@ -5108,6 +5179,8 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
     lapses,
     created,
     ref,
+    plan,
+    retired,
   );
   @override
   bool operator ==(Object other) =>
@@ -5128,7 +5201,9 @@ class Flashcard extends DataClass implements Insertable<Flashcard> {
           other.reps == this.reps &&
           other.lapses == this.lapses &&
           other.created == this.created &&
-          other.ref == this.ref);
+          other.ref == this.ref &&
+          other.plan == this.plan &&
+          other.retired == this.retired);
 }
 
 class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
@@ -5148,6 +5223,8 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
   final Value<int> lapses;
   final Value<String> created;
   final Value<String> ref;
+  final Value<String> plan;
+  final Value<String> retired;
   final Value<int> rowid;
   const LearnCardsCompanion({
     this.id = const Value.absent(),
@@ -5166,6 +5243,8 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
     this.lapses = const Value.absent(),
     this.created = const Value.absent(),
     this.ref = const Value.absent(),
+    this.plan = const Value.absent(),
+    this.retired = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LearnCardsCompanion.insert({
@@ -5185,6 +5264,8 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
     this.lapses = const Value.absent(),
     required String created,
     this.ref = const Value.absent(),
+    this.plan = const Value.absent(),
+    this.retired = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        front = Value(front),
@@ -5208,6 +5289,8 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
     Expression<int>? lapses,
     Expression<String>? created,
     Expression<String>? ref,
+    Expression<String>? plan,
+    Expression<String>? retired,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5227,6 +5310,8 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
       if (lapses != null) 'lapses': lapses,
       if (created != null) 'created': created,
       if (ref != null) 'ref': ref,
+      if (plan != null) 'plan': plan,
+      if (retired != null) 'retired': retired,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5248,6 +5333,8 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
     Value<int>? lapses,
     Value<String>? created,
     Value<String>? ref,
+    Value<String>? plan,
+    Value<String>? retired,
     Value<int>? rowid,
   }) {
     return LearnCardsCompanion(
@@ -5267,6 +5354,8 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
       lapses: lapses ?? this.lapses,
       created: created ?? this.created,
       ref: ref ?? this.ref,
+      plan: plan ?? this.plan,
+      retired: retired ?? this.retired,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5322,6 +5411,12 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
     if (ref.present) {
       map['ref'] = Variable<String>(ref.value);
     }
+    if (plan.present) {
+      map['plan'] = Variable<String>(plan.value);
+    }
+    if (retired.present) {
+      map['retired'] = Variable<String>(retired.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5347,6 +5442,8 @@ class LearnCardsCompanion extends UpdateCompanion<Flashcard> {
           ..write('lapses: $lapses, ')
           ..write('created: $created, ')
           ..write('ref: $ref, ')
+          ..write('plan: $plan, ')
+          ..write('retired: $retired, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9996,6 +10093,8 @@ typedef $$LearnCardsTableCreateCompanionBuilder = LearnCardsCompanion Function({
   Value<int> lapses,
   required String created,
   Value<String> ref,
+  Value<String> plan,
+  Value<String> retired,
   Value<int> rowid,
 });
 typedef $$LearnCardsTableUpdateCompanionBuilder = LearnCardsCompanion Function({
@@ -10015,6 +10114,8 @@ typedef $$LearnCardsTableUpdateCompanionBuilder = LearnCardsCompanion Function({
   Value<int> lapses,
   Value<String> created,
   Value<String> ref,
+  Value<String> plan,
+  Value<String> retired,
   Value<int> rowid,
 });
 
@@ -10104,6 +10205,16 @@ class $$LearnCardsTableFilterComposer
 
   ColumnFilters<String> get ref => $composableBuilder(
     column: $table.ref,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get plan => $composableBuilder(
+    column: $table.plan,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get retired => $composableBuilder(
+    column: $table.retired,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10196,6 +10307,16 @@ class $$LearnCardsTableOrderingComposer
     column: $table.ref,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get plan => $composableBuilder(
+    column: $table.plan,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get retired => $composableBuilder(
+    column: $table.retired,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LearnCardsTableAnnotationComposer
@@ -10254,6 +10375,12 @@ class $$LearnCardsTableAnnotationComposer
 
   GeneratedColumn<String> get ref =>
       $composableBuilder(column: $table.ref, builder: (column) => column);
+
+  GeneratedColumn<String> get plan =>
+      $composableBuilder(column: $table.plan, builder: (column) => column);
+
+  GeneratedColumn<String> get retired =>
+      $composableBuilder(column: $table.retired, builder: (column) => column);
 }
 
 class $$LearnCardsTableTableManager
@@ -10303,6 +10430,8 @@ class $$LearnCardsTableTableManager
                 Value<int> lapses = const Value.absent(),
                 Value<String> created = const Value.absent(),
                 Value<String> ref = const Value.absent(),
+                Value<String> plan = const Value.absent(),
+                Value<String> retired = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnCardsCompanion(
                 id: id,
@@ -10321,6 +10450,8 @@ class $$LearnCardsTableTableManager
                 lapses: lapses,
                 created: created,
                 ref: ref,
+                plan: plan,
+                retired: retired,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10341,6 +10472,8 @@ class $$LearnCardsTableTableManager
                 Value<int> lapses = const Value.absent(),
                 required String created,
                 Value<String> ref = const Value.absent(),
+                Value<String> plan = const Value.absent(),
+                Value<String> retired = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnCardsCompanion.insert(
                 id: id,
@@ -10359,6 +10492,8 @@ class $$LearnCardsTableTableManager
                 lapses: lapses,
                 created: created,
                 ref: ref,
+                plan: plan,
+                retired: retired,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

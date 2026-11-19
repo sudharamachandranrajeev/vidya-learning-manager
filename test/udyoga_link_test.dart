@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value, BooleanExpressionOperators;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vidya/db/database.dart';
 import 'package:vidya/domain/book.dart';
+import 'package:vidya/domain/curriculum.dart';
 import 'package:vidya/domain/review.dart';
 import 'package:vidya/domain/udyoga_link.dart';
 
@@ -148,6 +149,65 @@ void main() {
       final r = await book.addOfferedPlan((await book.offeredPlans()).single, today: today, now: 'N2');
       expect((r.cards, r.updatedCards), (0, 0));
       expect((await card(storyId)).deleted, isTrue);
+    });
+
+    test('a card the plan no longer sends is retired: kept with its reviews, not due, back if sent again', () async {
+      await receive('T1', id: planId, plan: drills);
+      await book.addOfferedPlan((await book.offeredPlans()).single, today: today, now: 'N1');
+      final story = await card(storyId);
+      expect(story.plan, 'interview drills');
+      await book.reviewCard(story, Grade.again, today: today); // due again today
+      // A card of the user's own in the same deck is never touched.
+      await book.saveCard('Mine', 'Private', today: today, deck: story.deck);
+
+      // The story is deleted in Udyoga: the plan comes without its card.
+      final without = jsonDecode(drills) as Map<String, Object?>;
+      without['cards'] = [
+        for (final c in without['cards'] as List)
+          if ((c as Map)['id'] != storyId) c,
+      ];
+      await receive('T2', id: planId, plan: jsonEncode(without));
+      final r = await book.addOfferedPlan((await book.offeredPlans()).single, today: '2026-11-17', now: 'N2');
+      expect(r.retiredCards, 1);
+
+      final gone = await card(storyId);
+      expect((gone.deleted, gone.retired), (false, '2026-11-17'), reason: 'kept, not deleted');
+      expect(await (db.select(db.learnReviews)..where((x) => x.cardId.equals(story.id))).get(), hasLength(1));
+      final s = await book.stats('2026-11-17');
+      expect(s.dueCards.map((c) => c.ref), isNot(contains(storyId)), reason: 'hidden from review');
+      expect(s.cards.map((c) => c.ref), isNot(contains(storyId)));
+      expect(s.retiredCards.map((c) => c.ref), [storyId]);
+      expect(s.cards.map((c) => c.front), contains('Mine'));
+
+      // Sent the same way again: nothing more to retire.
+      await receive('T3', id: planId, plan: jsonEncode(without));
+      expect((await book.addOfferedPlan((await book.offeredPlans()).single, today: today, now: 'N3')).retiredCards, 0);
+
+      // The story comes back in Udyoga: the same card, schedule and history.
+      await receive('T4', id: planId, plan: drills);
+      await book.addOfferedPlan((await book.offeredPlans()).single, today: '2026-11-18', now: 'N4');
+      final back = await card(storyId);
+      expect((back.id, back.retired, back.reps), (story.id, '', gone.reps));
+      expect((await book.stats('2026-11-18')).dueCards.map((c) => c.ref), contains(storyId));
+    });
+
+    test('one part of a long plan retires nothing', () async {
+      await receive('T1', id: planId, plan: drills);
+      await book.addOfferedPlan((await book.offeredPlans()).single, today: today, now: 'N1');
+      final part = jsonDecode(drills) as Map<String, Object?>;
+      part['part'] = '2 of 2';
+      part['cards'] = <Object>[];
+      final r = await book.importCurriculum(parseCurriculum(jsonEncode(part)), today: today);
+      expect(r.retiredCards, 0);
+      expect((await card(storyId)).retired, '');
+    });
+
+    test('an upgrade marks cards with the plan sync brought them in', () async {
+      await receive('T1', id: planId, plan: drills);
+      await book.addOfferedPlan((await book.offeredPlans()).single, today: today, now: 'N1');
+      await db.customStatement("UPDATE learn_cards SET plan = ''");
+      await db.backfillCardPlans();
+      expect((await card(storyId)).plan, 'interview drills');
     });
 
     test('a card from before ids, matched by deck and front, takes the id instead of a twin', () async {

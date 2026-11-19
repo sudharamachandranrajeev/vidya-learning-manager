@@ -161,6 +161,14 @@ class _Body extends ConsumerWidget {
                                     : '${s.reviewsToday} reviewed today · ${s.matureCards} of ${s.cards.length} held three weeks or more',
                                 style: t.bodyMedium?.copyWith(color: muted(context)),
                               ),
+                              if (s.retiredCards.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${s.retiredCards.length} set aside: no longer in the plan that sent '
+                                  '${s.retiredCards.length == 1 ? 'it' : 'them'}. Reviews are kept.',
+                                  style: t.bodySmall?.copyWith(color: muted(context)),
+                                ),
+                              ],
                               if (due.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 FilledButton.icon(

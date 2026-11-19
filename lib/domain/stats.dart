@@ -20,6 +20,7 @@ class Stats {
     this.portfolio = const [],
     this.notes = const [],
     this.cards = const [],
+    this.retiredCards = const [],
     this.reviews = const [],
     this.unlocked = 0,
   }) {
@@ -55,6 +56,10 @@ class Stats {
   final List<PortfolioItem> portfolio;
   final List<Note> notes;
   final List<Flashcard> cards;
+
+  /// Plan cards whose plan no longer sends them: kept with their reviews,
+  /// never due.
+  final List<Flashcard> retiredCards;
   final List<CardReview> reviews;
   final int unlocked;
 
