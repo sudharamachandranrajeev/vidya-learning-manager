@@ -4,6 +4,7 @@
 /// (Import a study plan) and progress goes back as the portfolio.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:brahma_core/brahma_core.dart';
@@ -161,5 +162,64 @@ extension UdyogaLink on LearningBook {
       ),
       planId,
     );
+  }
+}
+
+/// Sends progress back to Udyoga at most once per [gap]: when a review
+/// session ends, when the app comes back to the front, and after other
+/// writes. A request inside the gap is not lost: it runs when the gap is
+/// over (or at the next request after it, if the app was closed meanwhile).
+/// The report itself writes only when something changed.
+class ProgressReporter {
+  ProgressReporter(
+    this._report, {
+    this.gap = const Duration(minutes: 10),
+    DateTime Function()? clock,
+    Timer Function(Duration, void Function())? timer,
+  }) : _clock = clock ?? DateTime.now,
+       _timer = timer ?? Timer.new;
+
+  final Future<void> Function(String now) _report;
+  final Duration gap;
+  final DateTime Function() _clock;
+  final Timer Function(Duration, void Function()) _timer;
+
+  DateTime? _last;
+  Timer? _waiting;
+  Future<void>? _running;
+
+  /// When the last report ran, null before the first.
+  DateTime? get last => _last;
+
+  /// Whether a request is waiting for the gap to pass.
+  bool get pending => _waiting != null;
+
+  /// Reports now, or once the gap since the last report has passed.
+  Future<void> request() async {
+    if (_running != null) return _running;
+    final now = _clock();
+    final last = _last;
+    if (last != null && now.difference(last) < gap) {
+      _waiting ??= _timer(gap - now.difference(last), () {
+        _waiting = null;
+        request();
+      });
+      return;
+    }
+    _waiting?.cancel();
+    _waiting = null;
+    _last = now;
+    final run = _report(now.toUtc().toIso8601String());
+    _running = run;
+    try {
+      await run;
+    } finally {
+      _running = null;
+    }
+  }
+
+  void dispose() {
+    _waiting?.cancel();
+    _waiting = null;
   }
 }

@@ -10,6 +10,7 @@ import 'package:vidya/app/modules.dart';
 import 'package:vidya/app/providers.dart';
 import 'package:vidya/db/database.dart';
 import 'package:vidya/domain/curriculum.dart';
+import 'package:vidya/domain/udyoga_link.dart';
 
 import 'app_harness.dart';
 import 'seed.dart';
@@ -159,6 +160,52 @@ void main() {
     expect(find.textContaining('Achievement earned: First recall'), findsOneWidget);
     await app.tapText('Done');
     expect(find.text('Nothing due'), findsOneWidget);
+    await app.close();
+  });
+
+  testWidgets('a review session reports to Udyoga when it ends, not on each grade', (tester) async {
+    final app = AppHarness(tester)..desktop();
+    const planId = 'udyoga.interview-drills';
+    await app.open(
+      seed: (book) async {
+        await book.db
+            .into(book.db.bridgeStudyPlans)
+            .insert(
+              BridgeStudyPlansCompanion.insert(
+                id: planId,
+                source: 'udyoga',
+                plan: File('test/fixtures/udyoga-drills.json').readAsStringSync(),
+                updated: '2026-11-19T09:00:00Z',
+              ),
+            );
+        await book.addOfferedPlan((await book.offeredPlans()).single, today: today(), now: 'N1');
+      },
+    );
+    // No gap, so each request reports at once and the test sees when.
+    await app.run(
+      overrides: [
+        progressReporterProvider.overrideWith(
+          (ref) => ProgressReporter((now) => app.book.reportToUdyoga(now: now), gap: Duration.zero),
+        ),
+      ],
+    );
+    Future<String> sent() => tester
+        .runAsync(
+          () async => (await (app.session.db.select(
+            app.session.db.bridgeStudyProgress,
+          )..where((p) => p.id.equals(planId))).getSingle()).progress,
+        )
+        .then((p) => p!);
+
+    await app.go('Review');
+    await app.tapText('Begin review');
+    await app.tapText('Show answer');
+    await app.tapText('Good');
+    expect(await sent(), isNot(contains('drills')), reason: 'a grade alone does not report');
+    await app.tester.pageBack();
+    await app.settle();
+    expect(await sent(), contains('"drills"'), reason: 'the session ended');
+    expect(tester.takeException(), isNull);
     await app.close();
   });
 
