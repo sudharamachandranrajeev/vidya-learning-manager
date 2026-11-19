@@ -3,6 +3,8 @@
 ## Unreleased
 
 - A study plan Udyoga sends through sync is offered on Home and added in one tap; adding a re-sent plan updates the same program. What you finish and the skills you rate go back to Udyoga by themselves. Importing a plan file still works without sync.
+- A plan card the re-sent plan no longer has (a story deleted in Udyoga) is set aside, not deleted: its reviews are kept, it is never due, and it comes back as it was if the plan sends it again. Review shows how many are set aside.
+- Rehearsal results go back to Udyoga when a review session ends and when Vidya opens or comes back to the front, at most once every ten minutes, instead of after every grade.
 - Sync: *Change server address* follows your sync server to another computer without signing in again; edits that clashed with another device's are kept for you to bring back; the Sync card shows changes waiting to send.
 
 ## 0.4.0 (2026-11-15)
