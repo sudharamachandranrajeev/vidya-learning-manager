@@ -4,12 +4,15 @@
 /// (Import a study plan) and progress goes back as the portfolio.
 library;
 
+import 'dart:convert';
+
 import 'package:brahma_core/brahma_core.dart';
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 import 'book.dart';
 import 'curriculum.dart';
+import 'review.dart' show Grade;
 
 /// A plan another app sent that this one has not added in its latest form.
 typedef OfferedPlan = ({StudyPlan row, CurriculumPlan plan});
@@ -58,8 +61,7 @@ extension UdyogaLink on LearningBook {
             .get();
     return StudyProgress(
       learning: [
-        for (final c in courses)
-          (title: c.title, kind: c.kind, provider: c.provider, finished: c.finished ?? ''),
+        for (final c in courses) (title: c.title, kind: c.kind, provider: c.provider, finished: c.finished ?? ''),
       ],
       skills: [for (final k in skills) (name: k.name, category: k.category, level: k.level)],
     );
@@ -75,11 +77,77 @@ extension UdyogaLink on LearningBook {
     }
   }
 
+  /// How the plan's own cards and checklist items went, for the sender:
+  /// each card (by its id) rehearsed at least once, with the day of the last
+  /// review, its grade and how many reviews; each finished topic of the
+  /// plan's courses. Sorted, so the report only changes when the work does.
+  Future<List<Map<String, Object>>> planDrills(CurriculumPlan plan) async {
+    final ids = {
+      for (final c in plan.cards)
+        if (c.id.isNotEmpty) c.id,
+    };
+    final out = <Map<String, Object>>[];
+    if (ids.isNotEmpty) {
+      final cards = await (db.select(db.learnCards)..where((c) => c.deleted.not() & c.ref.isIn(ids))).get();
+      final byId = {for (final c in cards) c.id: c};
+      final reviews =
+          await (db.select(db.learnReviews)
+                ..where((r) => r.deleted.not() & r.cardId.isIn(byId.keys))
+                ..orderBy([(r) => OrderingTerm.asc(r.day), (r) => OrderingTerm.asc(r.hlc)]))
+              .get();
+      final last = <String, CardReview>{};
+      final times = <String, int>{};
+      for (final r in reviews) {
+        last[r.cardId] = r;
+        times[r.cardId] = (times[r.cardId] ?? 0) + 1;
+      }
+      for (final c in cards) {
+        final r = last[c.id];
+        if (r == null) continue;
+        out.add({
+          'id': c.ref,
+          'title': c.front,
+          'done': r.day,
+          'rating': Grade.values[r.grade.clamp(0, Grade.values.length - 1)].name,
+          'times': times[c.id]!,
+        });
+      }
+    }
+    final key = plan.title.toLowerCase();
+    final program = (await (db.select(
+      db.learnPrograms,
+    )..where((p) => p.deleted.not())).get()).where((p) => p.title.toLowerCase() == key).firstOrNull;
+    if (program != null) {
+      final titles = {for (final c in plan.courses) c.title.toLowerCase()};
+      final courses =
+          (await (db.select(db.learnCourses)..where((c) => c.programId.equals(program.id) & c.deleted.not())).get())
+              .where((c) => titles.contains(c.title.toLowerCase()));
+      for (final c in courses) {
+        for (final t in await (db.select(
+          db.learnTopics,
+        )..where((t) => t.courseId.equals(c.id) & t.deleted.not() & t.done.isNotNull())).get()) {
+          out.add({'course': c.title, 'title': t.title, 'done': t.done!});
+        }
+      }
+    }
+    String sortKey(Map<String, Object> d) => '${d['id'] ?? ''}\u0000${d['course'] ?? ''}\u0000${d['title']}';
+    return out..sort((a, b) => sortKey(a).compareTo(sortKey(b)));
+  }
+
   Future<void> _report(String planId, {String? planUpdated, required String now, bool force = false}) async {
-    final old = await (db.select(
-      db.bridgeStudyProgress,
-    )..where((p) => p.id.equals(planId))).getSingleOrNull();
-    final progress = (await studyProgress()).encode();
+    final old = await (db.select(db.bridgeStudyProgress)..where((p) => p.id.equals(planId))).getSingleOrNull();
+    var progress = (await studyProgress()).encode();
+    // The plan's drills ride along in the same JSON; readers that do not
+    // know the field ignore it. Left out when empty.
+    final row = await (db.select(db.bridgeStudyPlans)..where((p) => p.id.equals(planId))).getSingleOrNull();
+    CurriculumPlan? plan;
+    try {
+      plan = row == null ? null : parseCurriculum(row.plan);
+    } on FormatException {
+      plan = null;
+    }
+    final drills = plan == null ? const <Map<String, Object>>[] : await planDrills(plan);
+    if (drills.isNotEmpty) progress = jsonEncode({...jsonDecode(progress) as Map<String, Object?>, 'drills': drills});
     final mark = planUpdated ?? old?.planUpdated ?? '';
     if (!force && old != null && !old.deleted && old.progress == progress && old.planUpdated == mark) return;
     if (!force && old == null) return; // Not added yet: nothing to report on.
