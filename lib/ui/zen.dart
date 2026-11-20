@@ -152,6 +152,11 @@ ThemeData vidyaTheme(Brightness b) {
     snackBarTheme: base.snackBarTheme.copyWith(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       backgroundColor: dark ? const Color(0xFF263229) : stone,
+      // The background is dark in both modes, so the text must be light in
+      // both. Material's default (onInverseSurface) is dark in dark mode,
+      // which made toasts unreadable.
+      contentTextStyle: base.textTheme.bodyMedium?.copyWith(color: const Color(0xFFF2F1EC)),
+      closeIconColor: const Color(0xFFF2F1EC),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(
       color: scheme.primary,

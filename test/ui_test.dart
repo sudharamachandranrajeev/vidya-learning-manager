@@ -10,6 +10,7 @@ import 'package:vidya/app/modules.dart';
 import 'package:vidya/app/providers.dart';
 import 'package:vidya/db/database.dart';
 import 'package:vidya/domain/curriculum.dart';
+import 'package:vidya/domain/udyoga_link.dart';
 
 import 'app_harness.dart';
 import 'seed.dart';
@@ -162,6 +163,52 @@ void main() {
     await app.close();
   });
 
+  testWidgets('a review session reports to Udyoga when it ends, not on each grade', (tester) async {
+    final app = AppHarness(tester)..desktop();
+    const planId = 'udyoga.interview-drills';
+    await app.open(
+      seed: (book) async {
+        await book.db
+            .into(book.db.bridgeStudyPlans)
+            .insert(
+              BridgeStudyPlansCompanion.insert(
+                id: planId,
+                source: 'udyoga',
+                plan: File('test/fixtures/udyoga-drills.json').readAsStringSync(),
+                updated: '2026-11-19T09:00:00Z',
+              ),
+            );
+        await book.addOfferedPlan((await book.offeredPlans()).single, today: today(), now: 'N1');
+      },
+    );
+    // No gap, so each request reports at once and the test sees when.
+    await app.run(
+      overrides: [
+        progressReporterProvider.overrideWith(
+          (ref) => ProgressReporter((now) => app.book.reportToUdyoga(now: now), gap: Duration.zero),
+        ),
+      ],
+    );
+    Future<String> sent() => tester
+        .runAsync(
+          () async => (await (app.session.db.select(
+            app.session.db.bridgeStudyProgress,
+          )..where((p) => p.id.equals(planId))).getSingle()).progress,
+        )
+        .then((p) => p!);
+
+    await app.go('Review');
+    await app.tapText('Begin review');
+    await app.tapText('Show answer');
+    await app.tapText('Good');
+    expect(await sent(), isNot(contains('drills')), reason: 'a grade alone does not report');
+    await app.tester.pageBack();
+    await app.settle();
+    expect(await sent(), contains('"drills"'), reason: 'the session ended');
+    expect(tester.takeException(), isNull);
+    await app.close();
+  });
+
   testWidgets('a study plan Udyoga sent through sync is offered on Home and added in one tap', (
     tester,
   ) async {
@@ -182,6 +229,51 @@ void main() {
     expect(find.text('A study plan from Udyoga'), findsOneWidget);
     await app.tapText('Add to Vidya');
     expect(find.text('A study plan from Udyoga'), findsNothing);
+    expect(tester.takeException(), isNull);
+    await app.close();
+  });
+
+  testWidgets('a plan from the career file is offered as such; with auto-add on it goes in by itself', (
+    tester,
+  ) async {
+    final app = AppHarness(tester)..desktop();
+    final plan = jsonEncode({
+      'format': 'vidya-curriculum',
+      'version': 1,
+      'program': {'title': 'Example readiness', 'goal': 'Be ready'},
+      'courses': [
+        {'title': 'Example course', 'kind': 'course', 'topics': []},
+      ],
+    });
+    await app.open(
+      seed: (book) => book.db
+          .into(book.db.bridgeStudyPlans)
+          .insert(
+            BridgeStudyPlansCompanion.insert(
+              id: '${careerFilePlanPrefix}vidya-example',
+              source: 'udyoga',
+              plan: plan,
+              updated: '2026-11-20T09:00:00Z',
+            ),
+          ),
+    );
+    await app.run();
+    expect(find.text('A study plan from your career file'), findsOneWidget);
+    await app.go('Settings');
+    expect(find.text('Plans from your career file'), findsOneWidget);
+    // Turning it on is a write: the plan waiting is added at once.
+    await app.tapText('Add them automatically');
+    await app.go('Home');
+    await app.settle();
+    await tester.runAsync(() async {
+      for (var i = 0; i < 50 && (await app.book.offeredPlans()).isNotEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+    await app.settle();
+    expect(find.text('A study plan from your career file'), findsNothing);
+    final programs = await tester.runAsync(() => app.session.db.select(app.session.db.learnPrograms).get());
+    expect(programs!.map((p) => p.title), contains('Example readiness'));
     expect(tester.takeException(), isNull);
     await app.close();
   });

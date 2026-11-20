@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:brahma_core/brahma_core.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,15 +70,26 @@ class Celebrations extends Notifier<List<Achievement>> {
 
 final celebrationsProvider = NotifierProvider<Celebrations, List<Achievement>>(Celebrations.new);
 
+/// Progress back to Udyoga, at most once per ten minutes (see
+/// [ProgressReporter]).
+final progressReporterProvider = Provider<ProgressReporter>((ref) {
+  final book = ref.watch(sessionProvider).book;
+  final r = ProgressReporter((now) => book.reportToUdyoga(now: now));
+  ref.onDispose(r.dispose);
+  return r;
+});
+
 extension Mutate on WidgetRef {
   /// Runs a write, refreshes the screens, queues a sync, and unlocks any
-  /// achievement the write earned.
-  Future<T> mutate<T>(Future<T> Function(AppSession s) write) async {
+  /// achievement the write earned. Progress for Udyoga follows through the
+  /// reporter; a review grade passes [report] false, as the session's end
+  /// reports for all its grades at once.
+  Future<T> mutate<T>(Future<T> Function(AppSession s) write, {bool report = true}) async {
     final s = read(sessionProvider);
     final result = await write(s);
     final fresh = await s.book.unlockNew(today());
     if (fresh.isNotEmpty) read(celebrationsProvider.notifier).add(fresh);
-    await s.book.reportToUdyoga(now: DateTime.now().toUtc().toIso8601String());
+    if (report) unawaited(read(progressReporterProvider).request());
     changed();
     return result;
   }
@@ -127,4 +140,22 @@ final unlocksProvider = _rows<$LearnUnlocksTable, Unlock>((db) => db.learnUnlock
 final statsProvider = FutureProvider<Stats>((ref) {
   ref.watch(revisionProvider);
   return ref.watch(sessionProvider).book.stats(ref.watch(todayProvider));
+});
+
+/// The career file's study plans, added by themselves when the learner
+/// turned that on (Settings), after every write and every sync that brings
+/// changes. Gives the titles added this time; empty when none.
+final careerFileAutoAddProvider = FutureProvider<List<String>>((ref) async {
+  ref.watch(revisionProvider);
+  final book = ref.watch(sessionProvider).book;
+  final added = await book.autoAddCareerFilePlans(today: today(), now: DateTime.now().toUtc().toIso8601String());
+  if (added.isNotEmpty) {
+    // Load the screens again and send the "added" report; the rerun finds
+    // nothing left to add.
+    Future.microtask(() {
+      ref.read(revisionProvider.notifier).bump();
+      ref.read(syncProvider.notifier).soon();
+    });
+  }
+  return added;
 });

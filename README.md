@@ -177,6 +177,28 @@ Turn on sync in **Settings → Sync**. You need a sync server you own; the
 [Brahma sync server guide](https://github.com/sudharamachandranrajeev/brahma-life-suite/tree/main/server)
 walks you through it. **Write down the recovery key** it shows and keep it safe.
 
+### Using Vidya with Udyoga
+
+Udyoga, the career app (see [Related](#related)),
+turns the gaps it finds between you and the jobs you want into a Vidya study plan, with your
+interview stories as rehearsal cards. Both apps work on their own; together they share only
+the plan and your progress.
+
+1. **With sync** (both apps signed in to the same sync server): in Udyoga, open
+   **Prepare → Coach**, find **Learn and rehearse in Vidya** and press **Send to Vidya**.
+   Vidya's Home then shows **A study plan from Udyoga**. Add it with one tap.
+2. **Without sync**: press **Save plan** in Udyoga instead. In Vidya, go to
+   **Learn → Import a study plan → Open a file** and choose the saved file.
+3. **Sending it again** updates the same program. Your progress stays. A card the new plan
+   no longer has (for example a story you deleted in Udyoga) is set aside, not deleted: its
+   reviews are kept, it is never due, and it comes back if the plan sends it again. Review
+   shows how many are set aside.
+4. **What goes back to Udyoga** (with sync only): topics you finish, the skills you rate, and
+   your rehearsal results. They are sent when a review session ends and when Vidya opens, at
+   most once every ten minutes.
+5. **Home → Interview readiness** shows each interview competency against its target. Press
+   **Rehearse** to practise only your interview stories that are due.
+
 ## 🧭 How it works
 
 ```mermaid

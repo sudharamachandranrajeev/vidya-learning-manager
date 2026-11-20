@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -15,6 +16,7 @@ import '../domain/export.dart';
 import '../domain/import.dart';
 import '../domain/review.dart';
 import '../domain/stats.dart';
+import '../domain/udyoga_link.dart';
 import 'charts.dart';
 import 'common.dart';
 import 'zen.dart';
@@ -161,6 +163,14 @@ class _Body extends ConsumerWidget {
                                     : '${s.reviewsToday} reviewed today · ${s.matureCards} of ${s.cards.length} held three weeks or more',
                                 style: t.bodyMedium?.copyWith(color: muted(context)),
                               ),
+                              if (s.retiredCards.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${s.retiredCards.length} set aside: no longer in the plan that sent '
+                                  '${s.retiredCards.length == 1 ? 'it' : 'them'}. Reviews are kept.',
+                                  style: t.bodySmall?.copyWith(color: muted(context)),
+                                ),
+                              ],
                               if (due.isNotEmpty) ...[
                                 const SizedBox(height: 12),
                                 FilledButton.icon(
@@ -308,9 +318,13 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
   final _typed = TextEditingController();
   bool? _matched;
 
+  late final ProgressReporter _reporter;
+
   @override
   void dispose() {
     _typed.dispose();
+    // The session is over: its grades go back to Udyoga together.
+    if (_done > 0) unawaited(_reporter.request());
     super.dispose();
   }
 
@@ -325,6 +339,7 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
   @override
   void initState() {
     super.initState();
+    _reporter = ref.read(progressReporterProvider);
     ref.read(statsProvider.future).then((s) {
       if (mounted) {
         setState(
@@ -342,7 +357,7 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
     setState(() => _busy = true);
     final day = today();
     final pace = await ref.read(reviewPaceProvider.future);
-    await ref.mutate((s) => s.book.reviewCard(c, g, today: day, pace: pace));
+    await ref.mutate((s) => s.book.reviewCard(c, g, today: day, pace: pace), report: false);
     final n = nextSchedule(c, g, day, pace: pace);
     setState(() {
       _queue!.removeAt(0);

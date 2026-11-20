@@ -172,6 +172,24 @@ void main() {
     await dir.delete(recursive: true);
   });
 
+  test('a version 4 database gains the card ref column and keeps its cards, and can upgrade again', () async {
+    final dir = await Directory.systemTemp.createTemp('vidya');
+    final file = File('${dir.path}/v4.db');
+    var db = AppDatabase(NativeDatabase(file));
+    await LearningBook(await Store.open(db)).saveCard('Q', 'A', today: today);
+    await db.customStatement('ALTER TABLE learn_cards DROP COLUMN ref');
+    await db.customStatement('PRAGMA user_version = 4');
+    await db.close();
+    for (var i = 0; i < 2; i++) {
+      db = AppDatabase(NativeDatabase(file));
+      final c = (await LearningBook(await Store.open(db)).stats(today)).cards.single;
+      expect((c.front, c.ref), ('Q', ''));
+      await db.customStatement('PRAGMA user_version = 4');
+      await db.close();
+    }
+    await dir.delete(recursive: true);
+  });
+
   group('media and cloze', () {
     test('image and audio are saved and edited with the card', () async {
       await book.saveCard('Q', 'A', today: today, image: 'https://x/y.png', audio: '/a.mp3');

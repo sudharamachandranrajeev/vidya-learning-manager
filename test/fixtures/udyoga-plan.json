@@ -141,6 +141,7 @@
   ],
   "cards": [
     {
+      "id": "udyoga.story.fixture-story",
       "deck": "Interview stories",
       "front": "Tell your story: Fixture story (Working with others)",
       "back": "Action: I did the thing."

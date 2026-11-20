@@ -196,3 +196,9 @@ class DatePick extends StatelessWidget {
     ),
   );
 }
+
+/// The import message's note on cards a re-sent plan no longer has.
+String retiredNote(int n) => n == 0
+    ? ''
+    : ' ${n == 1 ? '1 card is' : '$n cards are'} no longer in the plan: '
+          'set aside with ${n == 1 ? 'its' : 'their'} reviews, not shown for review.';

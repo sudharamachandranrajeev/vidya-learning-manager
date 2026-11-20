@@ -1,0 +1,181 @@
+{
+  "format": "vidya-curriculum",
+  "version": 1,
+  "part": "1 of 1",
+  "program": {
+    "title": "Interview drills",
+    "goal": "Walk in with lines you have already said aloud: the opener, your stories, what to say if an answer goes wrong, and your questions for them."
+  },
+  "courses": [
+    {
+      "title": "Interview drills",
+      "kind": "practice",
+      "summary": "Say each card aloud, then rate how it went. Your ratings go back to Udyoga.",
+      "topics": []
+    },
+    {
+      "title": "Pre-interview routine",
+      "kind": "practice",
+      "summary": "A checklist for the day before and the last half hour.",
+      "topics": [
+        {
+          "title": "The day before",
+          "minutes": 30,
+          "details": "Check the route, or test the video link, camera and microphone. Read your questions for them. Read your story cards once. Read the values in the job pack."
+        },
+        {
+          "title": "30 minutes before",
+          "minutes": 10,
+          "details": "Say two short answers aloud as a warm-up: the settler and one story."
+        },
+        {
+          "title": "5 minutes before",
+          "minutes": 5,
+          "details": "A few slow breaths. Have your one-line opening ready: who you are and why this role."
+        },
+        {
+          "title": "In the room",
+          "minutes": 5,
+          "details": "It is fine to pause, to ask for a question again, or to jot a note. Panels expect nerves; no-one answers every question perfectly."
+        },
+        {
+          "title": "Optional: \"I'm excited\"",
+          "minutes": 1,
+          "details": "If your heart is racing before you go in, try saying to yourself \"I'm excited\" rather than trying to calm down: a racing heart is your body getting ready. Small effect in studies; try it, keep it if it helps."
+        }
+      ]
+    },
+    {
+      "title": "Video interview setup",
+      "kind": "practice",
+      "summary": "Check each before a video or phone interview.",
+      "topics": [
+        {
+          "title": "Connection",
+          "minutes": 2,
+          "details": "Use a wired or strong connection; close other apps that use the network."
+        },
+        {
+          "title": "Sound",
+          "minutes": 2,
+          "details": "Headphones or a headset; test the microphone in the meeting app first."
+        },
+        {
+          "title": "Light and framing",
+          "minutes": 2,
+          "details": "Light in front of you, not behind; head and shoulders in frame."
+        },
+        {
+          "title": "Eye line",
+          "minutes": 2,
+          "details": "Camera at eye height. Looking at the camera when you make a point is optional."
+        },
+        {
+          "title": "Notes",
+          "minutes": 2,
+          "details": "A few keywords near the camera at most: reading a script shows on video."
+        },
+        {
+          "title": "Interruptions",
+          "minutes": 2,
+          "details": "Phone on silent, door closed, notifications off."
+        },
+        {
+          "title": "If it drops",
+          "minutes": 2,
+          "details": "Have the panel's phone number ready; rejoin, then say where you were up to."
+        }
+      ]
+    }
+  ],
+  "skills": [],
+  "cards": [
+    {
+      "id": "udyoga.drill.settler",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Could you start by telling us a little about your current role?",
+      "back": "About a minute: your role now, one thing you are proud of in it, and why this job is the next step."
+    },
+    {
+      "id": "udyoga.drill.story.fixture-story",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Your story in three bullets: Clinic diary clash",
+      "back": "- The clinic diary was double-booked most Mondays.\n- I rang each patient on the list and moved the overflow to a Tuesday session.\n- Double bookings fell from nine a week to one."
+    },
+    {
+      "id": "udyoga.drill.recovery.better-example",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Recovery line: Your example felt weak as you finished it",
+      "back": "Can I come back to that with a better example?"
+    },
+    {
+      "id": "udyoga.drill.recovery.own-part",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Recovery line: You said \"we\" all through and the panel cannot tell what you did",
+      "back": "To be clear about my own part in that: I…"
+    },
+    {
+      "id": "udyoga.drill.recovery.outcome",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Recovery line: You stopped before saying how it turned out",
+      "back": "Could I briefly add how that turned out?"
+    },
+    {
+      "id": "udyoga.drill.recovery.sum-up",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Recovery line: You lost the thread of a long answer",
+      "back": "To sum up: the result was…, and next time I would…"
+    },
+    {
+      "id": "udyoga.drill.recovery.honest",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Recovery line: You have not done exactly what they asked about",
+      "back": "I have not done exactly that, but the closest I have come is…"
+    },
+    {
+      "id": "udyoga.drill.recovery.repeat",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Recovery line: You did not catch the question",
+      "back": "Sorry, could you say the question again?"
+    },
+    {
+      "id": "udyoga.drill.recovery.pause",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Recovery line: Your mind went blank",
+      "back": "Can I take a moment to think about that?"
+    },
+    {
+      "id": "udyoga.drill.questions",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Do you have any questions for us?",
+      "back": "- What would success look like at six months?\n- What are the biggest pressures on the team right now?\n- How does the team share learning when something goes wrong?"
+    },
+    {
+      "id": "udyoga.drill.reappraisal",
+      "deck": "Interview drills",
+      "course": "Interview drills",
+      "front": "Your heart is racing as you wait to go in",
+      "back": "If your heart is racing before you go in, try saying to yourself \"I'm excited\" rather than trying to calm down: a racing heart is your body getting ready. Small effect in studies; try it, keep it if it helps."
+    }
+  ],
+  "notes": [
+    {
+      "title": "From Udyoga: interview drills",
+      "body": "Made by Udyoga from your story bank and your questions for them. Sending again updates these cards and keeps your reviews.\n\nThe \"I'm excited\" card is optional. Small effect in studies; try it, keep it if it helps.",
+      "tags": [
+        "udyoga",
+        "interview"
+      ]
+    }
+  ]
+}

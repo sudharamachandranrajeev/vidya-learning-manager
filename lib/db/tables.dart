@@ -134,6 +134,21 @@ class LearnCards extends Table with SyncedRow {
   IntColumn get reps => integer().withDefault(const Constant(0))();
   IntColumn get lapses => integer().withDefault(const Constant(0))();
   TextColumn get created => text()();
+
+  /// The sending app's stable id for a card that came in a study plan
+  /// (for example `udyoga.story.<id>`), '' otherwise. When the plan comes
+  /// again, the card with the same ref is updated in place and keeps its
+  /// schedule and reviews.
+  TextColumn get ref => text().withDefault(const Constant(''))();
+
+  /// The plan a [ref] card came from (its title in lower case), '' for the
+  /// user's own cards.
+  TextColumn get plan => text().withDefault(const Constant(''))();
+
+  /// The day the card's plan came again without it (the story was deleted
+  /// in the sending app), '' while it is in use. A retired card is kept
+  /// with its reviews but no longer shown for review.
+  TextColumn get retired => text().withDefault(const Constant(''))();
 }
 
 /// One review of a flashcard.

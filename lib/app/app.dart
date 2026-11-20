@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:brahma_core/brahma_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,13 +36,43 @@ class _Root extends StatelessWidget {
 /// Vidya's screens. There is no onboarding: Home says what to do first.
 /// Each achievement a write earns is announced once, quietly. [onHome]
 /// leads back to the Brahma suite's home screen when the suite hosts Vidya.
-class VidyaHome extends ConsumerWidget {
+/// Opening the app, or coming back to it, sends progress to Udyoga (at most
+/// once per ten minutes).
+class VidyaHome extends ConsumerStatefulWidget {
   const VidyaHome({super.key, this.onHome});
   final VoidCallback? onHome;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VidyaHome> createState() => _VidyaHomeState();
+}
+
+class _VidyaHomeState extends ConsumerState<VidyaHome> {
+  late final AppLifecycleListener _life;
+
+  @override
+  void initState() {
+    super.initState();
+    final reporter = ref.read(progressReporterProvider);
+    _life = AppLifecycleListener(onResume: () => unawaited(reporter.request()));
+    unawaited(reporter.request());
+  }
+
+  @override
+  void dispose() {
+    _life.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(reminderSyncProvider);
+    ref.listen(careerFileAutoAddProvider, (_, next) {
+      final titles = next.value ?? const <String>[];
+      if (titles.isEmpty) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Added from your career file: ${titles.join(', ')}')));
+    });
     ref.listen(celebrationsProvider, (_, list) {
       if (list.isEmpty) return;
       final text = list.length == 1
@@ -51,6 +83,6 @@ class VidyaHome extends ConsumerWidget {
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text('🏅 $text')));
     });
-    return AppShell(destinations: allDestinations, floating: true, onHome: onHome);
+    return AppShell(destinations: allDestinations, floating: true, onHome: widget.onHome);
   }
 }

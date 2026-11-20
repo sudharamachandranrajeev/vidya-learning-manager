@@ -1,0 +1,41 @@
+{
+  "format": "vidya-curriculum",
+  "version": 1,
+  "part": "1 of 1",
+  "program": {
+    "title": "Avenue: Ireland",
+    "goal": "Get an offer at the GEP floor before the deadline."
+  },
+  "courses": [
+    {
+      "title": "Get a QQI comparability statement",
+      "kind": "certification",
+      "startWeek": 0,
+      "dueWeek": 1,
+      "summary": "Employers ask what the degree compares to. Cost: Free. Time: Online.",
+      "url": "https://qhelp.qqi.ie/",
+      "topics": []
+    },
+    {
+      "title": "Apply to five roles",
+      "kind": "practice",
+      "startWeek": 0,
+      "dueWeek": 11,
+      "summary": "Offers start the permit. Time: 6 weeks. Cost and time unverified.",
+      "topics": []
+    }
+  ],
+  "skills": [],
+  "cards": [],
+  "notes": [
+    {
+      "title": "From Udyoga",
+      "body": "Made by Udyoga from the prep plan for Ireland.\nEverything is timed to finish before 2027-06-30.\nQualification: QQI statement now.\n- No sponsor answers",
+      "tags": [
+        "udyoga",
+        "avenue",
+        "ie"
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/review.dart';
+import '../domain/udyoga_link.dart';
 import 'providers.dart';
 import 'reminders.dart';
 
@@ -16,6 +17,7 @@ class SettingsPage extends StatelessWidget {
       _StreaksCard(),
       _PaceCard(),
       _RemindersCard(),
+      _CareerFileCard(),
       AppLockCard(),
       HintsCard(),
       SyncCard(),
@@ -136,4 +138,30 @@ class _RemindersCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+final _autoAddProvider = FutureProvider<bool>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.autoAddCareerFile();
+});
+
+/// Plans from the career file (Udyoga sends them through sync): offered on
+/// Home with one tap, or added by themselves when this is on. Device-only.
+class _CareerFileCard extends ConsumerWidget {
+  const _CareerFileCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => SectionCard(
+    title: 'Plans from your career file',
+    padding: const EdgeInsets.only(bottom: 8),
+    child: SwitchListTile(
+      title: const Text('Add them automatically'),
+      subtitle: const Text(
+        'When Udyoga syncs a study plan from your career file, add it (or update it) without asking. '
+        'Off: it waits on Home for a tap. Plans Udyoga makes itself always wait.',
+      ),
+      value: ref.watch(_autoAddProvider).value ?? false,
+      onChanged: (v) => ref.mutate((s) => s.book.setAutoAddCareerFile(v), report: false),
+    ),
+  );
 }
