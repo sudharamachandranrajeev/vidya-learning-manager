@@ -18,6 +18,17 @@ import 'review.dart' show Grade;
 /// A plan another app sent that this one has not added in its latest form.
 typedef OfferedPlan = ({StudyPlan row, CurriculumPlan plan});
 
+/// Plans Udyoga sends from the candidate's career file (its
+/// `settings/vidya-*.json`) have ids starting with this.
+const careerFilePlanPrefix = 'udyoga.career-file.';
+
+/// Device-only: 'on' when plans from the career file are added without
+/// asking.
+const autoAddCareerFileKey = 'vidya.careerfile.auto';
+
+/// Whether [offer] came from the career file rather than Udyoga's own plans.
+bool isCareerFilePlan(OfferedPlan offer) => offer.row.id.startsWith(careerFilePlanPrefix);
+
 extension UdyogaLink on LearningBook {
   /// Plans sent and not yet added (or changed since). A plan that cannot be
   /// read is left out, not fatal: it may come from a newer Udyoga.
@@ -47,6 +58,25 @@ extension UdyogaLink on LearningBook {
         await _report(offer.row.id, planUpdated: offer.row.updated, now: now, force: true);
         return r;
       });
+
+  Future<bool> autoAddCareerFile() async => await db.localSetting(autoAddCareerFileKey) == 'on';
+
+  Future<void> setAutoAddCareerFile(bool on) => db.setLocalSetting(autoAddCareerFileKey, on ? 'on' : 'off');
+
+  /// Adds the career file's plans that are new or changed, when the learner
+  /// turned that on; each goes through [addOfferedPlan], so a changed file
+  /// updates its program in place. Udyoga's own plans still wait for a tap.
+  /// Returns the titles added.
+  Future<List<String>> autoAddCareerFilePlans({required String today, required String now}) async {
+    if (!await autoAddCareerFile()) return const [];
+    final added = <String>[];
+    for (final offer in await offeredPlans()) {
+      if (!isCareerFilePlan(offer)) continue;
+      await addOfferedPlan(offer, today: today, now: now);
+      added.add(offer.plan.title);
+    }
+    return added;
+  }
 
   /// What was finished and the rated skills, as the portfolio lists them.
   Future<StudyProgress> studyProgress() async {

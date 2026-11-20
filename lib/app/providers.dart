@@ -141,3 +141,21 @@ final statsProvider = FutureProvider<Stats>((ref) {
   ref.watch(revisionProvider);
   return ref.watch(sessionProvider).book.stats(ref.watch(todayProvider));
 });
+
+/// The career file's study plans, added by themselves when the learner
+/// turned that on (Settings), after every write and every sync that brings
+/// changes. Gives the titles added this time; empty when none.
+final careerFileAutoAddProvider = FutureProvider<List<String>>((ref) async {
+  ref.watch(revisionProvider);
+  final book = ref.watch(sessionProvider).book;
+  final added = await book.autoAddCareerFilePlans(today: today(), now: DateTime.now().toUtc().toIso8601String());
+  if (added.isNotEmpty) {
+    // Load the screens again and send the "added" report; the rerun finds
+    // nothing left to add.
+    Future.microtask(() {
+      ref.read(revisionProvider.notifier).bump();
+      ref.read(syncProvider.notifier).soon();
+    });
+  }
+  return added;
+});

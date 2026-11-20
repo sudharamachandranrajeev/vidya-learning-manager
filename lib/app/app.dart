@@ -66,6 +66,13 @@ class _VidyaHomeState extends ConsumerState<VidyaHome> {
   @override
   Widget build(BuildContext context) {
     ref.watch(reminderSyncProvider);
+    ref.listen(careerFileAutoAddProvider, (_, next) {
+      final titles = next.value ?? const <String>[];
+      if (titles.isEmpty) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Added from your career file: ${titles.join(', ')}')));
+    });
     ref.listen(celebrationsProvider, (_, list) {
       if (list.isEmpty) return;
       final text = list.length == 1

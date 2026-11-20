@@ -225,7 +225,9 @@ class _OfferedPlansState extends ConsumerState<_OfferedPlans> {
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: SectionCard(
-              title: 'A study plan from ${_appName(o.row.source)}',
+              title: isCareerFilePlan(o)
+                  ? 'A study plan from your career file'
+                  : 'A study plan from ${_appName(o.row.source)}',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

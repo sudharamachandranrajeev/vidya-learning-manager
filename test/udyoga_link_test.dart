@@ -344,4 +344,73 @@ void main() {
         .insert(BridgeStudyPlansCompanion.insert(id: 'x', source: 'udyoga', plan: 'not json', updated: 'T'));
     expect(await book.offeredPlans(), isEmpty);
   });
+
+  group('plans from the career file', () {
+    // A fictional settings/vidya-*.json, as Udyoga syncs it.
+    String plan(String goal) => jsonEncode({
+      'format': 'vidya-curriculum',
+      'version': 1,
+      'program': {'title': 'Example readiness', 'goal': goal},
+      'courses': [
+        {
+          'title': 'Example course',
+          'kind': 'course',
+          'topics': [
+            {'title': 'First topic', 'minutes': 20},
+          ],
+        },
+      ],
+      'cards': [
+        {'id': 'example.card.1', 'deck': 'Example', 'front': 'Front', 'back': 'Back'},
+      ],
+    });
+    const id = '${careerFilePlanPrefix}vidya-example';
+
+    test('are offered with one tap, marked as the career file\'s', () async {
+      await receive('2026-11-20T09:00:00Z', id: id, plan: plan('First goal'));
+      await receive('2026-11-20T09:00:00Z');
+      final offers = await book.offeredPlans();
+      expect(offers.map(isCareerFilePlan), unorderedEquals([true, false]));
+      expect(await book.autoAddCareerFilePlans(today: today, now: 'T1'), isEmpty, reason: 'off by default');
+      expect(await book.offeredPlans(), hasLength(2));
+    });
+
+    test('are added by themselves once turned on, updating in place; Udyoga\'s own plans still wait', () async {
+      await book.setAutoAddCareerFile(true);
+      await receive('2026-11-20T09:00:00Z', id: id, plan: plan('First goal'));
+      await receive('2026-11-20T09:00:00Z');
+      expect(await book.autoAddCareerFilePlans(today: today, now: 'T1'), ['Example readiness']);
+      final left = await book.offeredPlans();
+      expect(left.single.row.id, 'udyoga.study-plan');
+      final added = (await (db.select(db.bridgeStudyProgress)..where((p) => p.id.equals(id))).getSingle());
+      expect(added.planUpdated, '2026-11-20T09:00:00Z');
+      expect(await book.autoAddCareerFilePlans(today: today, now: 'T2'), isEmpty, reason: 'nothing new');
+
+      // The file changed on the laptop: the same program is updated.
+      await receive('2026-11-20T10:00:00Z', id: id, plan: plan('Second goal'));
+      expect(await book.autoAddCareerFilePlans(today: today, now: 'T3'), ['Example readiness']);
+      final programs = await (db.select(db.learnPrograms)..where((p) => p.deleted.not())).get();
+      expect(programs.where((p) => p.title == 'Example readiness'), hasLength(1));
+      expect(
+        (await (db.select(db.learnCards)..where((c) => c.deleted.not() & c.ref.equals('example.card.1'))).get()),
+        hasLength(1),
+      );
+    });
+
+    test('a plan withdrawn from the career file is no longer offered', () async {
+      await receive('2026-11-20T09:00:00Z', id: id, plan: plan('First goal'));
+      await db
+          .into(db.bridgeStudyPlans)
+          .insertOnConflictUpdate(
+            BridgeStudyPlansCompanion.insert(
+              id: id,
+              source: 'udyoga',
+              plan: '{}',
+              updated: '2026-11-20T11:00:00Z',
+              deleted: const Value(true),
+            ),
+          );
+      expect(await book.offeredPlans(), isEmpty);
+    });
+  });
 }

@@ -233,6 +233,51 @@ void main() {
     await app.close();
   });
 
+  testWidgets('a plan from the career file is offered as such; with auto-add on it goes in by itself', (
+    tester,
+  ) async {
+    final app = AppHarness(tester)..desktop();
+    final plan = jsonEncode({
+      'format': 'vidya-curriculum',
+      'version': 1,
+      'program': {'title': 'Example readiness', 'goal': 'Be ready'},
+      'courses': [
+        {'title': 'Example course', 'kind': 'course', 'topics': []},
+      ],
+    });
+    await app.open(
+      seed: (book) => book.db
+          .into(book.db.bridgeStudyPlans)
+          .insert(
+            BridgeStudyPlansCompanion.insert(
+              id: '${careerFilePlanPrefix}vidya-example',
+              source: 'udyoga',
+              plan: plan,
+              updated: '2026-11-20T09:00:00Z',
+            ),
+          ),
+    );
+    await app.run();
+    expect(find.text('A study plan from your career file'), findsOneWidget);
+    await app.go('Settings');
+    expect(find.text('Plans from your career file'), findsOneWidget);
+    // Turning it on is a write: the plan waiting is added at once.
+    await app.tapText('Add them automatically');
+    await app.go('Home');
+    await app.settle();
+    await tester.runAsync(() async {
+      for (var i = 0; i < 50 && (await app.book.offeredPlans()).isNotEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+    await app.settle();
+    expect(find.text('A study plan from your career file'), findsNothing);
+    final programs = await tester.runAsync(() => app.session.db.select(app.session.db.learnPrograms).get());
+    expect(programs!.map((p) => p.title), contains('Example readiness'));
+    expect(tester.takeException(), isNull);
+    await app.close();
+  });
+
   testWidgets('the focus timer opens from Home and can be paused', (tester) async {
     final app = AppHarness(tester)..phone();
     await app.open();

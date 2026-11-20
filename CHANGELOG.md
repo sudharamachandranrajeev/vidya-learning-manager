@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Study plans from your career file (the `settings/vidya-*.json` files Udyoga syncs) are offered on Home as "A study plan from your career file", one tap to add. Settings, *Plans from your career file*, can add them, and update them when the file changes, without asking; Udyoga's own plans still wait for a tap.
 - A study plan Udyoga sends through sync is offered on Home and added in one tap; adding a re-sent plan updates the same program. What you finish and the skills you rate go back to Udyoga by themselves. Importing a plan file still works without sync.
 - A plan card the re-sent plan no longer has (a story deleted in Udyoga) is set aside, not deleted: its reviews are kept, it is never due, and it comes back as it was if the plan sends it again. Review shows how many are set aside.
 - Rehearsal results go back to Udyoga when a review session ends and when Vidya opens or comes back to the front, at most once every ten minutes, instead of after every grade.
