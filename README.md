@@ -47,6 +47,10 @@ progress. Status: **early test releases**. It needs no internet and no account.
   yourself on four checks (situation, own actions, result, link to the criterion). Keep a story
   bank shown as STAR or CAR, answer scenario questions with a check / scope / escalate / hand
   over frame, review weak criteria first before the interview, and log how a real interview went.
+- ✅ **Job readiness** – line up each criterion of the job (from Udyoga, or typed in from the
+  person specification) against the evidence you built: topics, quiz scores, tasks, drills,
+  stories, portfolio and skills. Each row is covered, weak or missing, shown as counts ("9 of 12
+  essential covered, 2 weak, interview in 6 days") with one next step for the weakest row.
 - 🔎 **Find free resources** – search Microsoft Learn, MIT Learn and Open Library at once for
   a topic or a role (OpenLearn opens in your browser). Free results come first, each with its length, level, a free /
   audit / paid badge and its licence; one tap adds it to a topic. Paste any other link (Coursera,
@@ -255,6 +259,32 @@ change are kept when the plan comes again.
 Your stories, scores and feedback logs stay on this device, or travel only through your own
 sync. Nothing is sent anywhere else.
 
+#### Job readiness
+
+1. **Open it.** On a goal, tap **Job readiness** (under the progress bar). Home also shows a
+   card for the goal with the nearest interview, or else the latest role plan from Udyoga.
+2. **Read the counts.** The top line says, for example, "9 of 12 essential covered, 2 weak,
+   1 missing · desirable 3 of 5 · interview in 6 days". Set the interview date here too.
+3. **Press the Next button.** It gives one step for the weakest essential row: take or retake a
+   quiz, practise a drill, finish a task, or write a story.
+4. **Open a row** to see its evidence. Tap a piece to go to its topic, drill, story, portfolio
+   item or skill.
+5. **No criteria from Udyoga?** Tap **Add a criterion** (the list button at the top), type a row
+   of the person specification, say whether it is essential, and pick the topics that work
+   towards it. Edit or delete your own rows from the row itself.
+
+How a row is judged:
+
+- **Covered**: at least one strong piece of your own work from the last 60 days: a done topic
+  whose latest quiz is 70% or more, a practice task done with evidence, a drill whose latest
+  score is 5 of 8 or more, or a linked story together with a done topic.
+- **Weak**: there is evidence, but only old work (over 60 days), a latest quiz under 70%, a
+  latest drill under 5 of 8, only planned items, or work not checked yet (a topic ticked
+  without a quiz, a story, a portfolio item or a skill rating on their own).
+- **Missing**: nothing at all is linked to it.
+- **AI never marks a row covered.** A criterion's AI source, Udyoga's "your CV shows this" flag
+  and any status a plan sends are ignored. Only your own results count.
+
 #### Find free resources
 
 1. On a topic page, tap **Find free resources** (or the 🔍 button on a course or a goal, which
@@ -340,6 +370,27 @@ the id `udyoga.practise-results` (a plan row, because each app writes only its o
 
 Vidya shows the newest score per drill, never offers that row as a plan, and counts the score
 like a self-rated one (scaled to 8) when it is newer than your own last attempt.
+
+#### Readiness back to Udyoga (format)
+
+For a plan whose goal has criteria, the plan's own progress row (`bridge_study_progress`, the
+plan's id) gains a `readiness` list beside the fields it already has (`learning`, `skills` and, when
+there are any, `drills`; all unchanged). It holds one entry per **weak or missing** criterion, in plan order:
+
+```json
+{
+  "learning": [], "skills": [],
+  "readiness": [
+    {"criterionId": "e2", "text": "Handle a difficult learner calmly", "status": "weak", "essential": true},
+    {"criterionId": "", "text": "Full UK driving licence", "status": "missing", "essential": false}
+  ]
+}
+```
+
+`criterionId` is the plan's id for the criterion (`criteria[].id`), or `""` for a row the learner
+typed in. `status` is `weak` or `missing`; covered rows are left out, so an empty list means every
+criterion is covered. The key is left out when the goal has no criteria. Udyoga can turn the
+rows into drill cards. Like the rest of the report, it is written only when something changed.
 
 ## 🧭 How it works
 

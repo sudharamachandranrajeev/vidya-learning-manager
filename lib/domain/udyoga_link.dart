@@ -13,6 +13,7 @@ import 'package:drift/drift.dart';
 import '../db/database.dart';
 import 'book.dart';
 import 'curriculum.dart';
+import 'readiness.dart';
 import 'review.dart' show Grade;
 
 /// A plan another app sent that this one has not added in its latest form.
@@ -144,10 +145,7 @@ extension UdyogaLink on LearningBook {
         });
       }
     }
-    final key = plan.title.toLowerCase();
-    final program = (await (db.select(
-      db.learnPrograms,
-    )..where((p) => p.deleted.not())).get()).where((p) => p.title.toLowerCase() == key).firstOrNull;
+    final program = await planProgram(plan);
     if (program != null) {
       final titles = {for (final c in plan.courses) c.title.toLowerCase()};
       final courses =
@@ -165,6 +163,15 @@ extension UdyogaLink on LearningBook {
     return out..sort((a, b) => sortKey(a).compareTo(sortKey(b)));
   }
 
+  /// The program a plan was added as (matched by title, as the import
+  /// merges), or null when it has not been added.
+  Future<Program?> planProgram(CurriculumPlan plan) async {
+    final key = plan.title.toLowerCase();
+    return (await (db.select(
+      db.learnPrograms,
+    )..where((p) => p.deleted.not())).get()).where((p) => p.title.toLowerCase() == key).firstOrNull;
+  }
+
   Future<void> _report(String planId, {String? planUpdated, required String now, bool force = false}) async {
     final old = await (db.select(db.bridgeStudyProgress)..where((p) => p.id.equals(planId))).getSingleOrNull();
     var progress = (await studyProgress()).encode();
@@ -179,6 +186,17 @@ extension UdyogaLink on LearningBook {
     }
     final drills = plan == null ? const <Map<String, Object>>[] : await planDrills(plan);
     if (drills.isNotEmpty) progress = jsonEncode({...jsonDecode(progress) as Map<String, Object?>, 'drills': drills});
+    // The program's weak and missing criteria ride along too, as
+    // `readiness` (see `readinessReport`), so Udyoga can turn them into
+    // drill cards. Only for a program with criteria; an empty list then
+    // means every criterion is covered.
+    final program = plan == null ? null : await planProgram(plan);
+    if (program != null) {
+      final r = await readiness(program.id, today: _dayOf(now));
+      if (r.rows.isNotEmpty) {
+        progress = jsonEncode({...jsonDecode(progress) as Map<String, Object?>, 'readiness': readinessReport(r)});
+      }
+    }
     final mark = planUpdated ?? old?.planUpdated ?? '';
     if (!force && old != null && !old.deleted && old.progress == progress && old.planUpdated == mark) return;
     if (!force && old == null) return; // Not added yet: nothing to report on.
@@ -194,6 +212,11 @@ extension UdyogaLink on LearningBook {
     );
   }
 }
+
+/// The day (yyyy-MM-dd) of a report time in UTC ISO 8601; today on this
+/// device when [now] is not one.
+String _dayOf(String now) =>
+    RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(now) ? now.substring(0, 10) : today();
 
 /// Sends progress back to Udyoga at most once per [gap]: when a review
 /// session ends, when the app comes back to the front, and after other

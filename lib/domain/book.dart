@@ -982,8 +982,13 @@ class LearningBook {
           topics++;
         }
         // The plan owns a topic's criteria: a re-sent plan updates them.
+        // Links to the learner's own criteria (refs starting `own.`) stay.
         var topic = await (db.select(db.learnTopics)..where((x) => x.id.equals(tid!))).getSingle();
-        final refs = t.criteria.join(',');
+        final refs = [
+          ...t.criteria,
+          for (final r in criteriaRefs(topic))
+            if (r.startsWith('own.') && !t.criteria.contains(r)) r,
+        ].join(',');
         if (t.criteria.isNotEmpty && topic.criteria != refs) {
           topic = topic.copyWith(criteria: refs);
           await save(db.learnTopics, topic, tid);

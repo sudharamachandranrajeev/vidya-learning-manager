@@ -15,6 +15,7 @@ import 'dialogs.dart';
 import 'focus_page.dart';
 import 'next_up_card.dart';
 import 'notes_page.dart';
+import 'readiness_page.dart';
 import 'review_page.dart';
 import 'zen.dart';
 
@@ -105,6 +106,7 @@ class _Body extends ConsumerWidget {
                 ),
                 const _OfferedPlans(),
                 const FadeIn(delay: Duration(milliseconds: 30), child: NextUpCard()),
+                const FadeIn(delay: Duration(milliseconds: 45), child: ReadinessCard()),
                 FadeIn(
                   delay: const Duration(milliseconds: 60),
                   child: _LevelCard(s, streaks: streaks),
