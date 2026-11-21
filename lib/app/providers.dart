@@ -227,8 +227,8 @@ final httpClientProvider = Provider<http.Client>((ref) {
 });
 
 /// The no-key catalogues, kept for the life of the app so the Microsoft
-/// Learn and OpenLearn copies are read from the device only once a run.
-/// Their copies live in this device's local settings (not synced).
+/// Learn copy is read from the device only once a run. That copy lives in
+/// this device's local settings (not synced).
 final freeCataloguesProvider = Provider<List<ResourceCatalogue>>((ref) {
   final client = ref.watch(httpClientProvider);
   final db = ref.watch(sessionProvider).db;
@@ -236,7 +236,6 @@ final freeCataloguesProvider = Provider<List<ResourceCatalogue>>((ref) {
   return [
     MicrosoftLearnCatalogue(client, cache),
     MitLearnCatalogue(client),
-    OpenLearnCatalogue(client, cache),
     OpenLibraryCatalogue(client),
   ];
 });

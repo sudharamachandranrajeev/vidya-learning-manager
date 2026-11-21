@@ -182,36 +182,14 @@ void main() {
     });
   });
 
-  group('OpenLearn', () {
-    test('reads the RSS feed: free courses under CC BY-NC-SA 4.0, no lesson text kept', () {
-      final list = parseOpenLearnRss(fixture('openlearn_rss.xml'));
-      expect(list.map((r) => r.title), ['Getting started with care work', 'Introducing data in health']);
-      final r = list.first;
-      expect(r.access, Access.free);
-      expect(r.licence, 'CC BY-NC-SA 4.0');
-      expect(r.kind, 'Course');
-      expect(r.source, 'OpenLearn');
-      expect(
-        r.summary,
-        'A free course on the first weeks in a care role. 8 hours. · Health, Sports & Psychology',
-      );
-      expect(() => parseOpenLearnRss('<rss><channel>'), throwsA(isA<ResourceError>()));
-    });
-
-    test('the feed is read at most once a day and searched locally', () async {
-      final clock = FakeClock();
-      final m = mock((_) => ok(fixture('openlearn_rss.xml'), type: 'application/rss+xml'));
-      final cache = MemoryResourceCache();
-      final ol = OpenLearnCatalogue(m.client, cache, now: clock.now);
-      expect((await ol.search('care')).single.title, 'Getting started with care work');
-      expect((await ol.search('health data')).single.title, 'Introducing data in health');
-      clock.advance(const Duration(hours: 20));
-      await OpenLearnCatalogue(m.client, cache, now: clock.now).search('care');
-      expect(m.asked, hasLength(1));
-      expect(m.asked.single, OpenLearnCatalogue.defaultFeeds.single);
-      clock.advance(const Duration(hours: 5));
-      await OpenLearnCatalogue(m.client, cache, now: clock.now).search('care');
-      expect(m.asked, hasLength(2));
+  group('OpenLearn (link only)', () {
+    test('a search opens OpenLearn\'s own search page; nothing is read from open.edu', () {
+      final u = openLearnSearchUrl('  care work  ');
+      expect(u.toString(), 'https://www.open.edu/openlearn/local/ocwglobalsearch/search.php?q=care+work');
+      expect(u.queryParameters['q'], 'care work');
+      final d = dataSources.firstWhere((d) => d.name.startsWith('OpenLearn'));
+      expect(d.name, 'OpenLearn (link only)');
+      expect(d.what, contains('Search OpenLearn'));
     });
   });
 

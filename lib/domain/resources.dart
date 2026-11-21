@@ -20,11 +20,11 @@
 ///   No key. At most 3 requests a second with an app User-Agent and a
 ///   contact address (the public repository, never a person), and it backs
 ///   off when told to slow down (HTTP 429).
-/// * OpenLearn (The Open University) RSS, `https://www.open.edu/openlearn/rss/try-content`,
-///   the free-course feed its FAQ names. Read at most once a day and
-///   searched locally. On 2026-11-21 that address answered 404 or a
-///   browser check to scripts, so this source may show an error line; the
-///   others carry on.
+/// * OpenLearn (The Open University) is link only: its RSS feeds answer
+///   403 or a browser check to apps (checked again on 2026-11-21), and
+///   Vidya skips sites that block automated clients. "Search OpenLearn"
+///   opens OpenLearn's own search for the query in the browser instead
+///   ([openLearnSearchUrl]); Vidya never fetches anything from open.edu.
 /// * YouTube Data API v3 search, only with the learner's own key, which
 ///   stays in this device's keychain. Its free quota allows about 100
 ///   searches a day. Not checked live (no key on the build machine); the
@@ -38,7 +38,6 @@ import 'dart:math' as math;
 
 import 'package:brahma_core/brahma_core.dart' show SecretStore;
 import 'package:http/http.dart' as http;
-import 'package:xml/xml.dart';
 
 import 'study_items.dart';
 
@@ -557,118 +556,14 @@ List<Resource> parseMitLearn(String body) {
   return out;
 }
 
-// ---- OpenLearn ----
+// ---- OpenLearn (link only) ----
 
-/// The Open University's OpenLearn free courses from its RSS feed (no
-/// key, CC BY-NC-SA 4.0, reuse of the feed invited). Read at most once a
-/// day and searched here.
-class OpenLearnCatalogue implements ResourceCatalogue {
-  OpenLearnCatalogue(this.client, this.cache, {DateTime Function()? now, List<Uri>? feeds})
-    : now = now ?? DateTime.now,
-      feeds = feeds ?? defaultFeeds;
-  final http.Client client;
-  final ResourceCache cache;
-  final DateTime Function() now;
-  final List<Uri> feeds;
-
-  /// The free-course feed named in OpenLearn's FAQ ("Can I take a feed of
-  /// OpenLearn content?").
-  static final defaultFeeds = [Uri.parse('https://www.open.edu/openlearn/rss/try-content')];
-  static const keepFor = Duration(hours: 24);
-  static const _cacheKey = 'openlearn';
-
-  List<Resource>? _items;
-  DateTime? _loadedAt;
-
-  @override
-  String get id => 'openlearn';
-  @override
-  String get name => 'OpenLearn';
-
-  Future<List<Resource>> _all() async {
-    final t = now();
-    if (_items != null && _loadedAt != null && t.difference(_loadedAt!) < keepFor) return _items!;
-    final saved = await cache.read(_cacheKey);
-    if (saved != null && t.difference(saved.at) < keepFor) {
-      _loadedAt = saved.at;
-      return _items = parseOpenLearnRss(saved.body);
-    }
-    Object? failure;
-    for (final feed in feeds) {
-      try {
-        final r = await _get(client, feed, headers: const {'User-Agent': vidyaUserAgent});
-        final items = parseOpenLearnRss(r.body);
-        // Only the feed's own text is kept, and it is already just titles,
-        // links and short descriptions.
-        await cache.write(_cacheKey, r.body.length > 2000000 ? r.body.substring(0, 2000000) : r.body, t);
-        _loadedAt = t;
-        return _items = items;
-      } on ResourceError catch (e) {
-        failure = e;
-      }
-    }
-    if (saved != null) return _items = parseOpenLearnRss(saved.body);
-    throw failure ?? const ResourceError('has no feed set');
-  }
-
-  @override
-  Future<List<Resource>> search(String query) async {
-    final all = await _all();
-    final hits = [
-      for (final r in all)
-        if (matchesAll(query, r.title, '${r.summary} ${r.kind}'))
-          (fitScore(query, r.title, '${r.summary} ${r.kind}'), r),
-    ]..sort((a, b) => b.$1.compareTo(a.$1));
-    return [for (final h in hits.take(20)) h.$2];
-  }
-}
-
-/// Reads an OpenLearn RSS feed: each item's title, link, short
-/// description and category. Every OpenLearn course is free.
-List<Resource> parseOpenLearnRss(String body) {
-  final XmlDocument doc;
-  try {
-    doc = XmlDocument.parse(body);
-  } on XmlException {
-    throw const ResourceError('sent something Vidya could not read');
-  }
-  String licenceOf(XmlElement e) {
-    final l = e.childElements.where((c) => c.localName == 'license').firstOrNull;
-    final href = l?.getAttribute('rdf:resource') ?? l?.getAttribute('resource') ?? l?.innerText ?? '';
-    final m = RegExp(r'licenses/([a-z-]+)/(\d\.\d)').firstMatch(href);
-    return m == null ? '' : 'CC ${m[1]!.toUpperCase()} ${m[2]}';
-  }
-
-  final channel = doc.findAllElements('channel').firstOrNull;
-  final channelLicence = channel == null ? '' : licenceOf(channel);
-  return [
-    for (final item in doc.findAllElements('item'))
-      if (item.getElement('title')?.innerText.trim() case final title? when title.isNotEmpty)
-        if (item.getElement('link')?.innerText.trim() case final link? when link.startsWith('http'))
-          Resource(
-            catalogue: 'openlearn',
-            title: htmlUnescape(title),
-            url: link,
-            source: 'OpenLearn',
-            type: 'course',
-            kind:
-                [
-                  for (final c in item.childElements)
-                    if (c.localName == 'type' && c.innerText.trim().isNotEmpty) c.innerText.trim(),
-                ].firstOrNull ??
-                'Free course',
-            level: '',
-            access: Access.free,
-            licence: licenceOf(item).isNotEmpty
-                ? licenceOf(item)
-                : (channelLicence.isNotEmpty ? channelLicence : 'CC BY-NC-SA 4.0'),
-            summary: [
-              plainText(item.getElement('description')?.innerText ?? ''),
-              for (final c in item.findElements('category')) c.innerText.trim(),
-            ].where((s) => s.isNotEmpty).join(' · '),
-          ),
-  ];
-}
+/// OpenLearn's own search page for [query], opened in the browser by the
+/// "Search OpenLearn" row. Vidya does not read OpenLearn over the network:
+/// its feeds block apps, and the project skips sites that do.
+Uri openLearnSearchUrl(String query) => Uri.https('www.open.edu', '/openlearn/local/ocwglobalsearch/search.php', {
+  'q': query.trim(),
+});
 
 // ---- Open Library ----
 
@@ -1179,10 +1074,12 @@ const dataSources = <DataSource>[
     url: 'https://ocw.mit.edu/pages/privacy-and-terms-of-use/',
   ),
   (
-    name: 'OpenLearn',
-    what: 'Free courses from The Open University, including health and care. Its feed is read at most once a day.',
+    name: 'OpenLearn (link only)',
+    what:
+        'Free courses from The Open University, including health and care. Its feeds block apps, so Vidya does not '
+        'search it: "Search OpenLearn" opens its own search in your browser.',
     terms: 'CC BY-NC-SA 4.0',
-    url: 'https://www.open.edu/openlearn/get-started/frequently-asked-questions/can-i-take-feed-openlearn-content',
+    url: 'https://www.open.edu/openlearn/about-openlearn/try',
   ),
   (
     name: 'Open Library',

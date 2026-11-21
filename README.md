@@ -43,8 +43,8 @@ progress. Status: **early test releases**. It needs no internet and no account.
 - 📖 **Topic pages** – each topic holds its videos, articles, books, practice tasks and your own
   notes. Take its quiz: missed questions become flashcards by themselves. A practice task needs
   an evidence link (or a note) to be done, and goes into your portfolio in one tap.
-- 🔎 **Find free resources** – search Microsoft Learn, MIT Learn, OpenLearn and Open Library at
-  once for a topic or a role. Free results come first, each with its length, level, a free /
+- 🔎 **Find free resources** – search Microsoft Learn, MIT Learn and Open Library at once for
+  a topic or a role (OpenLearn opens in your browser). Free results come first, each with its length, level, a free /
   audit / paid badge and its licence; one tap adds it to a topic. Paste any other link (Coursera,
   YouTube, NHS e-LfH…) and Vidya reads its title for you.
 - ⏱️ **Focus timer and study log** – run a quiet 15 to 60 minute timer, or log time by hand, on a
@@ -224,8 +224,10 @@ change are kept when the plan comes again.
 1. On a topic page, tap **Find free resources** (or the 🔍 button on a course or a goal, which
    searches for that course or role). The topic's name is already filled in; change it and tap
    **Search**.
-2. Microsoft Learn, MIT Learn, OpenLearn and Open Library are asked at the same time. Each has
-   its own line ("MIT Learn: 20 found"); if one is down, the others still answer.
+2. Microsoft Learn, MIT Learn and Open Library are asked at the same time. Each has its own
+   line ("MIT Learn: 20 found"); if one is down, the others still answer. OpenLearn blocks apps,
+   so it is link only: tap **Search OpenLearn** to open its own search for the same words in
+   your browser. Vidya never fetches anything from OpenLearn.
 3. Free results come first. Each shows its source, length, level, a **Free**, **Free to audit**,
    **Free to borrow** or **Paid** badge, and its licence. Tap **Add** to put it on the topic.
 4. "Free" changes. If a course turns out to be paid, open the item, tap **Edit** and change
@@ -285,8 +287,8 @@ flowchart LR
   unreadable.
 - **Vidya goes online only when you ask it to.** It searches the free catalogues when you tap
   **Search**, reads a pasted link's title when you tap the **T** button, and talks to your sync
-  server only if you sign in. The Microsoft Learn catalogue and the OpenLearn feed are kept on
-  the device for a day, so a second search does not ask again. The next release also asks
+  server only if you sign in. The Microsoft Learn catalogue is kept on the device for a
+  day, so a second search does not ask again. The next release also asks
   GitHub once a day for a newer version (you can switch this off).
 
 > [!IMPORTANT]

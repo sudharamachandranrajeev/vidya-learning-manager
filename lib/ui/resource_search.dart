@@ -131,7 +131,7 @@ class _ResourceSearchSheetState extends ConsumerState<ResourceSearchSheet> {
             Text('Find free resources', style: text.titleLarge),
             const SizedBox(height: 4),
             Text(
-              'Searches Microsoft Learn, MIT Learn, OpenLearn and Open Library${youtube ? ', and YouTube with your key' : ''} '
+              'Searches Microsoft Learn, MIT Learn and Open Library${youtube ? ', and YouTube with your key' : ''} '
               'at once. Vidya keeps the link and its facts, never the lesson text.',
               style: text.bodySmall,
             ),
@@ -152,6 +152,7 @@ class _ResourceSearchSheetState extends ConsumerState<ResourceSearchSheet> {
             ),
             const SizedBox(height: 8),
             for (final s in _statuses) _StatusLine(s),
+            if (_searched.isNotEmpty) _OpenLearnRow(_searched),
             const SizedBox(height: 4),
             Expanded(
               child: _searched.isEmpty
@@ -206,6 +207,32 @@ class _StatusLine extends StatelessWidget {
       ),
     );
   }
+}
+
+/// OpenLearn is link only (its feeds block apps): this row opens
+/// OpenLearn's own search for the query in the browser. Nothing is fetched
+/// from OpenLearn by Vidya.
+class _OpenLearnRow extends StatelessWidget {
+  const _OpenLearnRow(this.query);
+  final String query;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      children: [
+        const Icon(Icons.open_in_new, size: 16),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('OpenLearn: link only, opens in your browser', style: Theme.of(context).textTheme.bodySmall),
+        ),
+        TextButton(
+          onPressed: () => openLink(context, openLearnSearchUrl(query).toString()),
+          child: const Text('Search OpenLearn'),
+        ),
+      ],
+    ),
+  );
 }
 
 /// A small label: how free a result is, or its licence.

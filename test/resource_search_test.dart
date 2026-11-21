@@ -114,6 +114,7 @@ void main() {
     await app.tap(find.byTooltip('Search'));
 
     expect(find.text('Fake Learn: 2 found'), findsOneWidget);
+    expect(find.text('Search OpenLearn'), findsOneWidget);
     expect(find.text('Broken: could not connect (are you offline?)'), findsOneWidget);
     // Free first, whatever order the catalogue gave.
     final freeY = tester.getTopLeft(find.textContaining('Centering clay on the wheel')).dy;
@@ -160,6 +161,54 @@ void main() {
     await app.tapText('Save');
     expect(find.text('Lecture 1: An example lecture'), findsOneWidget);
     expect(find.textContaining('Video · Free · Example University'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await app.close();
+  });
+
+  testWidgets('the real free catalogues never ask OpenLearn; it is a link-only row', (tester) async {
+    final app = AppHarness(tester)..phone();
+    await app.open(
+      seed: (b) => b.importCurriculum(
+        parseCurriculum(
+          jsonEncode({
+            'format': 'vidya-curriculum',
+            'version': 2,
+            'program': {'title': 'Pottery teacher'},
+            'courses': [
+              {
+                'title': 'Wheel basics',
+                'topics': [
+                  {'title': 'Centering'},
+                ],
+              },
+            ],
+          }),
+        ),
+        today: '2026-11-21',
+      ),
+    );
+    final asked = <Uri>[];
+    await app.run(
+      overrides: [
+        httpClientProvider.overrideWithValue(
+          MockClient((r) async {
+            asked.add(r.url);
+            return http.Response('{}', 404);
+          }),
+        ),
+      ],
+    );
+    await app.go('Learn');
+    await app.tapText('Pottery teacher');
+    await app.tapText('Wheel basics');
+    await app.tapText('Centering');
+    await app.tap(find.byTooltip('Find free resources'));
+    await app.tap(find.byTooltip('Search'));
+    await app.settle();
+    expect(asked, isNotEmpty);
+    expect(asked.where((u) => u.host.contains('open.edu')), isEmpty);
+    expect(find.textContaining('OpenLearn: link only'), findsOneWidget);
+    expect(find.text('Search OpenLearn'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await app.close();
   });
