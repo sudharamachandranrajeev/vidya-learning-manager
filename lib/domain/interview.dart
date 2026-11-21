@@ -18,6 +18,7 @@ import 'package:drift/drift.dart';
 import '../db/database.dart';
 import 'book.dart';
 import 'quiz.dart' show lastQuizPercents;
+import 'readiness.dart';
 import 'study_items.dart';
 
 // ---- self-rating ----
@@ -467,22 +468,21 @@ Story storyFromCard(Flashcard c, {StoryRow? links}) {
 
 // ---- before the interview ----
 
-/// How well a criterion is evidenced by drills and quizzes.
-enum CriterionState {
-  missing('No practice yet'),
-  weak('Low scores'),
-  covered('Covered');
+/// How well a criterion is evidenced: the same status Job readiness gives
+/// it (see readiness.dart), so both pages agree.
+typedef CriterionState = ReadinessStatus;
 
-  const CriterionState(this.label);
-  final String label;
-}
-
-/// A criterion with its evidence, in words.
+/// A criterion with its status, why it is weak (Job readiness's reasons)
+/// and its drill and quiz scores in words.
 class CriterionCheck {
-  const CriterionCheck(this.criterion, this.state, this.evidence);
+  const CriterionCheck(this.criterion, this.state, this.evidence, {this.reasons = const [], this.rank = 0});
   final Criterion criterion;
   final CriterionState state;
   final List<String> evidence;
+  final List<WeakReason> reasons;
+
+  /// How weak it is, 0 the weakest ([ReadinessRow.rank]).
+  final int rank;
 }
 
 /// A drill in the session, with what it tests and how it went.
@@ -495,7 +495,8 @@ class DrillStep {
 }
 
 /// The "before the interview" session for one program: weak criteria first
-/// (no evidence, then low scores; essential before desirable), then the
+/// (essential before desirable, then weakest first by Job readiness's
+/// rules: missing, only planned, low scores, unchecked, old), then the
 /// stories linked to them, then the drills (weak ones first). Covered
 /// criteria are listed apart.
 class BeforeInterview {
@@ -545,7 +546,9 @@ String drillCriterionText(StudyItem drill, List<Criterion> criteria) {
 /// Builds the session from rows already read (see [BeforeInterview]).
 /// [topics] are the program's topics and [drills] its interview drills, in
 /// course and topic order; [evidence] is by drill id and [quizPercents] by
-/// topic id.
+/// topic id. [readiness] is the program's Job readiness rows: each
+/// criterion's status and order come from them, so this page and Job
+/// readiness never disagree. A criterion without a row counts as missing.
 BeforeInterview planBeforeInterview({
   required List<Criterion> criteria,
   required List<Topic> topics,
@@ -553,6 +556,7 @@ BeforeInterview planBeforeInterview({
   required Map<String, DrillEvidence> evidence,
   required Map<String, int> quizPercents,
   required List<Story> stories,
+  required List<ReadinessRow> readiness,
   String? interviewDate,
 }) {
   final topicById = {for (final t in topics) t.id: t};
@@ -562,34 +566,29 @@ BeforeInterview planBeforeInterview({
       (drillsFor[c.id] ??= []).add(d);
     }
   }
+  final rowFor = {for (final r in readiness) r.criterion.id: r};
   final checks = <CriterionCheck>[];
   for (final c in criteria) {
     final lines = <String>[];
-    var good = false, any = false;
     for (final d in drillsFor[c.id] ?? const <StudyItem>[]) {
       final s = evidence[d.id]?.latest;
       if (s == null) continue;
-      any = true;
-      if (!drillWeak(s)) good = true;
       lines.add('Drill ${_outOf8(s)}/8: ${d.title}');
     }
     for (final t in topics) {
       if (!criteriaRefs(t).contains(c.ref)) continue;
       final q = quizPercents[t.id];
       if (q == null) continue;
-      any = true;
-      if (q >= passPercent) good = true;
       lines.add('Quiz $q%: ${t.title}');
     }
+    final row = rowFor[c.id];
     checks.add(
       CriterionCheck(
         c,
-        good
-            ? CriterionState.covered
-            : any
-            ? CriterionState.weak
-            : CriterionState.missing,
+        row?.status ?? ReadinessStatus.missing,
         lines,
+        reasons: row?.reasons ?? const [],
+        rank: row?.rank ?? 0,
       ),
     );
   }
@@ -600,7 +599,7 @@ BeforeInterview planBeforeInterview({
           if (c.state != CriterionState.covered) c,
       ]..sort((a, b) {
         if (a.criterion.essential != b.criterion.essential) return a.criterion.essential ? -1 : 1;
-        if (a.state != b.state) return a.state.index.compareTo(b.state.index);
+        if (a.rank != b.rank) return a.rank.compareTo(b.rank);
         return order[a.criterion.id]!.compareTo(order[b.criterion.id]!);
       });
   final weakIds = {for (final c in weak) c.criterion.id};
@@ -1049,9 +1048,9 @@ extension InterviewTraining on LearningBook {
             ..orderBy([(c) => OrderingTerm.asc(c.ord), (c) => OrderingTerm.asc(c.id)]))
           .get();
 
-  /// The "before the interview" session for a program (see
-  /// [planBeforeInterview]).
-  Future<BeforeInterview> beforeInterview(String programId) async {
+  /// The "before the interview" session for a program on [day] (today on
+  /// this device when not given; see [planBeforeInterview]).
+  Future<BeforeInterview> beforeInterview(String programId, {String? day}) async {
     final (:topics, :drills) = await programDrills(programId);
     final tests = await (db.select(db.learnAssessments)..where((a) => a.deleted.not())).get();
     return planBeforeInterview(
@@ -1061,6 +1060,7 @@ extension InterviewTraining on LearningBook {
       evidence: await drillEvidence(drills.map((d) => d.id)),
       quizPercents: lastQuizPercents(tests),
       stories: await storyBank(),
+      readiness: (await readiness(programId, today: day ?? today())).rows,
       interviewDate: await interviewDate(programId),
     );
   }

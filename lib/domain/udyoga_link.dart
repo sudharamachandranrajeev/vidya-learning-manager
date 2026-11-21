@@ -192,7 +192,7 @@ extension UdyogaLink on LearningBook {
     // means every criterion is covered.
     final program = plan == null ? null : await planProgram(plan);
     if (program != null) {
-      final r = await readiness(program.id, today: _dayOf(now));
+      final r = await readiness(program.id, today: reportDay(now));
       if (r.rows.isNotEmpty) {
         progress = jsonEncode({...jsonDecode(progress) as Map<String, Object?>, 'readiness': readinessReport(r)});
       }
@@ -213,10 +213,13 @@ extension UdyogaLink on LearningBook {
   }
 }
 
-/// The day (yyyy-MM-dd) of a report time in UTC ISO 8601; today on this
-/// device when [now] is not one.
-String _dayOf(String now) =>
-    RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(now) ? now.substring(0, 10) : today();
+/// The local calendar day (yyyy-MM-dd) of a report time in UTC ISO 8601,
+/// the day the learner is living in (a report at 23:30 UTC is already the
+/// next day in New Zealand); today on this device when [now] is not a time.
+String reportDay(String now) {
+  final t = DateTime.tryParse(now);
+  return t == null ? today() : isoDate(t.toLocal());
+}
 
 /// Sends progress back to Udyoga at most once per [gap]: when a review
 /// session ends, when the app comes back to the front, and after other

@@ -1,0 +1,27 @@
+{
+  "learning": [],
+  "skills": [],
+  "format": "vidya-practise-requests",
+  "version": 1,
+  "requests": [
+    {
+      "id": "vidya-drill-q2",
+      "ref": "q2",
+      "question": "Tell me about a time a learner got angry.",
+      "criterion": "Handle a difficult learner calmly",
+      "role": "Example Trainer",
+      "topic": "Difficult moments",
+      "story": "fixture-story",
+      "asked": "2026-11-21T10:00:00.000Z"
+    },
+    {
+      "id": "vidya-drill-q1",
+      "ref": "q1",
+      "question": "Tell me about a time you taught a new system.",
+      "criterion": "Explain a system to beginners",
+      "role": "Example Trainer",
+      "topic": "Explaining clearly",
+      "asked": "2026-11-21T09:00:00.000Z"
+    }
+  ]
+}

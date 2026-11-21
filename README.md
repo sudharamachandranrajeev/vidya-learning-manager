@@ -248,9 +248,9 @@ change are kept when the plan comes again.
    **CAR** (Context, Action, Result) from the same text. Link a story to the criteria it shows
    and the drills it answers. Picking a story while you practise links it too.
 6. **Before the interview**: on a goal, tap the **Interview training** button (a speaking head) at the top. Set the interview date for a
-   countdown. The page lists the weak criteria first (no practice yet, then low scores;
-   essential before desirable), then the stories linked to them, then the drills, weak ones
-   first.
+   countdown. The page lists the weak criteria first, with the same status and reason Job
+   readiness gives them (essential before desirable, then missing, only planned, low scores,
+   unchecked, old), then the stories linked to them, then the drills, weak ones first.
 7. **After a real interview**, tap **Log a real interview**: the date, the employer and role,
    the criteria and questions that went badly, and notes. The log is saved in **Notes** (tagged
    *interview feedback*), and each weak criterion becomes a new drill on a topic linked to it,
@@ -341,8 +341,9 @@ the plan and your progress.
 #### Practise in Udyoga (hand-off format)
 
 **Practise in Udyoga** on a drill writes one extra row to the shared `bridge_study_progress`
-table, with the id `vidya.practise-requests`. Udyoga reads progress rows only by its own plan
-ids, so today's Udyoga ignores this row; reading it is a follow-up for Udyoga. The row's
+table, with the id `vidya.practise-requests`. Udyoga lists it on its Interview page ("Vidya
+asked you to practise") and runs each as a one-question voice round. Its other readers look up
+progress rows by their own plan ids, so they never mistake this row for a report. The row's
 `progress` is:
 
 ```json
@@ -359,7 +360,7 @@ ids, so today's Udyoga ignores this row; reading it is a follow-up for Udyoga. T
 ```
 
 Newest first, at most 30, one per drill (asking again moves it to the top). Only the story's
-id goes, never its text. Udyoga is to send its scores back as a `bridge_study_plans` row with
+id goes, never its text. Udyoga sends its scores back as a `bridge_study_plans` row with
 the id `udyoga.practise-results` (a plan row, because each app writes only its own table):
 
 ```json
@@ -370,6 +371,8 @@ the id `udyoga.practise-results` (a plan row, because each app writes only its o
 
 Vidya shows the newest score per drill, never offers that row as a plan, and counts the score
 like a self-rated one (scaled to 8) when it is newer than your own last attempt.
+`test/fixtures/vidya-practise-requests.json` and `test/fixtures/udyoga-practise-results.json`
+are the two rows as each app writes them; both apps' tests read both.
 
 #### Readiness back to Udyoga (format)
 

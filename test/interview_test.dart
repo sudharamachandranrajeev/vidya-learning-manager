@@ -10,6 +10,7 @@ import 'package:vidya/domain/book.dart';
 import 'package:vidya/domain/curriculum.dart';
 import 'package:vidya/domain/interview.dart';
 import 'package:vidya/domain/quiz.dart';
+import 'package:vidya/domain/readiness.dart';
 import 'package:vidya/domain/udyoga_link.dart';
 
 import 'support.dart';
@@ -249,7 +250,7 @@ void main() {
       await book.saveStory(title: 'Unlinked story', action: 'Something else.', today: today);
       await book.setInterviewDate(pid, '2026-11-27');
 
-      final b = await book.beforeInterview(pid);
+      final b = await book.beforeInterview(pid, day: today);
       expect([for (final c in b.weak) c.criterion.ref], ['e3', 'e2']);
       expect([for (final c in b.weak) c.state], [CriterionState.missing, CriterionState.weak]);
       expect(b.weak[1].evidence.single, startsWith('Drill 3/8:'));
@@ -267,6 +268,40 @@ void main() {
       expect(interviewCountdown('2026-11-18', today), 'Interview was 3 days ago');
       await book.setInterviewDate(pid, null);
       expect(await book.interviewDate(pid), isNull);
+    });
+    test('it agrees with Job readiness: the same status for each criterion, weakest first', () async {
+      final pid = await importPlan();
+      final guides = (await db.select(db.learnTopics).get()).firstWhere((t) => t.title == 'Guides');
+      // Only an open topic works towards it: Job readiness calls that weak
+      // (only planned), not missing, and so must this page.
+      final own = await book.saveOwnCriterion(
+        pid,
+        body: 'Use the booking system',
+        essential: true,
+        topicIds: [guides.id],
+      );
+      await book.recordDrill(await drill('q4'), const DrillAttempt(checks: [2, 2, 2, 2]), today: today);
+      await book.recordDrill(await drill('q2'), const DrillAttempt(checks: [1, 1, 1, 0]), today: today);
+
+      final b = await book.beforeInterview(pid, day: today);
+      final r = await book.readiness(pid, today: today);
+      final status = {for (final row in r.rows) row.criterion.id: row.status};
+      for (final c in [...b.weak, ...b.covered]) {
+        expect(c.state, status[c.criterion.id], reason: c.criterion.body);
+      }
+      expect(b.weak.length + b.covered.length, r.rows.length);
+      final ownCheck = b.weak.firstWhere((c) => c.criterion.id == own);
+      expect(ownCheck.state, ReadinessStatus.weak);
+      expect(ownCheck.reasons, [WeakReason.planned]);
+      // Essential first, then weakest first by Job readiness's rank: e3 has
+      // nothing (missing), then the two only planned (plan order), then the
+      // low drill on e2.
+      final expected = [
+        for (final row in r.rows)
+          if (row.status != ReadinessStatus.covered) row,
+      ]..sort((a, b) => a.essential != b.essential ? (a.essential ? -1 : 1) : a.rank.compareTo(b.rank));
+      expect([for (final c in b.weak) c.criterion.id], [for (final row in expected) row.criterion.id]);
+      expect([for (final c in b.weak) c.criterion.ref], ['e3', 'e1', 'own.$own', 'e2']);
     });
   });
 
@@ -363,6 +398,63 @@ void main() {
       final before = (await requests())!.progress;
       await book.reportToUdyoga(now: '2026-11-21T12:00:00Z');
       expect((await requests())!.progress, before);
+    });
+
+    test('the requests fixture shared with Udyoga is current', () async {
+      await importPlan();
+      await db
+          .into(db.learnCards)
+          .insert(
+            LearnCardsCompanion.insert(
+              id: 'card1',
+              front: 'Tell your story: Clinic diary clash',
+              back: 'Action: I rang each patient on the list.',
+              due: today,
+              created: today,
+              ref: const Value('udyoga.story.fixture-story'),
+            ),
+          );
+      final q1 = await drill('q1'), q2 = await drill('q2');
+      await book.linkStory((await book.storyBank()).single, drills: [q2.id], today: today);
+      await book.askUdyogaToPractise(q1, now: '2026-11-21T09:00:00.000Z');
+      await book.askUdyogaToPractise(q2, now: '2026-11-21T10:00:00.000Z');
+      // Drill row ids are random: the fixture names them, and Udyoga's
+      // results fixture (udyoga-practise-results.json) answers to those names.
+      final text = const JsonEncoder.withIndent('  ')
+          .convert(jsonDecode((await requests())!.progress))
+          .replaceAll(q1.id, 'vidya-drill-q1')
+          .replaceAll(q2.id, 'vidya-drill-q2');
+      final fixture = File('test/fixtures/vidya-practise-requests.json');
+      if (!fixture.existsSync() || Platform.environment['UPDATE_FIXTURES'] == '1') {
+        await fixture.writeAsString('$text\n');
+      }
+      expect(await fixture.readAsString(), '$text\n');
+    });
+
+    test('Udyoga\'s results fixture reads back as the score on its drill', () async {
+      await importPlan();
+      final q2 = await drill('q2');
+      // Written by Udyoga's tests (test/fixtures/udyoga-practise-results.json
+      // there), for the drill named vidya-drill-q2 in the requests fixture.
+      final plan = File('test/fixtures/udyoga-practise-results.json').readAsStringSync();
+      await db
+          .into(db.bridgeStudyPlans)
+          .insert(
+            BridgeStudyPlansCompanion.insert(
+              id: practiseResultsId,
+              source: 'udyoga',
+              plan: plan.replaceAll('vidya-drill-q2', q2.id),
+              updated: '2026-11-21T12:00:00Z',
+            ),
+          );
+      expect(await book.offeredPlans(), isEmpty);
+      final scores = parsePractiseResults(plan);
+      expect(scores.keys, contains('vidya-drill-q2'));
+      final e = (await book.drillEvidence([q2.id]))[q2.id]!;
+      expect(e.udyoga, isNotNull);
+      expect(e.udyoga!.day, '2026-11-21');
+      expect(e.udyoga!.max, greaterThan(0));
+      expect(e.latest, e.udyoga!.outOf8);
     });
 
     test('a linked Udyoga story goes as its id only', () async {

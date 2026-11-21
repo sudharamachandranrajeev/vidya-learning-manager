@@ -515,4 +515,16 @@ void main() {
     final again = await (db.select(db.bridgeStudyProgress)..where((p) => p.id.equals(planId))).getSingle();
     expect(again.hlc, row.hlc);
   });
+
+  test('the report judges freshness on the learner\'s own calendar day, not the UTC day', () {
+    // Late evening and just after midnight here, whatever this machine's zone.
+    final lateEvening = DateTime(2026, 11, 21, 23, 30);
+    final afterMidnight = DateTime(2026, 11, 22, 0, 30);
+    expect(reportDay(lateEvening.toUtc().toIso8601String()), '2026-11-21');
+    expect(reportDay(afterMidnight.toUtc().toIso8601String()), '2026-11-22');
+    // A UTC time is read in the device's zone, not cut at its date.
+    final utc = DateTime.utc(2026, 11, 21, 23, 30);
+    expect(reportDay('2026-11-21T23:30:00.000Z'), isoDate(utc.toLocal()));
+    expect(reportDay('not a time'), isoDate(DateTime.now()));
+  });
 }

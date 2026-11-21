@@ -1,6 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show StringExpressionOperators, Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vidya/db/database.dart';
@@ -144,6 +145,41 @@ void main() {
     await app.close();
   });
 
+  testWidgets('a score Udyoga wrote (its results fixture) shows on the drill, in the list and on the page', (
+    tester,
+  ) async {
+    final app = AppHarness(tester)..phone();
+    await app.open(
+      seed: (b) async {
+        await _seed(b);
+        final drill = (await (b.db.select(
+          b.db.learnItems,
+        )..where((i) => i.title.like('Tell me about a time you taught%'))).get()).single;
+        // Written by Udyoga's tests for the drill named vidya-drill-q2.
+        final plan = File('test/fixtures/udyoga-practise-results.json').readAsStringSync();
+        await b.db
+            .into(b.db.bridgeStudyPlans)
+            .insert(
+              BridgeStudyPlansCompanion.insert(
+                id: practiseResultsId,
+                source: 'udyoga',
+                plan: plan.replaceAll('vidya-drill-q2', drill.id),
+                updated: '2026-11-21T12:00:00Z',
+              ),
+            );
+      },
+    );
+    await app.run();
+    await _openTopic(app);
+    expect(find.textContaining('Udyoga 2/2'), findsOneWidget);
+    expect(find.textContaining('not practised yet'), findsNothing);
+    await app.tap(find.textContaining('Tell me about a time you taught'));
+    expect(find.byType(DrillPage), findsOneWidget);
+    expect(find.textContaining('Udyoga 2/2'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await app.close();
+  });
+
   testWidgets('the story bank on a phone: STAR and CAR views, link a story to a criterion and a drill', (
     tester,
   ) async {
@@ -218,7 +254,9 @@ void main() {
     expect(find.byType(BeforeInterviewPage), findsOneWidget);
     expect(find.text('1. Weak criteria'), findsOneWidget);
     expect(find.text('Explain a new system to beginners who have never used one'), findsOneWidget);
-    expect(find.textContaining('Essential · No practice yet'), findsNWidgets(2));
+    // The same status and reason Job readiness gives each criterion.
+    expect(find.textContaining('Essential · Missing'), findsOneWidget);
+    expect(find.textContaining('Essential · Weak · Only planned so far'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await app.tapText('Log a real interview');

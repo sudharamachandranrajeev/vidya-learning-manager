@@ -843,7 +843,7 @@ class BeforeInterviewPage extends ConsumerWidget {
                               Text(
                                 plan.covered.isEmpty
                                     ? 'No criteria yet. Plans from Udyoga bring the role\'s criteria.'
-                                    : 'Every criterion has good drill or quiz evidence.',
+                                    : 'Every criterion is covered, as Job readiness counts it.',
                               ),
                             for (final c in plan.weak)
                               ListTile(
@@ -858,6 +858,7 @@ class BeforeInterviewPage extends ConsumerWidget {
                                   [
                                     c.criterion.essential ? 'Essential' : 'Desirable',
                                     c.state.label,
+                                    ...c.reasons.map((r) => r.label),
                                     ...c.evidence,
                                   ].join(' · '),
                                 ),
