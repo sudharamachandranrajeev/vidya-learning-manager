@@ -66,6 +66,7 @@ class _VidyaHomeState extends ConsumerState<VidyaHome> {
   @override
   Widget build(BuildContext context) {
     ref.watch(reminderSyncProvider);
+    ref.watch(guideSplitProvider);
     ref.listen(careerFileAutoAddProvider, (_, next) {
       final titles = next.value ?? const <String>[];
       if (titles.isEmpty) return;

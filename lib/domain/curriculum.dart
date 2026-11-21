@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:brahma_core/brahma_core.dart';
 
 import 'cloze.dart';
+import 'study_items.dart';
 
 /// A whole study plan in one file: a program, its roadmap of courses with
 /// topics, the skills it builds, flashcards and notes. Learners get one by
@@ -12,12 +13,48 @@ import 'cloze.dart';
 /// `LearningBook.importCurriculum`.
 
 class PlanTopic {
-  const PlanTopic(this.title, {this.minutes = 30, this.details = '', this.resources = const []});
+  const PlanTopic(
+    this.title, {
+    this.minutes = 30,
+    this.details = '',
+    this.resources = const [],
+    this.items = const [],
+    this.criteria = const [],
+  });
   final String title;
   final int minutes;
   final String details;
   final List<String> resources;
+
+  /// The topic's study items (format 2): its `items`, then one quiz item
+  /// holding its `quiz` questions, then one item per `drills` entry.
+  final List<PlanItem> items;
+
+  /// Ids of the plan's [CurriculumPlan.criteria] this topic works towards.
+  final List<String> criteria;
 }
+
+/// One study item in a plan (see study_items.dart for the types). [ref] is
+/// its stable id: the plan's own `id`, or one made from its link or title.
+class PlanItem {
+  const PlanItem({
+    required this.type,
+    required this.title,
+    required this.ref,
+    this.url = '',
+    this.source = '',
+    this.licence = '',
+    this.minutes = 0,
+    this.required = false,
+    this.content = '',
+  });
+  final String type, title, ref, url, source, licence, content;
+  final int minutes;
+  final bool required;
+}
+
+/// What the goal (a job, usually) asks for. [id] is what topics list.
+typedef PlanCriterion = ({String id, String text, bool essential, String kind, String source, bool? shown});
 
 class PlanCourse {
   const PlanCourse(
@@ -44,6 +81,7 @@ class PlanCourse {
 }
 
 typedef PlanSkill = ({String name, String category, int target});
+
 /// [id] is the sender's stable id for the card, '' when it has none: a
 /// card with one is updated in place when the plan comes again.
 typedef PlanCard = ({String id, String deck, String course, String front, String back});
@@ -59,8 +97,14 @@ class CurriculumPlan {
     this.skills = const [],
     this.cards = const [],
     this.notes = const [],
+    this.role = '',
+    this.criteria = const [],
   });
   final String title, goal, part;
+
+  /// The job role the plan is for (from Udyoga), '' otherwise.
+  final String role;
+  final List<PlanCriterion> criteria;
 
   /// yyyy-MM-dd, or null.
   final String? targetDate;
@@ -70,6 +114,7 @@ class CurriculumPlan {
   final List<PlanNote> notes;
 
   int get topicCount => courses.fold(0, (a, c) => a + c.topics.length);
+  int get itemCount => courses.fold(0, (a, c) => c.topics.fold(a, (b, t) => b + t.items.length));
 }
 
 const curriculumFormat = 'vidya-curriculum';
@@ -77,6 +122,11 @@ const curriculumFormat = 'vidya-curriculum';
 // Limits keep a runaway or hostile file from flooding the database.
 const _maxCourses = 100, _maxTopics = 300, _maxCards = 5000, _maxNotes = 300, _maxSkills = 200;
 const _maxTitle = 200, _maxText = 4000, _maxBody = 40000;
+const _maxItems = 50, _maxQuiz = 20, _maxDrills = 30, _maxCriteria = 200, _maxAllItems = 5000;
+
+/// The newest plan format this Vidya reads. Format 1 plans (no items,
+/// quiz, drills or criteria) still import.
+const curriculumVersion = 2;
 
 const _kinds = {'course', 'book', 'certification', 'degree', 'project', 'practice'};
 
@@ -160,7 +210,7 @@ CurriculumPlan parseCurriculum(String text) {
     );
   }
   final version = j['version'];
-  if (version is num && version > 1) {
+  if (version is num && version > curriculumVersion) {
     throw const FormatException('This plan was made for a newer Vidya. Update Vidya and try again.');
   }
 
@@ -169,6 +219,25 @@ CurriculumPlan parseCurriculum(String text) {
   if (title.isEmpty) throw const FormatException('The plan needs a program title.');
   final target = _str(program['targetDate'], 10);
 
+  final criteria = <PlanCriterion>[];
+  final criteriaSeen = <String>{};
+  for (final c in _list(j['criteria'], _maxCriteria, 'criteria')) {
+    final m = c is Map ? c : {'text': c};
+    final text = _str(m['text'], _maxText);
+    if (text.isEmpty) continue;
+    final id = _ref(m['id']);
+    if (!criteriaSeen.add(id.isNotEmpty ? id : text.toLowerCase())) continue;
+    criteria.add((
+      id: id,
+      text: text,
+      essential: m['essential'] == true,
+      kind: _str(m['kind'], 40),
+      source: _str(m['source'], 60),
+      shown: m['shown'] is bool ? m['shown'] as bool : null,
+    ));
+  }
+
+  var allItems = 0;
   final courses = <PlanCourse>[];
   final seen = <String>{};
   for (final c in _list(j['courses'], _maxCourses, 'courses')) {
@@ -180,6 +249,11 @@ CurriculumPlan parseCurriculum(String text) {
       final topic = tp is Map ? tp : {'title': tp};
       final tt = _str(topic['title'], _maxTitle);
       if (tt.isEmpty) continue;
+      final items = _items(topic, tt);
+      allItems += items.length;
+      if (allItems > _maxAllItems) {
+        throw const FormatException('Too many study items; the most is $_maxAllItems in one plan.');
+      }
       topics.add(
         PlanTopic(
           tt,
@@ -188,6 +262,11 @@ CurriculumPlan parseCurriculum(String text) {
           resources: [
             for (final r in topic['resources'] is List ? topic['resources'] as List : const [])
               if (_resource(r) case final s when s.isNotEmpty) s,
+          ],
+          items: items,
+          criteria: [
+            for (final c in _list(topic['criteria'], _maxCriteria, 'criteria in “$tt”'))
+              if (_ref(c) case final id when id.isNotEmpty) id,
           ],
         ),
       );
@@ -263,7 +342,119 @@ CurriculumPlan parseCurriculum(String text) {
     skills: skills,
     cards: cards,
     notes: notes,
+    role: _str(j['role'] ?? program['role'], _maxTitle),
+    criteria: criteria,
   );
+}
+
+/// An id from a plan, safe to keep in a comma-separated list.
+String _ref(Object? v) => _str(v, 60).replaceAll(',', ' ');
+
+/// A topic's `items`, `quiz` and `drills` as items, in that order, each
+/// once by its stable ref.
+List<PlanItem> _items(Map topic, String topicTitle) {
+  final out = <PlanItem>[];
+  final refs = <String>{};
+  void add(PlanItem i) {
+    if (refs.add(i.ref)) out.add(i);
+  }
+
+  for (final x in _list(topic['items'], _maxItems, 'items in “$topicTitle”')) {
+    if (x is! Map) continue;
+    final url = _str(x['url'], 500);
+    final title = _str(x['title'], _maxTitle).isNotEmpty ? _str(x['title'], _maxTitle) : url;
+    if (title.isEmpty) continue;
+    var type = itemTypeOf(_str(x['type'], 40));
+    if (type.isEmpty) type = url.isEmpty ? 'note' : linkTypeOf(url);
+    final extra = {
+      for (final k in ['instructions', 'doneWhen'])
+        if (_str(x[k], _maxText) case final v when v.isNotEmpty) k: v,
+    };
+    final id = _str(x['id'], 200);
+    add(
+      PlanItem(
+        type: type,
+        title: title,
+        ref: id.isNotEmpty ? id : itemRef(type: type, title: title, url: url),
+        url: url,
+        source: _str(x['source'], 100),
+        licence: _str(x['licence'] ?? x['license'], 100),
+        minutes: _int(x['minutes'], 0, 0, 6000),
+        required: x['required'] == true,
+        content: extra.isEmpty ? '' : jsonEncode(extra),
+      ),
+    );
+  }
+
+  final questions = <Map<String, Object>>[];
+  for (final q in _list(topic['quiz'], _maxQuiz, 'quiz questions in “$topicTitle”')) {
+    if (q is! Map) continue;
+    final question = _str(q['question'] ?? q['q'] ?? q['front'], _maxText);
+    final options = [
+      for (final o
+          in q['options'] is List ? q['options'] as List : (q['choices'] is List ? q['choices'] as List : const []))
+        if (_str(o, _maxTitle) case final s when s.isNotEmpty) s,
+    ].take(8).toList();
+    final rawAnswer = q['answer'] ?? q['a'] ?? q['back'];
+    // A choice answer may be the option's index.
+    final answer = rawAnswer is int && rawAnswer >= 0 && rawAnswer < options.length
+        ? options[rawAnswer]
+        : _str(rawAnswer, _maxText);
+    if (question.isEmpty || answer.isEmpty) continue;
+    var kind = _str(q['kind'] ?? q['type'], 20).toLowerCase();
+    if (!{'choice', 'short', 'card'}.contains(kind)) kind = options.length > 1 ? 'choice' : 'short';
+    if (kind == 'choice' && options.length < 2) kind = 'short';
+    questions.add({
+      'question': question,
+      'kind': kind,
+      if (kind == 'choice') 'options': options,
+      'answer': answer,
+      if (_str(q['explain'], _maxText) case final e when e.isNotEmpty) 'explain': e,
+    });
+  }
+  if (questions.isNotEmpty) {
+    add(
+      PlanItem(
+        type: 'quiz',
+        title: 'Quiz: $topicTitle',
+        ref: 'quiz',
+        minutes: (questions.length * 1.5).ceil(),
+        content: jsonEncode({'questions': questions}),
+      ),
+    );
+  }
+
+  for (final d in _list(topic['drills'], _maxDrills, 'drills in “$topicTitle”')) {
+    final m = d is Map ? d : {'question': d};
+    final question = _str(m['question'] ?? m['title'], _maxText);
+    if (question.isEmpty) continue;
+    final extra = {
+      'question': question,
+      for (final k in ['criterion', 'rubric', 'story'])
+        if (_str(m[k], _maxText) case final v when v.isNotEmpty) k: v,
+    };
+    final id = _str(m['id'], 200);
+    add(
+      PlanItem(
+        type: 'interview drill',
+        title: question.length > _maxTitle ? '${question.substring(0, _maxTitle - 1)}…' : question,
+        ref: id.isNotEmpty ? id : itemRef(type: 'interview drill', title: question),
+        source: _str(m['source'], 100),
+        content: jsonEncode(extra),
+      ),
+    );
+  }
+  return out;
+}
+
+/// A plan topic's details and resources as the Markdown of its own note,
+/// the same text the course's study guide holds under its heading.
+String topicGuideMarkdown(PlanTopic t) {
+  final parts = [
+    if (t.details.isNotEmpty) t.details,
+    if (t.resources.isNotEmpty) [for (final r in t.resources) '- $r'].join('\n'),
+  ];
+  return parts.join('\n\n');
 }
 
 String _str(Object? v, int max) {
@@ -329,7 +520,7 @@ ABOUT ME (I have filled these in):
 
 WHAT TO MAKE:
 1. A roadmap. Split the goal into courses (modules) in the order I should study them. Give each a startWeek and dueWeek, counted in whole weeks from today (week 0), so the whole plan fits my weekly hours before the deadline and leaves the last weeks for revision and practice tests.
-2. Topics. For every course, list the topics to cover in order. Each topic has minutes of study, details (the key facts, formulas, procedures and common mistakes, 2–6 sentences), and resources (real, well-known, preferably free; if you are not sure of a web address, give only the title — never invent links).
+2. Topics. For every course, list the topics to cover in order. Each topic has minutes of study, details (the key facts, formulas, procedures and common mistakes, 2–6 sentences), and items: what to study or do, in order. Items are real, well-known resources (preferably free; if you are not sure of a web address, leave out the url — never invent links) and at least one practice task. Mark "required": true on the items that must be done before the topic counts as learned. Give 3–10 quiz questions per topic, and interview drills where the goal is a job.
 3. Skills the plan builds, each with a category and a target level from 1 (aware) to 5 (expert).
 4. Flashcards: 10–30 per course, testing the facts and principles in its topics. Write them in your own words; never copy questions from copyrighted books or past papers. Cloze cards are allowed: put {{c1::hidden words}} in the front and leave back empty.
 5. Notes: one titled "Roadmap" with a week-by-week plan in Markdown; for an exam, one titled "Exam day" (format, timing, pass mark, what to bring, rules); add any others that help.
@@ -337,13 +528,14 @@ WHAT TO MAKE:
 FORMAT (follow it exactly; leave out any optional field you have nothing for):
 {
   "format": "vidya-curriculum",
-  "version": 1,
+  "version": 2,
   "part": "1 of 1",
   "program": {
     "title": "Short name of the goal",
     "goal": "One or two sentences: what I will be able to do",
     "targetDate": "yyyy-mm-dd"
   },
+  "criteria": [{ "id": "c1", "text": "Something the goal or job asks for", "essential": true }],
   "courses": [
     {
       "title": "Unique course title",
@@ -359,7 +551,16 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
           "title": "Topic title",
           "minutes": 45,
           "details": "Key points to learn",
-          "resources": [{ "title": "Resource name", "url": "https://…" }]
+          "criteria": ["c1"],
+          "items": [
+            { "type": "video", "title": "Resource name", "url": "https://…", "source": "Site, channel or publisher", "licence": "Optional, e.g. CC BY", "minutes": 20, "required": true },
+            { "type": "practice task", "title": "What to do", "instructions": "How to do it", "doneWhen": "What finished looks like", "minutes": 30, "required": true }
+          ],
+          "quiz": [
+            { "question": "A question", "kind": "choice", "options": ["One", "Two", "Three"], "answer": "Two" },
+            { "question": "A question", "kind": "short", "answer": "The answer" }
+          ],
+          "drills": [{ "question": "An interview question on this topic", "criterion": "c1" }]
         }
       ]
     }
@@ -371,6 +572,9 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
 
 RULES:
 - "kind" is one of: course, book, certification, degree, project, practice.
+- An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note. Give links and titles only; never copy a course's text.
+- A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card. Add a one-sentence "explain" where it helps.
+- "criteria" lists what the goal asks for (for a job: the essential and desirable criteria); each topic's "criteria" names the ids it works towards. Leave both out if there are none.
 - Plain JSON: double quotes, no comments, no trailing commas, \\n for line breaks inside text.
 - Every card's "course" must match a course title exactly.
 - Be accurate. Leave out anything you are not sure of rather than guess.

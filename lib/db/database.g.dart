@@ -92,6 +92,16 @@ class $LearnProgramsTable extends LearnPrograms
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+    'role',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -102,6 +112,7 @@ class $LearnProgramsTable extends LearnPrograms
     status,
     started,
     target,
+    role,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -166,6 +177,12 @@ class $LearnProgramsTable extends LearnPrograms
         target.isAcceptableOrUnknown(data['target']!, _targetMeta),
       );
     }
+    if (data.containsKey('role')) {
+      context.handle(
+        _roleMeta,
+        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
+      );
+    }
     return context;
   }
 
@@ -207,6 +224,10 @@ class $LearnProgramsTable extends LearnPrograms
         DriftSqlType.string,
         data['${effectivePrefix}target'],
       ),
+      role: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}role'],
+      )!,
     );
   }
 
@@ -227,6 +248,9 @@ class Program extends DataClass implements Insertable<Program> {
   final String status;
   final String started;
   final String? target;
+
+  /// The job role a plan from Udyoga is for ("IT Trainer"), '' otherwise.
+  final String role;
   const Program({
     required this.id,
     required this.hlc,
@@ -236,6 +260,7 @@ class Program extends DataClass implements Insertable<Program> {
     required this.status,
     required this.started,
     this.target,
+    required this.role,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -250,6 +275,7 @@ class Program extends DataClass implements Insertable<Program> {
     if (!nullToAbsent || target != null) {
       map['target'] = Variable<String>(target);
     }
+    map['role'] = Variable<String>(role);
     return map;
   }
 
@@ -265,6 +291,7 @@ class Program extends DataClass implements Insertable<Program> {
       target: target == null && nullToAbsent
           ? const Value.absent()
           : Value(target),
+      role: Value(role),
     );
   }
 
@@ -282,6 +309,7 @@ class Program extends DataClass implements Insertable<Program> {
       status: serializer.fromJson<String>(json['status']),
       started: serializer.fromJson<String>(json['started']),
       target: serializer.fromJson<String?>(json['target']),
+      role: serializer.fromJson<String>(json['role']),
     );
   }
   @override
@@ -296,6 +324,7 @@ class Program extends DataClass implements Insertable<Program> {
       'status': serializer.toJson<String>(status),
       'started': serializer.toJson<String>(started),
       'target': serializer.toJson<String?>(target),
+      'role': serializer.toJson<String>(role),
     };
   }
 
@@ -308,6 +337,7 @@ class Program extends DataClass implements Insertable<Program> {
     String? status,
     String? started,
     Value<String?> target = const Value.absent(),
+    String? role,
   }) => Program(
     id: id ?? this.id,
     hlc: hlc ?? this.hlc,
@@ -317,6 +347,7 @@ class Program extends DataClass implements Insertable<Program> {
     status: status ?? this.status,
     started: started ?? this.started,
     target: target.present ? target.value : this.target,
+    role: role ?? this.role,
   );
   Program copyWithCompanion(LearnProgramsCompanion data) {
     return Program(
@@ -328,6 +359,7 @@ class Program extends DataClass implements Insertable<Program> {
       status: data.status.present ? data.status.value : this.status,
       started: data.started.present ? data.started.value : this.started,
       target: data.target.present ? data.target.value : this.target,
+      role: data.role.present ? data.role.value : this.role,
     );
   }
 
@@ -341,14 +373,15 @@ class Program extends DataClass implements Insertable<Program> {
           ..write('goal: $goal, ')
           ..write('status: $status, ')
           ..write('started: $started, ')
-          ..write('target: $target')
+          ..write('target: $target, ')
+          ..write('role: $role')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, hlc, deleted, title, goal, status, started, target);
+      Object.hash(id, hlc, deleted, title, goal, status, started, target, role);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -360,7 +393,8 @@ class Program extends DataClass implements Insertable<Program> {
           other.goal == this.goal &&
           other.status == this.status &&
           other.started == this.started &&
-          other.target == this.target);
+          other.target == this.target &&
+          other.role == this.role);
 }
 
 class LearnProgramsCompanion extends UpdateCompanion<Program> {
@@ -372,6 +406,7 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
   final Value<String> status;
   final Value<String> started;
   final Value<String?> target;
+  final Value<String> role;
   final Value<int> rowid;
   const LearnProgramsCompanion({
     this.id = const Value.absent(),
@@ -382,6 +417,7 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
     this.status = const Value.absent(),
     this.started = const Value.absent(),
     this.target = const Value.absent(),
+    this.role = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LearnProgramsCompanion.insert({
@@ -393,6 +429,7 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
     this.status = const Value.absent(),
     required String started,
     this.target = const Value.absent(),
+    this.role = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title),
@@ -406,6 +443,7 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
     Expression<String>? status,
     Expression<String>? started,
     Expression<String>? target,
+    Expression<String>? role,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -417,6 +455,7 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
       if (status != null) 'status': status,
       if (started != null) 'started': started,
       if (target != null) 'target': target,
+      if (role != null) 'role': role,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -430,6 +469,7 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
     Value<String>? status,
     Value<String>? started,
     Value<String?>? target,
+    Value<String>? role,
     Value<int>? rowid,
   }) {
     return LearnProgramsCompanion(
@@ -441,6 +481,7 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
       status: status ?? this.status,
       started: started ?? this.started,
       target: target ?? this.target,
+      role: role ?? this.role,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -472,6 +513,9 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
     if (target.present) {
       map['target'] = Variable<String>(target.value);
     }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -489,6 +533,7 @@ class LearnProgramsCompanion extends UpdateCompanion<Program> {
           ..write('status: $status, ')
           ..write('started: $started, ')
           ..write('target: $target, ')
+          ..write('role: $role, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1318,6 +1363,50 @@ class $LearnTopicsTable extends LearnTopics
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
+  @override
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
+    'note_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _criteriaMeta = const VerificationMeta(
+    'criteria',
+  );
+  @override
+  late final GeneratedColumn<String> criteria = GeneratedColumn<String>(
+    'criteria',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _tickNoteMeta = const VerificationMeta(
+    'tickNote',
+  );
+  @override
+  late final GeneratedColumn<String> tickNote = GeneratedColumn<String>(
+    'tick_note',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1328,6 +1417,10 @@ class $LearnTopicsTable extends LearnTopics
     minutes,
     ord,
     done,
+    status,
+    noteId,
+    criteria,
+    tickNote,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1392,6 +1485,30 @@ class $LearnTopicsTable extends LearnTopics
         done.isAcceptableOrUnknown(data['done']!, _doneMeta),
       );
     }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('note_id')) {
+      context.handle(
+        _noteIdMeta,
+        noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta),
+      );
+    }
+    if (data.containsKey('criteria')) {
+      context.handle(
+        _criteriaMeta,
+        criteria.isAcceptableOrUnknown(data['criteria']!, _criteriaMeta),
+      );
+    }
+    if (data.containsKey('tick_note')) {
+      context.handle(
+        _tickNoteMeta,
+        tickNote.isAcceptableOrUnknown(data['tick_note']!, _tickNoteMeta),
+      );
+    }
     return context;
   }
 
@@ -1433,6 +1550,22 @@ class $LearnTopicsTable extends LearnTopics
         DriftSqlType.string,
         data['${effectivePrefix}done'],
       ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      noteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note_id'],
+      )!,
+      criteria: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}criteria'],
+      )!,
+      tickNote: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tick_note'],
+      )!,
     );
   }
 
@@ -1453,8 +1586,25 @@ class Topic extends DataClass implements Insertable<Topic> {
   final int minutes;
   final int ord;
 
-  /// The day it was finished, null while open.
+  /// The day it was finished, null while open. Stats and achievements
+  /// count a topic as finished by this alone.
   final String? done;
+
+  /// What the learner says about an open topic: '' (worked out from its
+  /// items, see `topicStatus`), `studying` or `review`. A ticked topic is
+  /// done whatever this says.
+  final String status;
+
+  /// The topic's own Markdown note (a row of [LearnNotes]), '' until made.
+  final String noteId;
+
+  /// Comma-separated ids of the program's criteria ([LearnCriteria.ref])
+  /// this topic works towards: the "why it matters".
+  final String criteria;
+
+  /// The short note given when the topic was ticked before its required
+  /// items were done, '' otherwise.
+  final String tickNote;
   const Topic({
     required this.id,
     required this.hlc,
@@ -1464,6 +1614,10 @@ class Topic extends DataClass implements Insertable<Topic> {
     required this.minutes,
     required this.ord,
     this.done,
+    required this.status,
+    required this.noteId,
+    required this.criteria,
+    required this.tickNote,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1478,6 +1632,10 @@ class Topic extends DataClass implements Insertable<Topic> {
     if (!nullToAbsent || done != null) {
       map['done'] = Variable<String>(done);
     }
+    map['status'] = Variable<String>(status);
+    map['note_id'] = Variable<String>(noteId);
+    map['criteria'] = Variable<String>(criteria);
+    map['tick_note'] = Variable<String>(tickNote);
     return map;
   }
 
@@ -1491,6 +1649,10 @@ class Topic extends DataClass implements Insertable<Topic> {
       minutes: Value(minutes),
       ord: Value(ord),
       done: done == null && nullToAbsent ? const Value.absent() : Value(done),
+      status: Value(status),
+      noteId: Value(noteId),
+      criteria: Value(criteria),
+      tickNote: Value(tickNote),
     );
   }
 
@@ -1508,6 +1670,10 @@ class Topic extends DataClass implements Insertable<Topic> {
       minutes: serializer.fromJson<int>(json['minutes']),
       ord: serializer.fromJson<int>(json['ord']),
       done: serializer.fromJson<String?>(json['done']),
+      status: serializer.fromJson<String>(json['status']),
+      noteId: serializer.fromJson<String>(json['noteId']),
+      criteria: serializer.fromJson<String>(json['criteria']),
+      tickNote: serializer.fromJson<String>(json['tickNote']),
     );
   }
   @override
@@ -1522,6 +1688,10 @@ class Topic extends DataClass implements Insertable<Topic> {
       'minutes': serializer.toJson<int>(minutes),
       'ord': serializer.toJson<int>(ord),
       'done': serializer.toJson<String?>(done),
+      'status': serializer.toJson<String>(status),
+      'noteId': serializer.toJson<String>(noteId),
+      'criteria': serializer.toJson<String>(criteria),
+      'tickNote': serializer.toJson<String>(tickNote),
     };
   }
 
@@ -1534,6 +1704,10 @@ class Topic extends DataClass implements Insertable<Topic> {
     int? minutes,
     int? ord,
     Value<String?> done = const Value.absent(),
+    String? status,
+    String? noteId,
+    String? criteria,
+    String? tickNote,
   }) => Topic(
     id: id ?? this.id,
     hlc: hlc ?? this.hlc,
@@ -1543,6 +1717,10 @@ class Topic extends DataClass implements Insertable<Topic> {
     minutes: minutes ?? this.minutes,
     ord: ord ?? this.ord,
     done: done.present ? done.value : this.done,
+    status: status ?? this.status,
+    noteId: noteId ?? this.noteId,
+    criteria: criteria ?? this.criteria,
+    tickNote: tickNote ?? this.tickNote,
   );
   Topic copyWithCompanion(LearnTopicsCompanion data) {
     return Topic(
@@ -1554,6 +1732,10 @@ class Topic extends DataClass implements Insertable<Topic> {
       minutes: data.minutes.present ? data.minutes.value : this.minutes,
       ord: data.ord.present ? data.ord.value : this.ord,
       done: data.done.present ? data.done.value : this.done,
+      status: data.status.present ? data.status.value : this.status,
+      noteId: data.noteId.present ? data.noteId.value : this.noteId,
+      criteria: data.criteria.present ? data.criteria.value : this.criteria,
+      tickNote: data.tickNote.present ? data.tickNote.value : this.tickNote,
     );
   }
 
@@ -1567,14 +1749,30 @@ class Topic extends DataClass implements Insertable<Topic> {
           ..write('title: $title, ')
           ..write('minutes: $minutes, ')
           ..write('ord: $ord, ')
-          ..write('done: $done')
+          ..write('done: $done, ')
+          ..write('status: $status, ')
+          ..write('noteId: $noteId, ')
+          ..write('criteria: $criteria, ')
+          ..write('tickNote: $tickNote')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, hlc, deleted, courseId, title, minutes, ord, done);
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    courseId,
+    title,
+    minutes,
+    ord,
+    done,
+    status,
+    noteId,
+    criteria,
+    tickNote,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1586,7 +1784,11 @@ class Topic extends DataClass implements Insertable<Topic> {
           other.title == this.title &&
           other.minutes == this.minutes &&
           other.ord == this.ord &&
-          other.done == this.done);
+          other.done == this.done &&
+          other.status == this.status &&
+          other.noteId == this.noteId &&
+          other.criteria == this.criteria &&
+          other.tickNote == this.tickNote);
 }
 
 class LearnTopicsCompanion extends UpdateCompanion<Topic> {
@@ -1598,6 +1800,10 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
   final Value<int> minutes;
   final Value<int> ord;
   final Value<String?> done;
+  final Value<String> status;
+  final Value<String> noteId;
+  final Value<String> criteria;
+  final Value<String> tickNote;
   final Value<int> rowid;
   const LearnTopicsCompanion({
     this.id = const Value.absent(),
@@ -1608,6 +1814,10 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
     this.minutes = const Value.absent(),
     this.ord = const Value.absent(),
     this.done = const Value.absent(),
+    this.status = const Value.absent(),
+    this.noteId = const Value.absent(),
+    this.criteria = const Value.absent(),
+    this.tickNote = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LearnTopicsCompanion.insert({
@@ -1619,6 +1829,10 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
     this.minutes = const Value.absent(),
     this.ord = const Value.absent(),
     this.done = const Value.absent(),
+    this.status = const Value.absent(),
+    this.noteId = const Value.absent(),
+    this.criteria = const Value.absent(),
+    this.tickNote = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        courseId = Value(courseId),
@@ -1632,6 +1846,10 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
     Expression<int>? minutes,
     Expression<int>? ord,
     Expression<String>? done,
+    Expression<String>? status,
+    Expression<String>? noteId,
+    Expression<String>? criteria,
+    Expression<String>? tickNote,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1643,6 +1861,10 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
       if (minutes != null) 'minutes': minutes,
       if (ord != null) 'ord': ord,
       if (done != null) 'done': done,
+      if (status != null) 'status': status,
+      if (noteId != null) 'note_id': noteId,
+      if (criteria != null) 'criteria': criteria,
+      if (tickNote != null) 'tick_note': tickNote,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1656,6 +1878,10 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
     Value<int>? minutes,
     Value<int>? ord,
     Value<String?>? done,
+    Value<String>? status,
+    Value<String>? noteId,
+    Value<String>? criteria,
+    Value<String>? tickNote,
     Value<int>? rowid,
   }) {
     return LearnTopicsCompanion(
@@ -1667,6 +1893,10 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
       minutes: minutes ?? this.minutes,
       ord: ord ?? this.ord,
       done: done ?? this.done,
+      status: status ?? this.status,
+      noteId: noteId ?? this.noteId,
+      criteria: criteria ?? this.criteria,
+      tickNote: tickNote ?? this.tickNote,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1698,6 +1928,18 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
     if (done.present) {
       map['done'] = Variable<String>(done.value);
     }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (noteId.present) {
+      map['note_id'] = Variable<String>(noteId.value);
+    }
+    if (criteria.present) {
+      map['criteria'] = Variable<String>(criteria.value);
+    }
+    if (tickNote.present) {
+      map['tick_note'] = Variable<String>(tickNote.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1715,6 +1957,1687 @@ class LearnTopicsCompanion extends UpdateCompanion<Topic> {
           ..write('minutes: $minutes, ')
           ..write('ord: $ord, ')
           ..write('done: $done, ')
+          ..write('status: $status, ')
+          ..write('noteId: $noteId, ')
+          ..write('criteria: $criteria, ')
+          ..write('tickNote: $tickNote, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LearnItemsTable extends LearnItems
+    with TableInfo<$LearnItemsTable, StudyItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LearnItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _topicIdMeta = const VerificationMeta(
+    'topicId',
+  );
+  @override
+  late final GeneratedColumn<String> topicId = GeneratedColumn<String>(
+    'topic_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('article'),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _licenceMeta = const VerificationMeta(
+    'licence',
+  );
+  @override
+  late final GeneratedColumn<String> licence = GeneratedColumn<String>(
+    'licence',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _minutesMeta = const VerificationMeta(
+    'minutes',
+  );
+  @override
+  late final GeneratedColumn<int> minutes = GeneratedColumn<int>(
+    'minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _requiredMeta = const VerificationMeta(
+    'required',
+  );
+  @override
+  late final GeneratedColumn<bool> required = GeneratedColumn<bool>(
+    'required',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("required" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _ordMeta = const VerificationMeta('ord');
+  @override
+  late final GeneratedColumn<int> ord = GeneratedColumn<int>(
+    'ord',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _doneMeta = const VerificationMeta('done');
+  @override
+  late final GeneratedColumn<String> done = GeneratedColumn<String>(
+    'done',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _stoppedAtMeta = const VerificationMeta(
+    'stoppedAt',
+  );
+  @override
+  late final GeneratedColumn<String> stoppedAt = GeneratedColumn<String>(
+    'stopped_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _takeawayMeta = const VerificationMeta(
+    'takeaway',
+  );
+  @override
+  late final GeneratedColumn<String> takeaway = GeneratedColumn<String>(
+    'takeaway',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _evidenceMeta = const VerificationMeta(
+    'evidence',
+  );
+  @override
+  late final GeneratedColumn<String> evidence = GeneratedColumn<String>(
+    'evidence',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _refMeta = const VerificationMeta('ref');
+  @override
+  late final GeneratedColumn<String> ref = GeneratedColumn<String>(
+    'ref',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _retiredMeta = const VerificationMeta(
+    'retired',
+  );
+  @override
+  late final GeneratedColumn<String> retired = GeneratedColumn<String>(
+    'retired',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hlc,
+    deleted,
+    topicId,
+    type,
+    title,
+    url,
+    source,
+    licence,
+    minutes,
+    required,
+    ord,
+    done,
+    stoppedAt,
+    takeaway,
+    evidence,
+    ref,
+    content,
+    retired,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'learn_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StudyItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('topic_id')) {
+      context.handle(
+        _topicIdMeta,
+        topicId.isAcceptableOrUnknown(data['topic_id']!, _topicIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_topicIdMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('licence')) {
+      context.handle(
+        _licenceMeta,
+        licence.isAcceptableOrUnknown(data['licence']!, _licenceMeta),
+      );
+    }
+    if (data.containsKey('minutes')) {
+      context.handle(
+        _minutesMeta,
+        minutes.isAcceptableOrUnknown(data['minutes']!, _minutesMeta),
+      );
+    }
+    if (data.containsKey('required')) {
+      context.handle(
+        _requiredMeta,
+        required.isAcceptableOrUnknown(data['required']!, _requiredMeta),
+      );
+    }
+    if (data.containsKey('ord')) {
+      context.handle(
+        _ordMeta,
+        ord.isAcceptableOrUnknown(data['ord']!, _ordMeta),
+      );
+    }
+    if (data.containsKey('done')) {
+      context.handle(
+        _doneMeta,
+        done.isAcceptableOrUnknown(data['done']!, _doneMeta),
+      );
+    }
+    if (data.containsKey('stopped_at')) {
+      context.handle(
+        _stoppedAtMeta,
+        stoppedAt.isAcceptableOrUnknown(data['stopped_at']!, _stoppedAtMeta),
+      );
+    }
+    if (data.containsKey('takeaway')) {
+      context.handle(
+        _takeawayMeta,
+        takeaway.isAcceptableOrUnknown(data['takeaway']!, _takeawayMeta),
+      );
+    }
+    if (data.containsKey('evidence')) {
+      context.handle(
+        _evidenceMeta,
+        evidence.isAcceptableOrUnknown(data['evidence']!, _evidenceMeta),
+      );
+    }
+    if (data.containsKey('ref')) {
+      context.handle(
+        _refMeta,
+        ref.isAcceptableOrUnknown(data['ref']!, _refMeta),
+      );
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    }
+    if (data.containsKey('retired')) {
+      context.handle(
+        _retiredMeta,
+        retired.isAcceptableOrUnknown(data['retired']!, _retiredMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StudyItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StudyItem(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      topicId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      licence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}licence'],
+      )!,
+      minutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}minutes'],
+      )!,
+      required: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}required'],
+      )!,
+      ord: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ord'],
+      )!,
+      done: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}done'],
+      ),
+      stoppedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stopped_at'],
+      )!,
+      takeaway: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}takeaway'],
+      )!,
+      evidence: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}evidence'],
+      )!,
+      ref: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ref'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      retired: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}retired'],
+      )!,
+    );
+  }
+
+  @override
+  $LearnItemsTable createAlias(String alias) {
+    return $LearnItemsTable(attachedDatabase, alias);
+  }
+}
+
+class StudyItem extends DataClass implements Insertable<StudyItem> {
+  final String id;
+  final String hlc;
+  final bool deleted;
+  final String topicId;
+
+  /// course | video | article | book | practice task | quiz |
+  /// interview drill | note
+  final String type;
+  final String title;
+  final String url;
+
+  /// Where it comes from: a site, channel, publisher, or "AI".
+  final String source;
+  final String licence;
+
+  /// Estimated minutes, 0 when not known.
+  final int minutes;
+
+  /// Whether the topic is earned only once this is done.
+  final bool required;
+  final int ord;
+
+  /// The day it was done, null while open.
+  final String? done;
+
+  /// Where the learner stopped in a video or book ("12:30", "page 84").
+  final String stoppedAt;
+
+  /// One line in the learner's words after an article or book; the text of
+  /// a note item.
+  final String takeaway;
+
+  /// A link to what a practice task produced.
+  final String evidence;
+
+  /// The plan's stable id for the item, '' for the learner's own. A plan
+  /// sent again updates the item with the same ref in place.
+  final String ref;
+
+  /// More, as JSON, by type: a quiz's `questions`, a drill's `question`,
+  /// `criterion`, `rubric` and `story`, a task's `instructions` and
+  /// `doneWhen`. '' when there is nothing more.
+  final String content;
+
+  /// The day a plan sent again without this item, '' while it is in use. A
+  /// retired item is kept (with anything the learner did on it) but no
+  /// longer counts towards the topic or shows as next up. Items the learner
+  /// had already done are never retired.
+  final String retired;
+  const StudyItem({
+    required this.id,
+    required this.hlc,
+    required this.deleted,
+    required this.topicId,
+    required this.type,
+    required this.title,
+    required this.url,
+    required this.source,
+    required this.licence,
+    required this.minutes,
+    required this.required,
+    required this.ord,
+    this.done,
+    required this.stoppedAt,
+    required this.takeaway,
+    required this.evidence,
+    required this.ref,
+    required this.content,
+    required this.retired,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['topic_id'] = Variable<String>(topicId);
+    map['type'] = Variable<String>(type);
+    map['title'] = Variable<String>(title);
+    map['url'] = Variable<String>(url);
+    map['source'] = Variable<String>(source);
+    map['licence'] = Variable<String>(licence);
+    map['minutes'] = Variable<int>(minutes);
+    map['required'] = Variable<bool>(required);
+    map['ord'] = Variable<int>(ord);
+    if (!nullToAbsent || done != null) {
+      map['done'] = Variable<String>(done);
+    }
+    map['stopped_at'] = Variable<String>(stoppedAt);
+    map['takeaway'] = Variable<String>(takeaway);
+    map['evidence'] = Variable<String>(evidence);
+    map['ref'] = Variable<String>(ref);
+    map['content'] = Variable<String>(content);
+    map['retired'] = Variable<String>(retired);
+    return map;
+  }
+
+  LearnItemsCompanion toCompanion(bool nullToAbsent) {
+    return LearnItemsCompanion(
+      id: Value(id),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      topicId: Value(topicId),
+      type: Value(type),
+      title: Value(title),
+      url: Value(url),
+      source: Value(source),
+      licence: Value(licence),
+      minutes: Value(minutes),
+      required: Value(required),
+      ord: Value(ord),
+      done: done == null && nullToAbsent ? const Value.absent() : Value(done),
+      stoppedAt: Value(stoppedAt),
+      takeaway: Value(takeaway),
+      evidence: Value(evidence),
+      ref: Value(ref),
+      content: Value(content),
+      retired: Value(retired),
+    );
+  }
+
+  factory StudyItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StudyItem(
+      id: serializer.fromJson<String>(json['id']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      topicId: serializer.fromJson<String>(json['topicId']),
+      type: serializer.fromJson<String>(json['type']),
+      title: serializer.fromJson<String>(json['title']),
+      url: serializer.fromJson<String>(json['url']),
+      source: serializer.fromJson<String>(json['source']),
+      licence: serializer.fromJson<String>(json['licence']),
+      minutes: serializer.fromJson<int>(json['minutes']),
+      required: serializer.fromJson<bool>(json['required']),
+      ord: serializer.fromJson<int>(json['ord']),
+      done: serializer.fromJson<String?>(json['done']),
+      stoppedAt: serializer.fromJson<String>(json['stoppedAt']),
+      takeaway: serializer.fromJson<String>(json['takeaway']),
+      evidence: serializer.fromJson<String>(json['evidence']),
+      ref: serializer.fromJson<String>(json['ref']),
+      content: serializer.fromJson<String>(json['content']),
+      retired: serializer.fromJson<String>(json['retired']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'topicId': serializer.toJson<String>(topicId),
+      'type': serializer.toJson<String>(type),
+      'title': serializer.toJson<String>(title),
+      'url': serializer.toJson<String>(url),
+      'source': serializer.toJson<String>(source),
+      'licence': serializer.toJson<String>(licence),
+      'minutes': serializer.toJson<int>(minutes),
+      'required': serializer.toJson<bool>(required),
+      'ord': serializer.toJson<int>(ord),
+      'done': serializer.toJson<String?>(done),
+      'stoppedAt': serializer.toJson<String>(stoppedAt),
+      'takeaway': serializer.toJson<String>(takeaway),
+      'evidence': serializer.toJson<String>(evidence),
+      'ref': serializer.toJson<String>(ref),
+      'content': serializer.toJson<String>(content),
+      'retired': serializer.toJson<String>(retired),
+    };
+  }
+
+  StudyItem copyWith({
+    String? id,
+    String? hlc,
+    bool? deleted,
+    String? topicId,
+    String? type,
+    String? title,
+    String? url,
+    String? source,
+    String? licence,
+    int? minutes,
+    bool? required,
+    int? ord,
+    Value<String?> done = const Value.absent(),
+    String? stoppedAt,
+    String? takeaway,
+    String? evidence,
+    String? ref,
+    String? content,
+    String? retired,
+  }) => StudyItem(
+    id: id ?? this.id,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    topicId: topicId ?? this.topicId,
+    type: type ?? this.type,
+    title: title ?? this.title,
+    url: url ?? this.url,
+    source: source ?? this.source,
+    licence: licence ?? this.licence,
+    minutes: minutes ?? this.minutes,
+    required: required ?? this.required,
+    ord: ord ?? this.ord,
+    done: done.present ? done.value : this.done,
+    stoppedAt: stoppedAt ?? this.stoppedAt,
+    takeaway: takeaway ?? this.takeaway,
+    evidence: evidence ?? this.evidence,
+    ref: ref ?? this.ref,
+    content: content ?? this.content,
+    retired: retired ?? this.retired,
+  );
+  StudyItem copyWithCompanion(LearnItemsCompanion data) {
+    return StudyItem(
+      id: data.id.present ? data.id.value : this.id,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      topicId: data.topicId.present ? data.topicId.value : this.topicId,
+      type: data.type.present ? data.type.value : this.type,
+      title: data.title.present ? data.title.value : this.title,
+      url: data.url.present ? data.url.value : this.url,
+      source: data.source.present ? data.source.value : this.source,
+      licence: data.licence.present ? data.licence.value : this.licence,
+      minutes: data.minutes.present ? data.minutes.value : this.minutes,
+      required: data.required.present ? data.required.value : this.required,
+      ord: data.ord.present ? data.ord.value : this.ord,
+      done: data.done.present ? data.done.value : this.done,
+      stoppedAt: data.stoppedAt.present ? data.stoppedAt.value : this.stoppedAt,
+      takeaway: data.takeaway.present ? data.takeaway.value : this.takeaway,
+      evidence: data.evidence.present ? data.evidence.value : this.evidence,
+      ref: data.ref.present ? data.ref.value : this.ref,
+      content: data.content.present ? data.content.value : this.content,
+      retired: data.retired.present ? data.retired.value : this.retired,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StudyItem(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('topicId: $topicId, ')
+          ..write('type: $type, ')
+          ..write('title: $title, ')
+          ..write('url: $url, ')
+          ..write('source: $source, ')
+          ..write('licence: $licence, ')
+          ..write('minutes: $minutes, ')
+          ..write('required: $required, ')
+          ..write('ord: $ord, ')
+          ..write('done: $done, ')
+          ..write('stoppedAt: $stoppedAt, ')
+          ..write('takeaway: $takeaway, ')
+          ..write('evidence: $evidence, ')
+          ..write('ref: $ref, ')
+          ..write('content: $content, ')
+          ..write('retired: $retired')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    topicId,
+    type,
+    title,
+    url,
+    source,
+    licence,
+    minutes,
+    required,
+    ord,
+    done,
+    stoppedAt,
+    takeaway,
+    evidence,
+    ref,
+    content,
+    retired,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StudyItem &&
+          other.id == this.id &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.topicId == this.topicId &&
+          other.type == this.type &&
+          other.title == this.title &&
+          other.url == this.url &&
+          other.source == this.source &&
+          other.licence == this.licence &&
+          other.minutes == this.minutes &&
+          other.required == this.required &&
+          other.ord == this.ord &&
+          other.done == this.done &&
+          other.stoppedAt == this.stoppedAt &&
+          other.takeaway == this.takeaway &&
+          other.evidence == this.evidence &&
+          other.ref == this.ref &&
+          other.content == this.content &&
+          other.retired == this.retired);
+}
+
+class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
+  final Value<String> id;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> topicId;
+  final Value<String> type;
+  final Value<String> title;
+  final Value<String> url;
+  final Value<String> source;
+  final Value<String> licence;
+  final Value<int> minutes;
+  final Value<bool> required;
+  final Value<int> ord;
+  final Value<String?> done;
+  final Value<String> stoppedAt;
+  final Value<String> takeaway;
+  final Value<String> evidence;
+  final Value<String> ref;
+  final Value<String> content;
+  final Value<String> retired;
+  final Value<int> rowid;
+  const LearnItemsCompanion({
+    this.id = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.topicId = const Value.absent(),
+    this.type = const Value.absent(),
+    this.title = const Value.absent(),
+    this.url = const Value.absent(),
+    this.source = const Value.absent(),
+    this.licence = const Value.absent(),
+    this.minutes = const Value.absent(),
+    this.required = const Value.absent(),
+    this.ord = const Value.absent(),
+    this.done = const Value.absent(),
+    this.stoppedAt = const Value.absent(),
+    this.takeaway = const Value.absent(),
+    this.evidence = const Value.absent(),
+    this.ref = const Value.absent(),
+    this.content = const Value.absent(),
+    this.retired = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LearnItemsCompanion.insert({
+    required String id,
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    required String topicId,
+    this.type = const Value.absent(),
+    required String title,
+    this.url = const Value.absent(),
+    this.source = const Value.absent(),
+    this.licence = const Value.absent(),
+    this.minutes = const Value.absent(),
+    this.required = const Value.absent(),
+    this.ord = const Value.absent(),
+    this.done = const Value.absent(),
+    this.stoppedAt = const Value.absent(),
+    this.takeaway = const Value.absent(),
+    this.evidence = const Value.absent(),
+    this.ref = const Value.absent(),
+    this.content = const Value.absent(),
+    this.retired = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       topicId = Value(topicId),
+       title = Value(title);
+  static Insertable<StudyItem> custom({
+    Expression<String>? id,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? topicId,
+    Expression<String>? type,
+    Expression<String>? title,
+    Expression<String>? url,
+    Expression<String>? source,
+    Expression<String>? licence,
+    Expression<int>? minutes,
+    Expression<bool>? required,
+    Expression<int>? ord,
+    Expression<String>? done,
+    Expression<String>? stoppedAt,
+    Expression<String>? takeaway,
+    Expression<String>? evidence,
+    Expression<String>? ref,
+    Expression<String>? content,
+    Expression<String>? retired,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (topicId != null) 'topic_id': topicId,
+      if (type != null) 'type': type,
+      if (title != null) 'title': title,
+      if (url != null) 'url': url,
+      if (source != null) 'source': source,
+      if (licence != null) 'licence': licence,
+      if (minutes != null) 'minutes': minutes,
+      if (required != null) 'required': required,
+      if (ord != null) 'ord': ord,
+      if (done != null) 'done': done,
+      if (stoppedAt != null) 'stopped_at': stoppedAt,
+      if (takeaway != null) 'takeaway': takeaway,
+      if (evidence != null) 'evidence': evidence,
+      if (ref != null) 'ref': ref,
+      if (content != null) 'content': content,
+      if (retired != null) 'retired': retired,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LearnItemsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? topicId,
+    Value<String>? type,
+    Value<String>? title,
+    Value<String>? url,
+    Value<String>? source,
+    Value<String>? licence,
+    Value<int>? minutes,
+    Value<bool>? required,
+    Value<int>? ord,
+    Value<String?>? done,
+    Value<String>? stoppedAt,
+    Value<String>? takeaway,
+    Value<String>? evidence,
+    Value<String>? ref,
+    Value<String>? content,
+    Value<String>? retired,
+    Value<int>? rowid,
+  }) {
+    return LearnItemsCompanion(
+      id: id ?? this.id,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      topicId: topicId ?? this.topicId,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      url: url ?? this.url,
+      source: source ?? this.source,
+      licence: licence ?? this.licence,
+      minutes: minutes ?? this.minutes,
+      required: required ?? this.required,
+      ord: ord ?? this.ord,
+      done: done ?? this.done,
+      stoppedAt: stoppedAt ?? this.stoppedAt,
+      takeaway: takeaway ?? this.takeaway,
+      evidence: evidence ?? this.evidence,
+      ref: ref ?? this.ref,
+      content: content ?? this.content,
+      retired: retired ?? this.retired,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (topicId.present) {
+      map['topic_id'] = Variable<String>(topicId.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (licence.present) {
+      map['licence'] = Variable<String>(licence.value);
+    }
+    if (minutes.present) {
+      map['minutes'] = Variable<int>(minutes.value);
+    }
+    if (required.present) {
+      map['required'] = Variable<bool>(required.value);
+    }
+    if (ord.present) {
+      map['ord'] = Variable<int>(ord.value);
+    }
+    if (done.present) {
+      map['done'] = Variable<String>(done.value);
+    }
+    if (stoppedAt.present) {
+      map['stopped_at'] = Variable<String>(stoppedAt.value);
+    }
+    if (takeaway.present) {
+      map['takeaway'] = Variable<String>(takeaway.value);
+    }
+    if (evidence.present) {
+      map['evidence'] = Variable<String>(evidence.value);
+    }
+    if (ref.present) {
+      map['ref'] = Variable<String>(ref.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (retired.present) {
+      map['retired'] = Variable<String>(retired.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LearnItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('topicId: $topicId, ')
+          ..write('type: $type, ')
+          ..write('title: $title, ')
+          ..write('url: $url, ')
+          ..write('source: $source, ')
+          ..write('licence: $licence, ')
+          ..write('minutes: $minutes, ')
+          ..write('required: $required, ')
+          ..write('ord: $ord, ')
+          ..write('done: $done, ')
+          ..write('stoppedAt: $stoppedAt, ')
+          ..write('takeaway: $takeaway, ')
+          ..write('evidence: $evidence, ')
+          ..write('ref: $ref, ')
+          ..write('content: $content, ')
+          ..write('retired: $retired, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LearnCriteriaTable extends LearnCriteria
+    with TableInfo<$LearnCriteriaTable, Criterion> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LearnCriteriaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _programIdMeta = const VerificationMeta(
+    'programId',
+  );
+  @override
+  late final GeneratedColumn<String> programId = GeneratedColumn<String>(
+    'program_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _refMeta = const VerificationMeta('ref');
+  @override
+  late final GeneratedColumn<String> ref = GeneratedColumn<String>(
+    'ref',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _essentialMeta = const VerificationMeta(
+    'essential',
+  );
+  @override
+  late final GeneratedColumn<bool> essential = GeneratedColumn<bool>(
+    'essential',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("essential" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _shownMeta = const VerificationMeta('shown');
+  @override
+  late final GeneratedColumn<bool> shown = GeneratedColumn<bool>(
+    'shown',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("shown" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _ordMeta = const VerificationMeta('ord');
+  @override
+  late final GeneratedColumn<int> ord = GeneratedColumn<int>(
+    'ord',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hlc,
+    deleted,
+    programId,
+    ref,
+    body,
+    essential,
+    kind,
+    source,
+    shown,
+    ord,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'learn_criteria';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Criterion> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('program_id')) {
+      context.handle(
+        _programIdMeta,
+        programId.isAcceptableOrUnknown(data['program_id']!, _programIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_programIdMeta);
+    }
+    if (data.containsKey('ref')) {
+      context.handle(
+        _refMeta,
+        ref.isAcceptableOrUnknown(data['ref']!, _refMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_refMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('essential')) {
+      context.handle(
+        _essentialMeta,
+        essential.isAcceptableOrUnknown(data['essential']!, _essentialMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('shown')) {
+      context.handle(
+        _shownMeta,
+        shown.isAcceptableOrUnknown(data['shown']!, _shownMeta),
+      );
+    }
+    if (data.containsKey('ord')) {
+      context.handle(
+        _ordMeta,
+        ord.isAcceptableOrUnknown(data['ord']!, _ordMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Criterion map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Criterion(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      programId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}program_id'],
+      )!,
+      ref: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ref'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      essential: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}essential'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      shown: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}shown'],
+      ),
+      ord: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ord'],
+      )!,
+    );
+  }
+
+  @override
+  $LearnCriteriaTable createAlias(String alias) {
+    return $LearnCriteriaTable(attachedDatabase, alias);
+  }
+}
+
+class Criterion extends DataClass implements Insertable<Criterion> {
+  final String id;
+  final String hlc;
+  final bool deleted;
+  final String programId;
+
+  /// The plan's id for it ("e1"), which topics list in their criteria.
+  final String ref;
+  final String body;
+  final bool essential;
+
+  /// skill | requirement | value | knowledge … as the sender names it.
+  final String kind;
+
+  /// Where it comes from: "ESCO", "advert", "AI".
+  final String source;
+
+  /// Whether the learner's CV already shows it; null when not known.
+  final bool? shown;
+  final int ord;
+  const Criterion({
+    required this.id,
+    required this.hlc,
+    required this.deleted,
+    required this.programId,
+    required this.ref,
+    required this.body,
+    required this.essential,
+    required this.kind,
+    required this.source,
+    this.shown,
+    required this.ord,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['program_id'] = Variable<String>(programId);
+    map['ref'] = Variable<String>(ref);
+    map['body'] = Variable<String>(body);
+    map['essential'] = Variable<bool>(essential);
+    map['kind'] = Variable<String>(kind);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || shown != null) {
+      map['shown'] = Variable<bool>(shown);
+    }
+    map['ord'] = Variable<int>(ord);
+    return map;
+  }
+
+  LearnCriteriaCompanion toCompanion(bool nullToAbsent) {
+    return LearnCriteriaCompanion(
+      id: Value(id),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      programId: Value(programId),
+      ref: Value(ref),
+      body: Value(body),
+      essential: Value(essential),
+      kind: Value(kind),
+      source: Value(source),
+      shown: shown == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shown),
+      ord: Value(ord),
+    );
+  }
+
+  factory Criterion.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Criterion(
+      id: serializer.fromJson<String>(json['id']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      programId: serializer.fromJson<String>(json['programId']),
+      ref: serializer.fromJson<String>(json['ref']),
+      body: serializer.fromJson<String>(json['body']),
+      essential: serializer.fromJson<bool>(json['essential']),
+      kind: serializer.fromJson<String>(json['kind']),
+      source: serializer.fromJson<String>(json['source']),
+      shown: serializer.fromJson<bool?>(json['shown']),
+      ord: serializer.fromJson<int>(json['ord']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'programId': serializer.toJson<String>(programId),
+      'ref': serializer.toJson<String>(ref),
+      'body': serializer.toJson<String>(body),
+      'essential': serializer.toJson<bool>(essential),
+      'kind': serializer.toJson<String>(kind),
+      'source': serializer.toJson<String>(source),
+      'shown': serializer.toJson<bool?>(shown),
+      'ord': serializer.toJson<int>(ord),
+    };
+  }
+
+  Criterion copyWith({
+    String? id,
+    String? hlc,
+    bool? deleted,
+    String? programId,
+    String? ref,
+    String? body,
+    bool? essential,
+    String? kind,
+    String? source,
+    Value<bool?> shown = const Value.absent(),
+    int? ord,
+  }) => Criterion(
+    id: id ?? this.id,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    programId: programId ?? this.programId,
+    ref: ref ?? this.ref,
+    body: body ?? this.body,
+    essential: essential ?? this.essential,
+    kind: kind ?? this.kind,
+    source: source ?? this.source,
+    shown: shown.present ? shown.value : this.shown,
+    ord: ord ?? this.ord,
+  );
+  Criterion copyWithCompanion(LearnCriteriaCompanion data) {
+    return Criterion(
+      id: data.id.present ? data.id.value : this.id,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      programId: data.programId.present ? data.programId.value : this.programId,
+      ref: data.ref.present ? data.ref.value : this.ref,
+      body: data.body.present ? data.body.value : this.body,
+      essential: data.essential.present ? data.essential.value : this.essential,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      source: data.source.present ? data.source.value : this.source,
+      shown: data.shown.present ? data.shown.value : this.shown,
+      ord: data.ord.present ? data.ord.value : this.ord,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Criterion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('ref: $ref, ')
+          ..write('body: $body, ')
+          ..write('essential: $essential, ')
+          ..write('kind: $kind, ')
+          ..write('source: $source, ')
+          ..write('shown: $shown, ')
+          ..write('ord: $ord')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    programId,
+    ref,
+    body,
+    essential,
+    kind,
+    source,
+    shown,
+    ord,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Criterion &&
+          other.id == this.id &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.programId == this.programId &&
+          other.ref == this.ref &&
+          other.body == this.body &&
+          other.essential == this.essential &&
+          other.kind == this.kind &&
+          other.source == this.source &&
+          other.shown == this.shown &&
+          other.ord == this.ord);
+}
+
+class LearnCriteriaCompanion extends UpdateCompanion<Criterion> {
+  final Value<String> id;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> programId;
+  final Value<String> ref;
+  final Value<String> body;
+  final Value<bool> essential;
+  final Value<String> kind;
+  final Value<String> source;
+  final Value<bool?> shown;
+  final Value<int> ord;
+  final Value<int> rowid;
+  const LearnCriteriaCompanion({
+    this.id = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.programId = const Value.absent(),
+    this.ref = const Value.absent(),
+    this.body = const Value.absent(),
+    this.essential = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.source = const Value.absent(),
+    this.shown = const Value.absent(),
+    this.ord = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LearnCriteriaCompanion.insert({
+    required String id,
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    required String programId,
+    required String ref,
+    required String body,
+    this.essential = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.source = const Value.absent(),
+    this.shown = const Value.absent(),
+    this.ord = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       programId = Value(programId),
+       ref = Value(ref),
+       body = Value(body);
+  static Insertable<Criterion> custom({
+    Expression<String>? id,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? programId,
+    Expression<String>? ref,
+    Expression<String>? body,
+    Expression<bool>? essential,
+    Expression<String>? kind,
+    Expression<String>? source,
+    Expression<bool>? shown,
+    Expression<int>? ord,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (programId != null) 'program_id': programId,
+      if (ref != null) 'ref': ref,
+      if (body != null) 'body': body,
+      if (essential != null) 'essential': essential,
+      if (kind != null) 'kind': kind,
+      if (source != null) 'source': source,
+      if (shown != null) 'shown': shown,
+      if (ord != null) 'ord': ord,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LearnCriteriaCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? programId,
+    Value<String>? ref,
+    Value<String>? body,
+    Value<bool>? essential,
+    Value<String>? kind,
+    Value<String>? source,
+    Value<bool?>? shown,
+    Value<int>? ord,
+    Value<int>? rowid,
+  }) {
+    return LearnCriteriaCompanion(
+      id: id ?? this.id,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      programId: programId ?? this.programId,
+      ref: ref ?? this.ref,
+      body: body ?? this.body,
+      essential: essential ?? this.essential,
+      kind: kind ?? this.kind,
+      source: source ?? this.source,
+      shown: shown ?? this.shown,
+      ord: ord ?? this.ord,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (programId.present) {
+      map['program_id'] = Variable<String>(programId.value);
+    }
+    if (ref.present) {
+      map['ref'] = Variable<String>(ref.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (essential.present) {
+      map['essential'] = Variable<bool>(essential.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (shown.present) {
+      map['shown'] = Variable<bool>(shown.value);
+    }
+    if (ord.present) {
+      map['ord'] = Variable<int>(ord.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LearnCriteriaCompanion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('ref: $ref, ')
+          ..write('body: $body, ')
+          ..write('essential: $essential, ')
+          ..write('kind: $kind, ')
+          ..write('source: $source, ')
+          ..write('shown: $shown, ')
+          ..write('ord: $ord, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1772,6 +3695,17 @@ class $LearnSessionsTable extends LearnSessions
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _topicIdMeta = const VerificationMeta(
+    'topicId',
+  );
+  @override
+  late final GeneratedColumn<String> topicId = GeneratedColumn<String>(
+    'topic_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _dayMeta = const VerificationMeta('day');
   @override
   late final GeneratedColumn<String> day = GeneratedColumn<String>(
@@ -1808,6 +3742,7 @@ class $LearnSessionsTable extends LearnSessions
     hlc,
     deleted,
     courseId,
+    topicId,
     day,
     minutes,
     note,
@@ -1845,6 +3780,12 @@ class $LearnSessionsTable extends LearnSessions
       context.handle(
         _courseIdMeta,
         courseId.isAcceptableOrUnknown(data['course_id']!, _courseIdMeta),
+      );
+    }
+    if (data.containsKey('topic_id')) {
+      context.handle(
+        _topicIdMeta,
+        topicId.isAcceptableOrUnknown(data['topic_id']!, _topicIdMeta),
       );
     }
     if (data.containsKey('day')) {
@@ -1894,6 +3835,10 @@ class $LearnSessionsTable extends LearnSessions
         DriftSqlType.string,
         data['${effectivePrefix}course_id'],
       ),
+      topicId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic_id'],
+      ),
       day: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}day'],
@@ -1920,6 +3865,9 @@ class StudySession extends DataClass implements Insertable<StudySession> {
   final String hlc;
   final bool deleted;
   final String? courseId;
+
+  /// The topic studied, when the time was logged on a topic page.
+  final String? topicId;
   final String day;
   final int minutes;
   final String note;
@@ -1928,6 +3876,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
     required this.hlc,
     required this.deleted,
     this.courseId,
+    this.topicId,
     required this.day,
     required this.minutes,
     required this.note,
@@ -1940,6 +3889,9 @@ class StudySession extends DataClass implements Insertable<StudySession> {
     map['deleted'] = Variable<bool>(deleted);
     if (!nullToAbsent || courseId != null) {
       map['course_id'] = Variable<String>(courseId);
+    }
+    if (!nullToAbsent || topicId != null) {
+      map['topic_id'] = Variable<String>(topicId);
     }
     map['day'] = Variable<String>(day);
     map['minutes'] = Variable<int>(minutes);
@@ -1955,6 +3907,9 @@ class StudySession extends DataClass implements Insertable<StudySession> {
       courseId: courseId == null && nullToAbsent
           ? const Value.absent()
           : Value(courseId),
+      topicId: topicId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(topicId),
       day: Value(day),
       minutes: Value(minutes),
       note: Value(note),
@@ -1971,6 +3926,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
       hlc: serializer.fromJson<String>(json['hlc']),
       deleted: serializer.fromJson<bool>(json['deleted']),
       courseId: serializer.fromJson<String?>(json['courseId']),
+      topicId: serializer.fromJson<String?>(json['topicId']),
       day: serializer.fromJson<String>(json['day']),
       minutes: serializer.fromJson<int>(json['minutes']),
       note: serializer.fromJson<String>(json['note']),
@@ -1984,6 +3940,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
       'hlc': serializer.toJson<String>(hlc),
       'deleted': serializer.toJson<bool>(deleted),
       'courseId': serializer.toJson<String?>(courseId),
+      'topicId': serializer.toJson<String?>(topicId),
       'day': serializer.toJson<String>(day),
       'minutes': serializer.toJson<int>(minutes),
       'note': serializer.toJson<String>(note),
@@ -1995,6 +3952,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
     String? hlc,
     bool? deleted,
     Value<String?> courseId = const Value.absent(),
+    Value<String?> topicId = const Value.absent(),
     String? day,
     int? minutes,
     String? note,
@@ -2003,6 +3961,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
     hlc: hlc ?? this.hlc,
     deleted: deleted ?? this.deleted,
     courseId: courseId.present ? courseId.value : this.courseId,
+    topicId: topicId.present ? topicId.value : this.topicId,
     day: day ?? this.day,
     minutes: minutes ?? this.minutes,
     note: note ?? this.note,
@@ -2013,6 +3972,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
       hlc: data.hlc.present ? data.hlc.value : this.hlc,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       courseId: data.courseId.present ? data.courseId.value : this.courseId,
+      topicId: data.topicId.present ? data.topicId.value : this.topicId,
       day: data.day.present ? data.day.value : this.day,
       minutes: data.minutes.present ? data.minutes.value : this.minutes,
       note: data.note.present ? data.note.value : this.note,
@@ -2026,6 +3986,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
           ..write('hlc: $hlc, ')
           ..write('deleted: $deleted, ')
           ..write('courseId: $courseId, ')
+          ..write('topicId: $topicId, ')
           ..write('day: $day, ')
           ..write('minutes: $minutes, ')
           ..write('note: $note')
@@ -2035,7 +3996,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
 
   @override
   int get hashCode =>
-      Object.hash(id, hlc, deleted, courseId, day, minutes, note);
+      Object.hash(id, hlc, deleted, courseId, topicId, day, minutes, note);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2044,6 +4005,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
           other.hlc == this.hlc &&
           other.deleted == this.deleted &&
           other.courseId == this.courseId &&
+          other.topicId == this.topicId &&
           other.day == this.day &&
           other.minutes == this.minutes &&
           other.note == this.note);
@@ -2054,6 +4016,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
   final Value<String> hlc;
   final Value<bool> deleted;
   final Value<String?> courseId;
+  final Value<String?> topicId;
   final Value<String> day;
   final Value<int> minutes;
   final Value<String> note;
@@ -2063,6 +4026,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     this.hlc = const Value.absent(),
     this.deleted = const Value.absent(),
     this.courseId = const Value.absent(),
+    this.topicId = const Value.absent(),
     this.day = const Value.absent(),
     this.minutes = const Value.absent(),
     this.note = const Value.absent(),
@@ -2073,6 +4037,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     this.hlc = const Value.absent(),
     this.deleted = const Value.absent(),
     this.courseId = const Value.absent(),
+    this.topicId = const Value.absent(),
     required String day,
     required int minutes,
     this.note = const Value.absent(),
@@ -2085,6 +4050,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     Expression<String>? hlc,
     Expression<bool>? deleted,
     Expression<String>? courseId,
+    Expression<String>? topicId,
     Expression<String>? day,
     Expression<int>? minutes,
     Expression<String>? note,
@@ -2095,6 +4061,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
       if (hlc != null) 'hlc': hlc,
       if (deleted != null) 'deleted': deleted,
       if (courseId != null) 'course_id': courseId,
+      if (topicId != null) 'topic_id': topicId,
       if (day != null) 'day': day,
       if (minutes != null) 'minutes': minutes,
       if (note != null) 'note': note,
@@ -2107,6 +4074,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     Value<String>? hlc,
     Value<bool>? deleted,
     Value<String?>? courseId,
+    Value<String?>? topicId,
     Value<String>? day,
     Value<int>? minutes,
     Value<String>? note,
@@ -2117,6 +4085,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
       hlc: hlc ?? this.hlc,
       deleted: deleted ?? this.deleted,
       courseId: courseId ?? this.courseId,
+      topicId: topicId ?? this.topicId,
       day: day ?? this.day,
       minutes: minutes ?? this.minutes,
       note: note ?? this.note,
@@ -2138,6 +4107,9 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     }
     if (courseId.present) {
       map['course_id'] = Variable<String>(courseId.value);
+    }
+    if (topicId.present) {
+      map['topic_id'] = Variable<String>(topicId.value);
     }
     if (day.present) {
       map['day'] = Variable<String>(day.value);
@@ -2161,6 +4133,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
           ..write('hlc: $hlc, ')
           ..write('deleted: $deleted, ')
           ..write('courseId: $courseId, ')
+          ..write('topicId: $topicId, ')
           ..write('day: $day, ')
           ..write('minutes: $minutes, ')
           ..write('note: $note, ')
@@ -2221,6 +4194,17 @@ class $LearnAssessmentsTable extends LearnAssessments
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _topicIdMeta = const VerificationMeta(
+    'topicId',
+  );
+  @override
+  late final GeneratedColumn<String> topicId = GeneratedColumn<String>(
+    'topic_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -2258,16 +4242,38 @@ class $LearnAssessmentsTable extends LearnAssessments
     requiredDuringInsert: false,
     defaultValue: const Constant(100),
   );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _detailMeta = const VerificationMeta('detail');
+  @override
+  late final GeneratedColumn<String> detail = GeneratedColumn<String>(
+    'detail',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     hlc,
     deleted,
     courseId,
+    topicId,
     title,
     day,
     score,
     max,
+    itemId,
+    detail,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2304,6 +4310,12 @@ class $LearnAssessmentsTable extends LearnAssessments
         courseId.isAcceptableOrUnknown(data['course_id']!, _courseIdMeta),
       );
     }
+    if (data.containsKey('topic_id')) {
+      context.handle(
+        _topicIdMeta,
+        topicId.isAcceptableOrUnknown(data['topic_id']!, _topicIdMeta),
+      );
+    }
     if (data.containsKey('title')) {
       context.handle(
         _titleMeta,
@@ -2334,6 +4346,18 @@ class $LearnAssessmentsTable extends LearnAssessments
         max.isAcceptableOrUnknown(data['max']!, _maxMeta),
       );
     }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    }
+    if (data.containsKey('detail')) {
+      context.handle(
+        _detailMeta,
+        detail.isAcceptableOrUnknown(data['detail']!, _detailMeta),
+      );
+    }
     return context;
   }
 
@@ -2359,6 +4383,10 @@ class $LearnAssessmentsTable extends LearnAssessments
         DriftSqlType.string,
         data['${effectivePrefix}course_id'],
       ),
+      topicId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic_id'],
+      ),
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}title'],
@@ -2375,6 +4403,14 @@ class $LearnAssessmentsTable extends LearnAssessments
         DriftSqlType.double,
         data['${effectivePrefix}max'],
       )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      ),
+      detail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}detail'],
+      )!,
     );
   }
 
@@ -2389,19 +4425,35 @@ class Assessment extends DataClass implements Insertable<Assessment> {
   final String hlc;
   final bool deleted;
   final String? courseId;
+
+  /// The topic whose quiz this is, null for a test recorded by hand.
+  final String? topicId;
   final String title;
   final String day;
   final double score;
   final double max;
+
+  /// The study item this result is for (an interview drill practised on
+  /// its topic), null for a quiz or a test recorded by hand.
+  final String? itemId;
+
+  /// More about the attempt, as JSON, '' for quizzes and tests. A drill
+  /// attempt keeps its four self-rated checks, the seconds used, the
+  /// scenario frame, the story used and a note (see interview.dart). Only
+  /// rows with a detail are drill attempts.
+  final String detail;
   const Assessment({
     required this.id,
     required this.hlc,
     required this.deleted,
     this.courseId,
+    this.topicId,
     required this.title,
     required this.day,
     required this.score,
     required this.max,
+    this.itemId,
+    required this.detail,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2412,10 +4464,17 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     if (!nullToAbsent || courseId != null) {
       map['course_id'] = Variable<String>(courseId);
     }
+    if (!nullToAbsent || topicId != null) {
+      map['topic_id'] = Variable<String>(topicId);
+    }
     map['title'] = Variable<String>(title);
     map['day'] = Variable<String>(day);
     map['score'] = Variable<double>(score);
     map['max'] = Variable<double>(max);
+    if (!nullToAbsent || itemId != null) {
+      map['item_id'] = Variable<String>(itemId);
+    }
+    map['detail'] = Variable<String>(detail);
     return map;
   }
 
@@ -2427,10 +4486,17 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       courseId: courseId == null && nullToAbsent
           ? const Value.absent()
           : Value(courseId),
+      topicId: topicId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(topicId),
       title: Value(title),
       day: Value(day),
       score: Value(score),
       max: Value(max),
+      itemId: itemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(itemId),
+      detail: Value(detail),
     );
   }
 
@@ -2444,10 +4510,13 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       hlc: serializer.fromJson<String>(json['hlc']),
       deleted: serializer.fromJson<bool>(json['deleted']),
       courseId: serializer.fromJson<String?>(json['courseId']),
+      topicId: serializer.fromJson<String?>(json['topicId']),
       title: serializer.fromJson<String>(json['title']),
       day: serializer.fromJson<String>(json['day']),
       score: serializer.fromJson<double>(json['score']),
       max: serializer.fromJson<double>(json['max']),
+      itemId: serializer.fromJson<String?>(json['itemId']),
+      detail: serializer.fromJson<String>(json['detail']),
     );
   }
   @override
@@ -2458,10 +4527,13 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       'hlc': serializer.toJson<String>(hlc),
       'deleted': serializer.toJson<bool>(deleted),
       'courseId': serializer.toJson<String?>(courseId),
+      'topicId': serializer.toJson<String?>(topicId),
       'title': serializer.toJson<String>(title),
       'day': serializer.toJson<String>(day),
       'score': serializer.toJson<double>(score),
       'max': serializer.toJson<double>(max),
+      'itemId': serializer.toJson<String?>(itemId),
+      'detail': serializer.toJson<String>(detail),
     };
   }
 
@@ -2470,19 +4542,25 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     String? hlc,
     bool? deleted,
     Value<String?> courseId = const Value.absent(),
+    Value<String?> topicId = const Value.absent(),
     String? title,
     String? day,
     double? score,
     double? max,
+    Value<String?> itemId = const Value.absent(),
+    String? detail,
   }) => Assessment(
     id: id ?? this.id,
     hlc: hlc ?? this.hlc,
     deleted: deleted ?? this.deleted,
     courseId: courseId.present ? courseId.value : this.courseId,
+    topicId: topicId.present ? topicId.value : this.topicId,
     title: title ?? this.title,
     day: day ?? this.day,
     score: score ?? this.score,
     max: max ?? this.max,
+    itemId: itemId.present ? itemId.value : this.itemId,
+    detail: detail ?? this.detail,
   );
   Assessment copyWithCompanion(LearnAssessmentsCompanion data) {
     return Assessment(
@@ -2490,10 +4568,13 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       hlc: data.hlc.present ? data.hlc.value : this.hlc,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       courseId: data.courseId.present ? data.courseId.value : this.courseId,
+      topicId: data.topicId.present ? data.topicId.value : this.topicId,
       title: data.title.present ? data.title.value : this.title,
       day: data.day.present ? data.day.value : this.day,
       score: data.score.present ? data.score.value : this.score,
       max: data.max.present ? data.max.value : this.max,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      detail: data.detail.present ? data.detail.value : this.detail,
     );
   }
 
@@ -2504,17 +4585,31 @@ class Assessment extends DataClass implements Insertable<Assessment> {
           ..write('hlc: $hlc, ')
           ..write('deleted: $deleted, ')
           ..write('courseId: $courseId, ')
+          ..write('topicId: $topicId, ')
           ..write('title: $title, ')
           ..write('day: $day, ')
           ..write('score: $score, ')
-          ..write('max: $max')
+          ..write('max: $max, ')
+          ..write('itemId: $itemId, ')
+          ..write('detail: $detail')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, hlc, deleted, courseId, title, day, score, max);
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    courseId,
+    topicId,
+    title,
+    day,
+    score,
+    max,
+    itemId,
+    detail,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2523,10 +4618,13 @@ class Assessment extends DataClass implements Insertable<Assessment> {
           other.hlc == this.hlc &&
           other.deleted == this.deleted &&
           other.courseId == this.courseId &&
+          other.topicId == this.topicId &&
           other.title == this.title &&
           other.day == this.day &&
           other.score == this.score &&
-          other.max == this.max);
+          other.max == this.max &&
+          other.itemId == this.itemId &&
+          other.detail == this.detail);
 }
 
 class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
@@ -2534,20 +4632,26 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
   final Value<String> hlc;
   final Value<bool> deleted;
   final Value<String?> courseId;
+  final Value<String?> topicId;
   final Value<String> title;
   final Value<String> day;
   final Value<double> score;
   final Value<double> max;
+  final Value<String?> itemId;
+  final Value<String> detail;
   final Value<int> rowid;
   const LearnAssessmentsCompanion({
     this.id = const Value.absent(),
     this.hlc = const Value.absent(),
     this.deleted = const Value.absent(),
     this.courseId = const Value.absent(),
+    this.topicId = const Value.absent(),
     this.title = const Value.absent(),
     this.day = const Value.absent(),
     this.score = const Value.absent(),
     this.max = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.detail = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LearnAssessmentsCompanion.insert({
@@ -2555,10 +4659,13 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     this.hlc = const Value.absent(),
     this.deleted = const Value.absent(),
     this.courseId = const Value.absent(),
+    this.topicId = const Value.absent(),
     required String title,
     required String day,
     required double score,
     this.max = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.detail = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title),
@@ -2569,10 +4676,13 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     Expression<String>? hlc,
     Expression<bool>? deleted,
     Expression<String>? courseId,
+    Expression<String>? topicId,
     Expression<String>? title,
     Expression<String>? day,
     Expression<double>? score,
     Expression<double>? max,
+    Expression<String>? itemId,
+    Expression<String>? detail,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2580,10 +4690,13 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
       if (hlc != null) 'hlc': hlc,
       if (deleted != null) 'deleted': deleted,
       if (courseId != null) 'course_id': courseId,
+      if (topicId != null) 'topic_id': topicId,
       if (title != null) 'title': title,
       if (day != null) 'day': day,
       if (score != null) 'score': score,
       if (max != null) 'max': max,
+      if (itemId != null) 'item_id': itemId,
+      if (detail != null) 'detail': detail,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2593,10 +4706,13 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     Value<String>? hlc,
     Value<bool>? deleted,
     Value<String?>? courseId,
+    Value<String?>? topicId,
     Value<String>? title,
     Value<String>? day,
     Value<double>? score,
     Value<double>? max,
+    Value<String?>? itemId,
+    Value<String>? detail,
     Value<int>? rowid,
   }) {
     return LearnAssessmentsCompanion(
@@ -2604,10 +4720,13 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
       hlc: hlc ?? this.hlc,
       deleted: deleted ?? this.deleted,
       courseId: courseId ?? this.courseId,
+      topicId: topicId ?? this.topicId,
       title: title ?? this.title,
       day: day ?? this.day,
       score: score ?? this.score,
       max: max ?? this.max,
+      itemId: itemId ?? this.itemId,
+      detail: detail ?? this.detail,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2627,6 +4746,9 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     if (courseId.present) {
       map['course_id'] = Variable<String>(courseId.value);
     }
+    if (topicId.present) {
+      map['topic_id'] = Variable<String>(topicId.value);
+    }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
@@ -2638,6 +4760,12 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     }
     if (max.present) {
       map['max'] = Variable<double>(max.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (detail.present) {
+      map['detail'] = Variable<String>(detail.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -2652,10 +4780,13 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
           ..write('hlc: $hlc, ')
           ..write('deleted: $deleted, ')
           ..write('courseId: $courseId, ')
+          ..write('topicId: $topicId, ')
           ..write('title: $title, ')
           ..write('day: $day, ')
           ..write('score: $score, ')
           ..write('max: $max, ')
+          ..write('itemId: $itemId, ')
+          ..write('detail: $detail, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4172,6 +6303,737 @@ class LearnNotesCompanion extends UpdateCompanion<Note> {
           ..write('title: $title, ')
           ..write('body: $body, ')
           ..write('tags: $tags, ')
+          ..write('created: $created, ')
+          ..write('updated: $updated, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LearnStoriesTable extends LearnStories
+    with TableInfo<$LearnStoriesTable, StoryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LearnStoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _situationMeta = const VerificationMeta(
+    'situation',
+  );
+  @override
+  late final GeneratedColumn<String> situation = GeneratedColumn<String>(
+    'situation',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _taskMeta = const VerificationMeta('task');
+  @override
+  late final GeneratedColumn<String> task = GeneratedColumn<String>(
+    'task',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _resultMeta = const VerificationMeta('result');
+  @override
+  late final GeneratedColumn<String> result = GeneratedColumn<String>(
+    'result',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _criteriaMeta = const VerificationMeta(
+    'criteria',
+  );
+  @override
+  late final GeneratedColumn<String> criteria = GeneratedColumn<String>(
+    'criteria',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _drillsMeta = const VerificationMeta('drills');
+  @override
+  late final GeneratedColumn<String> drills = GeneratedColumn<String>(
+    'drills',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _refMeta = const VerificationMeta('ref');
+  @override
+  late final GeneratedColumn<String> ref = GeneratedColumn<String>(
+    'ref',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdMeta = const VerificationMeta(
+    'created',
+  );
+  @override
+  late final GeneratedColumn<String> created = GeneratedColumn<String>(
+    'created',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedMeta = const VerificationMeta(
+    'updated',
+  );
+  @override
+  late final GeneratedColumn<String> updated = GeneratedColumn<String>(
+    'updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hlc,
+    deleted,
+    title,
+    situation,
+    task,
+    action,
+    result,
+    criteria,
+    drills,
+    ref,
+    created,
+    updated,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'learn_stories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StoryRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('situation')) {
+      context.handle(
+        _situationMeta,
+        situation.isAcceptableOrUnknown(data['situation']!, _situationMeta),
+      );
+    }
+    if (data.containsKey('task')) {
+      context.handle(
+        _taskMeta,
+        task.isAcceptableOrUnknown(data['task']!, _taskMeta),
+      );
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    }
+    if (data.containsKey('result')) {
+      context.handle(
+        _resultMeta,
+        result.isAcceptableOrUnknown(data['result']!, _resultMeta),
+      );
+    }
+    if (data.containsKey('criteria')) {
+      context.handle(
+        _criteriaMeta,
+        criteria.isAcceptableOrUnknown(data['criteria']!, _criteriaMeta),
+      );
+    }
+    if (data.containsKey('drills')) {
+      context.handle(
+        _drillsMeta,
+        drills.isAcceptableOrUnknown(data['drills']!, _drillsMeta),
+      );
+    }
+    if (data.containsKey('ref')) {
+      context.handle(
+        _refMeta,
+        ref.isAcceptableOrUnknown(data['ref']!, _refMeta),
+      );
+    }
+    if (data.containsKey('created')) {
+      context.handle(
+        _createdMeta,
+        created.isAcceptableOrUnknown(data['created']!, _createdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdMeta);
+    }
+    if (data.containsKey('updated')) {
+      context.handle(
+        _updatedMeta,
+        updated.isAcceptableOrUnknown(data['updated']!, _updatedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StoryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StoryRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      situation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}situation'],
+      )!,
+      task: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task'],
+      )!,
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      )!,
+      result: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}result'],
+      )!,
+      criteria: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}criteria'],
+      )!,
+      drills: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}drills'],
+      )!,
+      ref: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ref'],
+      )!,
+      created: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created'],
+      )!,
+      updated: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated'],
+      )!,
+    );
+  }
+
+  @override
+  $LearnStoriesTable createAlias(String alias) {
+    return $LearnStoriesTable(attachedDatabase, alias);
+  }
+}
+
+class StoryRow extends DataClass implements Insertable<StoryRow> {
+  final String id;
+  final String hlc;
+  final bool deleted;
+  final String title;
+  final String situation;
+  final String task;
+  final String action;
+  final String result;
+
+  /// Comma-separated row ids of the criteria ([LearnCriteria]) it shows.
+  final String criteria;
+
+  /// Comma-separated row ids of the interview drills ([LearnItems]) it
+  /// answers.
+  final String drills;
+
+  /// The Udyoga story card it links (`udyoga.story.<id>`), '' for the
+  /// learner's own story.
+  final String ref;
+  final String created;
+  final String updated;
+  const StoryRow({
+    required this.id,
+    required this.hlc,
+    required this.deleted,
+    required this.title,
+    required this.situation,
+    required this.task,
+    required this.action,
+    required this.result,
+    required this.criteria,
+    required this.drills,
+    required this.ref,
+    required this.created,
+    required this.updated,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['title'] = Variable<String>(title);
+    map['situation'] = Variable<String>(situation);
+    map['task'] = Variable<String>(task);
+    map['action'] = Variable<String>(action);
+    map['result'] = Variable<String>(result);
+    map['criteria'] = Variable<String>(criteria);
+    map['drills'] = Variable<String>(drills);
+    map['ref'] = Variable<String>(ref);
+    map['created'] = Variable<String>(created);
+    map['updated'] = Variable<String>(updated);
+    return map;
+  }
+
+  LearnStoriesCompanion toCompanion(bool nullToAbsent) {
+    return LearnStoriesCompanion(
+      id: Value(id),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      title: Value(title),
+      situation: Value(situation),
+      task: Value(task),
+      action: Value(action),
+      result: Value(result),
+      criteria: Value(criteria),
+      drills: Value(drills),
+      ref: Value(ref),
+      created: Value(created),
+      updated: Value(updated),
+    );
+  }
+
+  factory StoryRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StoryRow(
+      id: serializer.fromJson<String>(json['id']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      title: serializer.fromJson<String>(json['title']),
+      situation: serializer.fromJson<String>(json['situation']),
+      task: serializer.fromJson<String>(json['task']),
+      action: serializer.fromJson<String>(json['action']),
+      result: serializer.fromJson<String>(json['result']),
+      criteria: serializer.fromJson<String>(json['criteria']),
+      drills: serializer.fromJson<String>(json['drills']),
+      ref: serializer.fromJson<String>(json['ref']),
+      created: serializer.fromJson<String>(json['created']),
+      updated: serializer.fromJson<String>(json['updated']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'title': serializer.toJson<String>(title),
+      'situation': serializer.toJson<String>(situation),
+      'task': serializer.toJson<String>(task),
+      'action': serializer.toJson<String>(action),
+      'result': serializer.toJson<String>(result),
+      'criteria': serializer.toJson<String>(criteria),
+      'drills': serializer.toJson<String>(drills),
+      'ref': serializer.toJson<String>(ref),
+      'created': serializer.toJson<String>(created),
+      'updated': serializer.toJson<String>(updated),
+    };
+  }
+
+  StoryRow copyWith({
+    String? id,
+    String? hlc,
+    bool? deleted,
+    String? title,
+    String? situation,
+    String? task,
+    String? action,
+    String? result,
+    String? criteria,
+    String? drills,
+    String? ref,
+    String? created,
+    String? updated,
+  }) => StoryRow(
+    id: id ?? this.id,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    title: title ?? this.title,
+    situation: situation ?? this.situation,
+    task: task ?? this.task,
+    action: action ?? this.action,
+    result: result ?? this.result,
+    criteria: criteria ?? this.criteria,
+    drills: drills ?? this.drills,
+    ref: ref ?? this.ref,
+    created: created ?? this.created,
+    updated: updated ?? this.updated,
+  );
+  StoryRow copyWithCompanion(LearnStoriesCompanion data) {
+    return StoryRow(
+      id: data.id.present ? data.id.value : this.id,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      title: data.title.present ? data.title.value : this.title,
+      situation: data.situation.present ? data.situation.value : this.situation,
+      task: data.task.present ? data.task.value : this.task,
+      action: data.action.present ? data.action.value : this.action,
+      result: data.result.present ? data.result.value : this.result,
+      criteria: data.criteria.present ? data.criteria.value : this.criteria,
+      drills: data.drills.present ? data.drills.value : this.drills,
+      ref: data.ref.present ? data.ref.value : this.ref,
+      created: data.created.present ? data.created.value : this.created,
+      updated: data.updated.present ? data.updated.value : this.updated,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StoryRow(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('title: $title, ')
+          ..write('situation: $situation, ')
+          ..write('task: $task, ')
+          ..write('action: $action, ')
+          ..write('result: $result, ')
+          ..write('criteria: $criteria, ')
+          ..write('drills: $drills, ')
+          ..write('ref: $ref, ')
+          ..write('created: $created, ')
+          ..write('updated: $updated')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    title,
+    situation,
+    task,
+    action,
+    result,
+    criteria,
+    drills,
+    ref,
+    created,
+    updated,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StoryRow &&
+          other.id == this.id &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.title == this.title &&
+          other.situation == this.situation &&
+          other.task == this.task &&
+          other.action == this.action &&
+          other.result == this.result &&
+          other.criteria == this.criteria &&
+          other.drills == this.drills &&
+          other.ref == this.ref &&
+          other.created == this.created &&
+          other.updated == this.updated);
+}
+
+class LearnStoriesCompanion extends UpdateCompanion<StoryRow> {
+  final Value<String> id;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> title;
+  final Value<String> situation;
+  final Value<String> task;
+  final Value<String> action;
+  final Value<String> result;
+  final Value<String> criteria;
+  final Value<String> drills;
+  final Value<String> ref;
+  final Value<String> created;
+  final Value<String> updated;
+  final Value<int> rowid;
+  const LearnStoriesCompanion({
+    this.id = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.title = const Value.absent(),
+    this.situation = const Value.absent(),
+    this.task = const Value.absent(),
+    this.action = const Value.absent(),
+    this.result = const Value.absent(),
+    this.criteria = const Value.absent(),
+    this.drills = const Value.absent(),
+    this.ref = const Value.absent(),
+    this.created = const Value.absent(),
+    this.updated = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LearnStoriesCompanion.insert({
+    required String id,
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    required String title,
+    this.situation = const Value.absent(),
+    this.task = const Value.absent(),
+    this.action = const Value.absent(),
+    this.result = const Value.absent(),
+    this.criteria = const Value.absent(),
+    this.drills = const Value.absent(),
+    this.ref = const Value.absent(),
+    required String created,
+    required String updated,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       created = Value(created),
+       updated = Value(updated);
+  static Insertable<StoryRow> custom({
+    Expression<String>? id,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? title,
+    Expression<String>? situation,
+    Expression<String>? task,
+    Expression<String>? action,
+    Expression<String>? result,
+    Expression<String>? criteria,
+    Expression<String>? drills,
+    Expression<String>? ref,
+    Expression<String>? created,
+    Expression<String>? updated,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (title != null) 'title': title,
+      if (situation != null) 'situation': situation,
+      if (task != null) 'task': task,
+      if (action != null) 'action': action,
+      if (result != null) 'result': result,
+      if (criteria != null) 'criteria': criteria,
+      if (drills != null) 'drills': drills,
+      if (ref != null) 'ref': ref,
+      if (created != null) 'created': created,
+      if (updated != null) 'updated': updated,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LearnStoriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? title,
+    Value<String>? situation,
+    Value<String>? task,
+    Value<String>? action,
+    Value<String>? result,
+    Value<String>? criteria,
+    Value<String>? drills,
+    Value<String>? ref,
+    Value<String>? created,
+    Value<String>? updated,
+    Value<int>? rowid,
+  }) {
+    return LearnStoriesCompanion(
+      id: id ?? this.id,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      title: title ?? this.title,
+      situation: situation ?? this.situation,
+      task: task ?? this.task,
+      action: action ?? this.action,
+      result: result ?? this.result,
+      criteria: criteria ?? this.criteria,
+      drills: drills ?? this.drills,
+      ref: ref ?? this.ref,
+      created: created ?? this.created,
+      updated: updated ?? this.updated,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (situation.present) {
+      map['situation'] = Variable<String>(situation.value);
+    }
+    if (task.present) {
+      map['task'] = Variable<String>(task.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (result.present) {
+      map['result'] = Variable<String>(result.value);
+    }
+    if (criteria.present) {
+      map['criteria'] = Variable<String>(criteria.value);
+    }
+    if (drills.present) {
+      map['drills'] = Variable<String>(drills.value);
+    }
+    if (ref.present) {
+      map['ref'] = Variable<String>(ref.value);
+    }
+    if (created.present) {
+      map['created'] = Variable<String>(created.value);
+    }
+    if (updated.present) {
+      map['updated'] = Variable<String>(updated.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LearnStoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('title: $title, ')
+          ..write('situation: $situation, ')
+          ..write('task: $task, ')
+          ..write('action: $action, ')
+          ..write('result: $result, ')
+          ..write('criteria: $criteria, ')
+          ..write('drills: $drills, ')
+          ..write('ref: $ref, ')
           ..write('created: $created, ')
           ..write('updated: $updated, ')
           ..write('rowid: $rowid')
@@ -7650,6 +10512,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LearnProgramsTable learnPrograms = $LearnProgramsTable(this);
   late final $LearnCoursesTable learnCourses = $LearnCoursesTable(this);
   late final $LearnTopicsTable learnTopics = $LearnTopicsTable(this);
+  late final $LearnItemsTable learnItems = $LearnItemsTable(this);
+  late final $LearnCriteriaTable learnCriteria = $LearnCriteriaTable(this);
   late final $LearnSessionsTable learnSessions = $LearnSessionsTable(this);
   late final $LearnAssessmentsTable learnAssessments = $LearnAssessmentsTable(
     this,
@@ -7657,6 +10521,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LearnSkillsTable learnSkills = $LearnSkillsTable(this);
   late final $LearnPortfolioTable learnPortfolio = $LearnPortfolioTable(this);
   late final $LearnNotesTable learnNotes = $LearnNotesTable(this);
+  late final $LearnStoriesTable learnStories = $LearnStoriesTable(this);
   late final $LearnUnlocksTable learnUnlocks = $LearnUnlocksTable(this);
   late final $LearnCardsTable learnCards = $LearnCardsTable(this);
   late final $LearnReviewsTable learnReviews = $LearnReviewsTable(this);
@@ -7677,11 +10542,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     learnPrograms,
     learnCourses,
     learnTopics,
+    learnItems,
+    learnCriteria,
     learnSessions,
     learnAssessments,
     learnSkills,
     learnPortfolio,
     learnNotes,
+    learnStories,
     learnUnlocks,
     learnCards,
     learnReviews,
@@ -7704,6 +10572,7 @@ typedef $$LearnProgramsTableCreateCompanionBuilder =
       Value<String> status,
       required String started,
       Value<String?> target,
+      Value<String> role,
       Value<int> rowid,
     });
 typedef $$LearnProgramsTableUpdateCompanionBuilder =
@@ -7716,6 +10585,7 @@ typedef $$LearnProgramsTableUpdateCompanionBuilder =
       Value<String> status,
       Value<String> started,
       Value<String?> target,
+      Value<String> role,
       Value<int> rowid,
     });
 
@@ -7765,6 +10635,11 @@ class $$LearnProgramsTableFilterComposer
 
   ColumnFilters<String> get target => $composableBuilder(
     column: $table.target,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get role => $composableBuilder(
+    column: $table.role,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7817,6 +10692,11 @@ class $$LearnProgramsTableOrderingComposer
     column: $table.target,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LearnProgramsTableAnnotationComposer
@@ -7851,6 +10731,9 @@ class $$LearnProgramsTableAnnotationComposer
 
   GeneratedColumn<String> get target =>
       $composableBuilder(column: $table.target, builder: (column) => column);
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
 }
 
 class $$LearnProgramsTableTableManager
@@ -7892,6 +10775,7 @@ class $$LearnProgramsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<String> started = const Value.absent(),
                 Value<String?> target = const Value.absent(),
+                Value<String> role = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnProgramsCompanion(
                 id: id,
@@ -7902,6 +10786,7 @@ class $$LearnProgramsTableTableManager
                 status: status,
                 started: started,
                 target: target,
+                role: role,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7914,6 +10799,7 @@ class $$LearnProgramsTableTableManager
                 Value<String> status = const Value.absent(),
                 required String started,
                 Value<String?> target = const Value.absent(),
+                Value<String> role = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnProgramsCompanion.insert(
                 id: id,
@@ -7924,6 +10810,7 @@ class $$LearnProgramsTableTableManager
                 status: status,
                 started: started,
                 target: target,
+                role: role,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8322,6 +11209,10 @@ typedef $$LearnTopicsTableCreateCompanionBuilder =
       Value<int> minutes,
       Value<int> ord,
       Value<String?> done,
+      Value<String> status,
+      Value<String> noteId,
+      Value<String> criteria,
+      Value<String> tickNote,
       Value<int> rowid,
     });
 typedef $$LearnTopicsTableUpdateCompanionBuilder =
@@ -8334,6 +11225,10 @@ typedef $$LearnTopicsTableUpdateCompanionBuilder =
       Value<int> minutes,
       Value<int> ord,
       Value<String?> done,
+      Value<String> status,
+      Value<String> noteId,
+      Value<String> criteria,
+      Value<String> tickNote,
       Value<int> rowid,
     });
 
@@ -8383,6 +11278,26 @@ class $$LearnTopicsTableFilterComposer
 
   ColumnFilters<String> get done => $composableBuilder(
     column: $table.done,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get noteId => $composableBuilder(
+    column: $table.noteId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get criteria => $composableBuilder(
+    column: $table.criteria,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tickNote => $composableBuilder(
+    column: $table.tickNote,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8435,6 +11350,26 @@ class $$LearnTopicsTableOrderingComposer
     column: $table.done,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get noteId => $composableBuilder(
+    column: $table.noteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get criteria => $composableBuilder(
+    column: $table.criteria,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tickNote => $composableBuilder(
+    column: $table.tickNote,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LearnTopicsTableAnnotationComposer
@@ -8469,6 +11404,18 @@ class $$LearnTopicsTableAnnotationComposer
 
   GeneratedColumn<String> get done =>
       $composableBuilder(column: $table.done, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get noteId =>
+      $composableBuilder(column: $table.noteId, builder: (column) => column);
+
+  GeneratedColumn<String> get criteria =>
+      $composableBuilder(column: $table.criteria, builder: (column) => column);
+
+  GeneratedColumn<String> get tickNote =>
+      $composableBuilder(column: $table.tickNote, builder: (column) => column);
 }
 
 class $$LearnTopicsTableTableManager
@@ -8507,6 +11454,10 @@ class $$LearnTopicsTableTableManager
                 Value<int> minutes = const Value.absent(),
                 Value<int> ord = const Value.absent(),
                 Value<String?> done = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> noteId = const Value.absent(),
+                Value<String> criteria = const Value.absent(),
+                Value<String> tickNote = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnTopicsCompanion(
                 id: id,
@@ -8517,6 +11468,10 @@ class $$LearnTopicsTableTableManager
                 minutes: minutes,
                 ord: ord,
                 done: done,
+                status: status,
+                noteId: noteId,
+                criteria: criteria,
+                tickNote: tickNote,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8529,6 +11484,10 @@ class $$LearnTopicsTableTableManager
                 Value<int> minutes = const Value.absent(),
                 Value<int> ord = const Value.absent(),
                 Value<String?> done = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> noteId = const Value.absent(),
+                Value<String> criteria = const Value.absent(),
+                Value<String> tickNote = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnTopicsCompanion.insert(
                 id: id,
@@ -8539,6 +11498,10 @@ class $$LearnTopicsTableTableManager
                 minutes: minutes,
                 ord: ord,
                 done: done,
+                status: status,
+                noteId: noteId,
+                criteria: criteria,
+                tickNote: tickNote,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8572,12 +11535,806 @@ typedef $$LearnTopicsTableProcessedTableManager =
       Topic,
       PrefetchHooks Function()
     >;
+typedef $$LearnItemsTableCreateCompanionBuilder = LearnItemsCompanion Function({
+  required String id,
+  Value<String> hlc,
+  Value<bool> deleted,
+  required String topicId,
+  Value<String> type,
+  required String title,
+  Value<String> url,
+  Value<String> source,
+  Value<String> licence,
+  Value<int> minutes,
+  Value<bool> required,
+  Value<int> ord,
+  Value<String?> done,
+  Value<String> stoppedAt,
+  Value<String> takeaway,
+  Value<String> evidence,
+  Value<String> ref,
+  Value<String> content,
+  Value<String> retired,
+  Value<int> rowid,
+});
+typedef $$LearnItemsTableUpdateCompanionBuilder = LearnItemsCompanion Function({
+  Value<String> id,
+  Value<String> hlc,
+  Value<bool> deleted,
+  Value<String> topicId,
+  Value<String> type,
+  Value<String> title,
+  Value<String> url,
+  Value<String> source,
+  Value<String> licence,
+  Value<int> minutes,
+  Value<bool> required,
+  Value<int> ord,
+  Value<String?> done,
+  Value<String> stoppedAt,
+  Value<String> takeaway,
+  Value<String> evidence,
+  Value<String> ref,
+  Value<String> content,
+  Value<String> retired,
+  Value<int> rowid,
+});
+
+class $$LearnItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $LearnItemsTable> {
+  $$LearnItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get topicId => $composableBuilder(
+    column: $table.topicId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get licence => $composableBuilder(
+    column: $table.licence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get minutes => $composableBuilder(
+    column: $table.minutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get required => $composableBuilder(
+    column: $table.required,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ord => $composableBuilder(
+    column: $table.ord,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get done => $composableBuilder(
+    column: $table.done,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stoppedAt => $composableBuilder(
+    column: $table.stoppedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get takeaway => $composableBuilder(
+    column: $table.takeaway,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get evidence => $composableBuilder(
+    column: $table.evidence,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get retired => $composableBuilder(
+    column: $table.retired,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LearnItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LearnItemsTable> {
+  $$LearnItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get topicId => $composableBuilder(
+    column: $table.topicId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get licence => $composableBuilder(
+    column: $table.licence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get minutes => $composableBuilder(
+    column: $table.minutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get required => $composableBuilder(
+    column: $table.required,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ord => $composableBuilder(
+    column: $table.ord,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get done => $composableBuilder(
+    column: $table.done,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stoppedAt => $composableBuilder(
+    column: $table.stoppedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get takeaway => $composableBuilder(
+    column: $table.takeaway,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get evidence => $composableBuilder(
+    column: $table.evidence,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get retired => $composableBuilder(
+    column: $table.retired,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LearnItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LearnItemsTable> {
+  $$LearnItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get topicId =>
+      $composableBuilder(column: $table.topicId, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get licence =>
+      $composableBuilder(column: $table.licence, builder: (column) => column);
+
+  GeneratedColumn<int> get minutes =>
+      $composableBuilder(column: $table.minutes, builder: (column) => column);
+
+  GeneratedColumn<bool> get required =>
+      $composableBuilder(column: $table.required, builder: (column) => column);
+
+  GeneratedColumn<int> get ord =>
+      $composableBuilder(column: $table.ord, builder: (column) => column);
+
+  GeneratedColumn<String> get done =>
+      $composableBuilder(column: $table.done, builder: (column) => column);
+
+  GeneratedColumn<String> get stoppedAt =>
+      $composableBuilder(column: $table.stoppedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get takeaway =>
+      $composableBuilder(column: $table.takeaway, builder: (column) => column);
+
+  GeneratedColumn<String> get evidence =>
+      $composableBuilder(column: $table.evidence, builder: (column) => column);
+
+  GeneratedColumn<String> get ref =>
+      $composableBuilder(column: $table.ref, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get retired =>
+      $composableBuilder(column: $table.retired, builder: (column) => column);
+}
+
+class $$LearnItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LearnItemsTable,
+          StudyItem,
+          $$LearnItemsTableFilterComposer,
+          $$LearnItemsTableOrderingComposer,
+          $$LearnItemsTableAnnotationComposer,
+          $$LearnItemsTableCreateCompanionBuilder,
+          $$LearnItemsTableUpdateCompanionBuilder,
+          (
+            StudyItem,
+            BaseReferences<_$AppDatabase, $LearnItemsTable, StudyItem>,
+          ),
+          StudyItem,
+          PrefetchHooks Function()
+        > {
+  $$LearnItemsTableTableManager(_$AppDatabase db, $LearnItemsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LearnItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LearnItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LearnItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> topicId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> url = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> licence = const Value.absent(),
+                Value<int> minutes = const Value.absent(),
+                Value<bool> required = const Value.absent(),
+                Value<int> ord = const Value.absent(),
+                Value<String?> done = const Value.absent(),
+                Value<String> stoppedAt = const Value.absent(),
+                Value<String> takeaway = const Value.absent(),
+                Value<String> evidence = const Value.absent(),
+                Value<String> ref = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String> retired = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnItemsCompanion(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                topicId: topicId,
+                type: type,
+                title: title,
+                url: url,
+                source: source,
+                licence: licence,
+                minutes: minutes,
+                required: required,
+                ord: ord,
+                done: done,
+                stoppedAt: stoppedAt,
+                takeaway: takeaway,
+                evidence: evidence,
+                ref: ref,
+                content: content,
+                retired: retired,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                required String topicId,
+                Value<String> type = const Value.absent(),
+                required String title,
+                Value<String> url = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<String> licence = const Value.absent(),
+                Value<int> minutes = const Value.absent(),
+                Value<bool> required = const Value.absent(),
+                Value<int> ord = const Value.absent(),
+                Value<String?> done = const Value.absent(),
+                Value<String> stoppedAt = const Value.absent(),
+                Value<String> takeaway = const Value.absent(),
+                Value<String> evidence = const Value.absent(),
+                Value<String> ref = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String> retired = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnItemsCompanion.insert(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                topicId: topicId,
+                type: type,
+                title: title,
+                url: url,
+                source: source,
+                licence: licence,
+                minutes: minutes,
+                required: required,
+                ord: ord,
+                done: done,
+                stoppedAt: stoppedAt,
+                takeaway: takeaway,
+                evidence: evidence,
+                ref: ref,
+                content: content,
+                retired: retired,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LearnItemsTable, StudyItem>(table),
+                  BaseReferences<_$AppDatabase, $LearnItemsTable, StudyItem>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LearnItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LearnItemsTable,
+      StudyItem,
+      $$LearnItemsTableFilterComposer,
+      $$LearnItemsTableOrderingComposer,
+      $$LearnItemsTableAnnotationComposer,
+      $$LearnItemsTableCreateCompanionBuilder,
+      $$LearnItemsTableUpdateCompanionBuilder,
+      (StudyItem, BaseReferences<_$AppDatabase, $LearnItemsTable, StudyItem>),
+      StudyItem,
+      PrefetchHooks Function()
+    >;
+typedef $$LearnCriteriaTableCreateCompanionBuilder =
+    LearnCriteriaCompanion Function({
+      required String id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      required String programId,
+      required String ref,
+      required String body,
+      Value<bool> essential,
+      Value<String> kind,
+      Value<String> source,
+      Value<bool?> shown,
+      Value<int> ord,
+      Value<int> rowid,
+    });
+typedef $$LearnCriteriaTableUpdateCompanionBuilder =
+    LearnCriteriaCompanion Function({
+      Value<String> id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> programId,
+      Value<String> ref,
+      Value<String> body,
+      Value<bool> essential,
+      Value<String> kind,
+      Value<String> source,
+      Value<bool?> shown,
+      Value<int> ord,
+      Value<int> rowid,
+    });
+
+class $$LearnCriteriaTableFilterComposer
+    extends Composer<_$AppDatabase, $LearnCriteriaTable> {
+  $$LearnCriteriaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get essential => $composableBuilder(
+    column: $table.essential,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get shown => $composableBuilder(
+    column: $table.shown,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get ord => $composableBuilder(
+    column: $table.ord,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LearnCriteriaTableOrderingComposer
+    extends Composer<_$AppDatabase, $LearnCriteriaTable> {
+  $$LearnCriteriaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get essential => $composableBuilder(
+    column: $table.essential,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get shown => $composableBuilder(
+    column: $table.shown,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get ord => $composableBuilder(
+    column: $table.ord,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LearnCriteriaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LearnCriteriaTable> {
+  $$LearnCriteriaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get programId =>
+      $composableBuilder(column: $table.programId, builder: (column) => column);
+
+  GeneratedColumn<String> get ref =>
+      $composableBuilder(column: $table.ref, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<bool> get essential =>
+      $composableBuilder(column: $table.essential, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<bool> get shown =>
+      $composableBuilder(column: $table.shown, builder: (column) => column);
+
+  GeneratedColumn<int> get ord =>
+      $composableBuilder(column: $table.ord, builder: (column) => column);
+}
+
+class $$LearnCriteriaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LearnCriteriaTable,
+          Criterion,
+          $$LearnCriteriaTableFilterComposer,
+          $$LearnCriteriaTableOrderingComposer,
+          $$LearnCriteriaTableAnnotationComposer,
+          $$LearnCriteriaTableCreateCompanionBuilder,
+          $$LearnCriteriaTableUpdateCompanionBuilder,
+          (
+            Criterion,
+            BaseReferences<_$AppDatabase, $LearnCriteriaTable, Criterion>,
+          ),
+          Criterion,
+          PrefetchHooks Function()
+        > {
+  $$LearnCriteriaTableTableManager(_$AppDatabase db, $LearnCriteriaTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LearnCriteriaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LearnCriteriaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LearnCriteriaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> programId = const Value.absent(),
+                Value<String> ref = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<bool> essential = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<bool?> shown = const Value.absent(),
+                Value<int> ord = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnCriteriaCompanion(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                ref: ref,
+                body: body,
+                essential: essential,
+                kind: kind,
+                source: source,
+                shown: shown,
+                ord: ord,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                required String programId,
+                required String ref,
+                required String body,
+                Value<bool> essential = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<bool?> shown = const Value.absent(),
+                Value<int> ord = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnCriteriaCompanion.insert(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                ref: ref,
+                body: body,
+                essential: essential,
+                kind: kind,
+                source: source,
+                shown: shown,
+                ord: ord,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LearnCriteriaTable, Criterion>(table),
+                  BaseReferences<_$AppDatabase, $LearnCriteriaTable, Criterion>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LearnCriteriaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LearnCriteriaTable,
+      Criterion,
+      $$LearnCriteriaTableFilterComposer,
+      $$LearnCriteriaTableOrderingComposer,
+      $$LearnCriteriaTableAnnotationComposer,
+      $$LearnCriteriaTableCreateCompanionBuilder,
+      $$LearnCriteriaTableUpdateCompanionBuilder,
+      (
+        Criterion,
+        BaseReferences<_$AppDatabase, $LearnCriteriaTable, Criterion>,
+      ),
+      Criterion,
+      PrefetchHooks Function()
+    >;
 typedef $$LearnSessionsTableCreateCompanionBuilder =
     LearnSessionsCompanion Function({
       required String id,
       Value<String> hlc,
       Value<bool> deleted,
       Value<String?> courseId,
+      Value<String?> topicId,
       required String day,
       required int minutes,
       Value<String> note,
@@ -8589,6 +12346,7 @@ typedef $$LearnSessionsTableUpdateCompanionBuilder =
       Value<String> hlc,
       Value<bool> deleted,
       Value<String?> courseId,
+      Value<String?> topicId,
       Value<String> day,
       Value<int> minutes,
       Value<String> note,
@@ -8621,6 +12379,11 @@ class $$LearnSessionsTableFilterComposer
 
   ColumnFilters<String> get courseId => $composableBuilder(
     column: $table.courseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get topicId => $composableBuilder(
+    column: $table.topicId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8669,6 +12432,11 @@ class $$LearnSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get topicId => $composableBuilder(
+    column: $table.topicId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get day => $composableBuilder(
     column: $table.day,
     builder: (column) => ColumnOrderings(column),
@@ -8705,6 +12473,9 @@ class $$LearnSessionsTableAnnotationComposer
 
   GeneratedColumn<String> get courseId =>
       $composableBuilder(column: $table.courseId, builder: (column) => column);
+
+  GeneratedColumn<String> get topicId =>
+      $composableBuilder(column: $table.topicId, builder: (column) => column);
 
   GeneratedColumn<String> get day =>
       $composableBuilder(column: $table.day, builder: (column) => column);
@@ -8751,6 +12522,7 @@ class $$LearnSessionsTableTableManager
                 Value<String> hlc = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
+                Value<String?> topicId = const Value.absent(),
                 Value<String> day = const Value.absent(),
                 Value<int> minutes = const Value.absent(),
                 Value<String> note = const Value.absent(),
@@ -8760,6 +12532,7 @@ class $$LearnSessionsTableTableManager
                 hlc: hlc,
                 deleted: deleted,
                 courseId: courseId,
+                topicId: topicId,
                 day: day,
                 minutes: minutes,
                 note: note,
@@ -8771,6 +12544,7 @@ class $$LearnSessionsTableTableManager
                 Value<String> hlc = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
+                Value<String?> topicId = const Value.absent(),
                 required String day,
                 required int minutes,
                 Value<String> note = const Value.absent(),
@@ -8780,6 +12554,7 @@ class $$LearnSessionsTableTableManager
                 hlc: hlc,
                 deleted: deleted,
                 courseId: courseId,
+                topicId: topicId,
                 day: day,
                 minutes: minutes,
                 note: note,
@@ -8825,10 +12600,13 @@ typedef $$LearnAssessmentsTableCreateCompanionBuilder =
       Value<String> hlc,
       Value<bool> deleted,
       Value<String?> courseId,
+      Value<String?> topicId,
       required String title,
       required String day,
       required double score,
       Value<double> max,
+      Value<String?> itemId,
+      Value<String> detail,
       Value<int> rowid,
     });
 typedef $$LearnAssessmentsTableUpdateCompanionBuilder =
@@ -8837,10 +12615,13 @@ typedef $$LearnAssessmentsTableUpdateCompanionBuilder =
       Value<String> hlc,
       Value<bool> deleted,
       Value<String?> courseId,
+      Value<String?> topicId,
       Value<String> title,
       Value<String> day,
       Value<double> score,
       Value<double> max,
+      Value<String?> itemId,
+      Value<String> detail,
       Value<int> rowid,
     });
 
@@ -8873,6 +12654,11 @@ class $$LearnAssessmentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get topicId => $composableBuilder(
+    column: $table.topicId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
     builder: (column) => ColumnFilters(column),
@@ -8890,6 +12676,16 @@ class $$LearnAssessmentsTableFilterComposer
 
   ColumnFilters<double> get max => $composableBuilder(
     column: $table.max,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get detail => $composableBuilder(
+    column: $table.detail,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8923,6 +12719,11 @@ class $$LearnAssessmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get topicId => $composableBuilder(
+    column: $table.topicId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
     builder: (column) => ColumnOrderings(column),
@@ -8940,6 +12741,16 @@ class $$LearnAssessmentsTableOrderingComposer
 
   ColumnOrderings<double> get max => $composableBuilder(
     column: $table.max,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get detail => $composableBuilder(
+    column: $table.detail,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -8965,6 +12776,9 @@ class $$LearnAssessmentsTableAnnotationComposer
   GeneratedColumn<String> get courseId =>
       $composableBuilder(column: $table.courseId, builder: (column) => column);
 
+  GeneratedColumn<String> get topicId =>
+      $composableBuilder(column: $table.topicId, builder: (column) => column);
+
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
 
@@ -8976,6 +12790,12 @@ class $$LearnAssessmentsTableAnnotationComposer
 
   GeneratedColumn<double> get max =>
       $composableBuilder(column: $table.max, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get detail =>
+      $composableBuilder(column: $table.detail, builder: (column) => column);
 }
 
 class $$LearnAssessmentsTableTableManager
@@ -9015,20 +12835,26 @@ class $$LearnAssessmentsTableTableManager
                 Value<String> hlc = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
+                Value<String?> topicId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String> day = const Value.absent(),
                 Value<double> score = const Value.absent(),
                 Value<double> max = const Value.absent(),
+                Value<String?> itemId = const Value.absent(),
+                Value<String> detail = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnAssessmentsCompanion(
                 id: id,
                 hlc: hlc,
                 deleted: deleted,
                 courseId: courseId,
+                topicId: topicId,
                 title: title,
                 day: day,
                 score: score,
                 max: max,
+                itemId: itemId,
+                detail: detail,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9037,20 +12863,26 @@ class $$LearnAssessmentsTableTableManager
                 Value<String> hlc = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
+                Value<String?> topicId = const Value.absent(),
                 required String title,
                 required String day,
                 required double score,
                 Value<double> max = const Value.absent(),
+                Value<String?> itemId = const Value.absent(),
+                Value<String> detail = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnAssessmentsCompanion.insert(
                 id: id,
                 hlc: hlc,
                 deleted: deleted,
                 courseId: courseId,
+                topicId: topicId,
                 title: title,
                 day: day,
                 score: score,
                 max: max,
+                itemId: itemId,
+                detail: detail,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9890,6 +13722,364 @@ typedef $$LearnNotesTableProcessedTableManager =
       $$LearnNotesTableUpdateCompanionBuilder,
       (Note, BaseReferences<_$AppDatabase, $LearnNotesTable, Note>),
       Note,
+      PrefetchHooks Function()
+    >;
+typedef $$LearnStoriesTableCreateCompanionBuilder =
+    LearnStoriesCompanion Function({
+      required String id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      required String title,
+      Value<String> situation,
+      Value<String> task,
+      Value<String> action,
+      Value<String> result,
+      Value<String> criteria,
+      Value<String> drills,
+      Value<String> ref,
+      required String created,
+      required String updated,
+      Value<int> rowid,
+    });
+typedef $$LearnStoriesTableUpdateCompanionBuilder =
+    LearnStoriesCompanion Function({
+      Value<String> id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> title,
+      Value<String> situation,
+      Value<String> task,
+      Value<String> action,
+      Value<String> result,
+      Value<String> criteria,
+      Value<String> drills,
+      Value<String> ref,
+      Value<String> created,
+      Value<String> updated,
+      Value<int> rowid,
+    });
+
+class $$LearnStoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $LearnStoriesTable> {
+  $$LearnStoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get situation => $composableBuilder(
+    column: $table.situation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get task => $composableBuilder(
+    column: $table.task,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get result => $composableBuilder(
+    column: $table.result,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get criteria => $composableBuilder(
+    column: $table.criteria,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get drills => $composableBuilder(
+    column: $table.drills,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get created => $composableBuilder(
+    column: $table.created,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LearnStoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LearnStoriesTable> {
+  $$LearnStoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get situation => $composableBuilder(
+    column: $table.situation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get task => $composableBuilder(
+    column: $table.task,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get result => $composableBuilder(
+    column: $table.result,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get criteria => $composableBuilder(
+    column: $table.criteria,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get drills => $composableBuilder(
+    column: $table.drills,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get created => $composableBuilder(
+    column: $table.created,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LearnStoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LearnStoriesTable> {
+  $$LearnStoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get situation =>
+      $composableBuilder(column: $table.situation, builder: (column) => column);
+
+  GeneratedColumn<String> get task =>
+      $composableBuilder(column: $table.task, builder: (column) => column);
+
+  GeneratedColumn<String> get action =>
+      $composableBuilder(column: $table.action, builder: (column) => column);
+
+  GeneratedColumn<String> get result =>
+      $composableBuilder(column: $table.result, builder: (column) => column);
+
+  GeneratedColumn<String> get criteria =>
+      $composableBuilder(column: $table.criteria, builder: (column) => column);
+
+  GeneratedColumn<String> get drills =>
+      $composableBuilder(column: $table.drills, builder: (column) => column);
+
+  GeneratedColumn<String> get ref =>
+      $composableBuilder(column: $table.ref, builder: (column) => column);
+
+  GeneratedColumn<String> get created =>
+      $composableBuilder(column: $table.created, builder: (column) => column);
+
+  GeneratedColumn<String> get updated =>
+      $composableBuilder(column: $table.updated, builder: (column) => column);
+}
+
+class $$LearnStoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LearnStoriesTable,
+          StoryRow,
+          $$LearnStoriesTableFilterComposer,
+          $$LearnStoriesTableOrderingComposer,
+          $$LearnStoriesTableAnnotationComposer,
+          $$LearnStoriesTableCreateCompanionBuilder,
+          $$LearnStoriesTableUpdateCompanionBuilder,
+          (
+            StoryRow,
+            BaseReferences<_$AppDatabase, $LearnStoriesTable, StoryRow>,
+          ),
+          StoryRow,
+          PrefetchHooks Function()
+        > {
+  $$LearnStoriesTableTableManager(_$AppDatabase db, $LearnStoriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LearnStoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LearnStoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LearnStoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> situation = const Value.absent(),
+                Value<String> task = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String> result = const Value.absent(),
+                Value<String> criteria = const Value.absent(),
+                Value<String> drills = const Value.absent(),
+                Value<String> ref = const Value.absent(),
+                Value<String> created = const Value.absent(),
+                Value<String> updated = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnStoriesCompanion(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                title: title,
+                situation: situation,
+                task: task,
+                action: action,
+                result: result,
+                criteria: criteria,
+                drills: drills,
+                ref: ref,
+                created: created,
+                updated: updated,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                required String title,
+                Value<String> situation = const Value.absent(),
+                Value<String> task = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String> result = const Value.absent(),
+                Value<String> criteria = const Value.absent(),
+                Value<String> drills = const Value.absent(),
+                Value<String> ref = const Value.absent(),
+                required String created,
+                required String updated,
+                Value<int> rowid = const Value.absent(),
+              }) => LearnStoriesCompanion.insert(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                title: title,
+                situation: situation,
+                task: task,
+                action: action,
+                result: result,
+                criteria: criteria,
+                drills: drills,
+                ref: ref,
+                created: created,
+                updated: updated,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LearnStoriesTable, StoryRow>(table),
+                  BaseReferences<_$AppDatabase, $LearnStoriesTable, StoryRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LearnStoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LearnStoriesTable,
+      StoryRow,
+      $$LearnStoriesTableFilterComposer,
+      $$LearnStoriesTableOrderingComposer,
+      $$LearnStoriesTableAnnotationComposer,
+      $$LearnStoriesTableCreateCompanionBuilder,
+      $$LearnStoriesTableUpdateCompanionBuilder,
+      (StoryRow, BaseReferences<_$AppDatabase, $LearnStoriesTable, StoryRow>),
+      StoryRow,
       PrefetchHooks Function()
     >;
 typedef $$LearnUnlocksTableCreateCompanionBuilder =
@@ -11886,6 +16076,10 @@ class $AppDatabaseManager {
       $$LearnCoursesTableTableManager(_db, _db.learnCourses);
   $$LearnTopicsTableTableManager get learnTopics =>
       $$LearnTopicsTableTableManager(_db, _db.learnTopics);
+  $$LearnItemsTableTableManager get learnItems =>
+      $$LearnItemsTableTableManager(_db, _db.learnItems);
+  $$LearnCriteriaTableTableManager get learnCriteria =>
+      $$LearnCriteriaTableTableManager(_db, _db.learnCriteria);
   $$LearnSessionsTableTableManager get learnSessions =>
       $$LearnSessionsTableTableManager(_db, _db.learnSessions);
   $$LearnAssessmentsTableTableManager get learnAssessments =>
@@ -11896,6 +16090,8 @@ class $AppDatabaseManager {
       $$LearnPortfolioTableTableManager(_db, _db.learnPortfolio);
   $$LearnNotesTableTableManager get learnNotes =>
       $$LearnNotesTableTableManager(_db, _db.learnNotes);
+  $$LearnStoriesTableTableManager get learnStories =>
+      $$LearnStoriesTableTableManager(_db, _db.learnStories);
   $$LearnUnlocksTableTableManager get learnUnlocks =>
       $$LearnUnlocksTableTableManager(_db, _db.learnUnlocks);
   $$LearnCardsTableTableManager get learnCards =>

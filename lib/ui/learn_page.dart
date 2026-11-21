@@ -10,7 +10,10 @@ import 'charts.dart';
 import 'common.dart';
 import 'course_page.dart';
 import 'dialogs.dart';
+import 'interview_pages.dart';
 import 'plan_import.dart';
+import 'readiness_page.dart';
+import 'resource_search.dart';
 import 'zen.dart';
 
 class LearnPage extends ConsumerWidget {
@@ -236,6 +239,20 @@ class ProgramPage extends ConsumerWidget {
             appBar: AppBar(
               title: Text(p.title),
               actions: [
+                IconButton(
+                  tooltip: 'Interview training',
+                  icon: const Icon(Icons.record_voice_over_outlined),
+                  onPressed: () => openBeforeInterview(context, id),
+                ),
+                IconButton(
+                  tooltip: 'Find free resources for this role',
+                  icon: const Icon(Icons.travel_explore),
+                  onPressed: () => openResourceSearch(
+                    context,
+                    query: p.title,
+                    topics: [for (final c in courses) ...s.topicsOf(c.id)],
+                  ),
+                ),
                 PopupMenuButton<String>(
                   onSelected: (v) async {
                     if (v == 'delete') {
@@ -287,6 +304,7 @@ class ProgramPage extends ConsumerWidget {
                           trailing: '${(s.programProgress(p) * 100).round()}%',
                         ),
                         const SizedBox(height: 12),
+                        _ReadinessTile(id),
                         SectionCard(
                           title: 'Courses',
                           child: courses.isEmpty
@@ -301,6 +319,32 @@ class ProgramPage extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// The program page's way into job readiness, with the summary in counts.
+class _ReadinessTile extends ConsumerWidget {
+  const _ReadinessTile(this.programId);
+  final String programId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final v = ref.watch(readinessProvider(programId)).value;
+    final day = ref.watch(todayProvider);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: ListTile(
+        leading: const Icon(Icons.fact_check_outlined),
+        title: const Text('Job readiness'),
+        subtitle: Text(
+          v == null || v.readiness.rows.isEmpty
+              ? 'Add the job\'s criteria to see what your work covers.'
+              : v.readiness.summary.text(day),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => openReadiness(context, programId),
       ),
     );
   }

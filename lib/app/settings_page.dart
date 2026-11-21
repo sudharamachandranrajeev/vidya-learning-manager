@@ -1,8 +1,16 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:brahma_core/brahma_core.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../domain/export.dart';
+import '../domain/resources.dart';
 import '../domain/review.dart';
+import '../ui/common.dart';
+import '../ui/dialogs.dart';
 import '../domain/udyoga_link.dart';
 import 'providers.dart';
 import 'reminders.dart';
@@ -15,21 +23,104 @@ class SettingsPage extends StatelessWidget {
     title: 'Settings',
     children: [
       _StreaksCard(),
+      _WeekTargetCard(),
       _PaceCard(),
       _RemindersCard(),
       _CareerFileCard(),
+      _HistoryCard(),
+      _DataSourcesCard(),
       AppLockCard(),
       HintsCard(),
       SyncCard(),
       SecurityCard(
         network:
-            'Vidya makes no network requests of its own. It talks to your sync server only if you sign in.',
+            'Vidya goes online only when you search for free resources or read a pasted link\'s title, '
+            'and talks to your sync server only if you sign in.',
       ),
       AboutCard(
         description:
             'Learning and knowledge management: programs, courses, skills, portfolio, notes and progress.',
       ),
     ],
+  );
+}
+
+/// The catalogues the free resource search asks, each with its licence or
+/// terms, and the optional YouTube key (this device's keychain only).
+class _DataSourcesCard extends ConsumerWidget {
+  const _DataSourcesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasKey = (ref.watch(youtubeKeyProvider).value ?? '').isNotEmpty;
+    return SectionCard(
+      title: 'Data sources',
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Find free resources asks these catalogues, only when you search. Vidya keeps each link and its '
+            'facts (title, length, level, licence), never the lesson text.',
+          ),
+          for (final d in dataSources)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(d.name),
+              subtitle: Text('${d.what}\nLicence or terms: ${d.terms}'),
+              isThreeLine: true,
+              trailing: IconButton(
+                tooltip: 'Open the ${d.name} terms',
+                icon: const Icon(Icons.open_in_new),
+                onPressed: () => openLink(context, d.url),
+              ),
+            ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.key_outlined),
+            title: const Text('Your YouTube key'),
+            subtitle: Text(
+              hasKey
+                  ? 'Added. YouTube search is on. Kept in this device\'s keychain, never synced.'
+                  : 'Not added, so YouTube search is off. Pasted YouTube links still work.',
+            ),
+            trailing: TextButton(
+              onPressed: () => _youtubeKeyDialog(context, ref, hasKey),
+              child: Text(hasKey ? 'Change' : 'Add'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _youtubeKeyDialog(BuildContext context, WidgetRef ref, bool hasKey) async {
+  final key = TextEditingController();
+  final store = ref.read(sessionProvider).keys.store;
+  await showFormDialog(
+    context,
+    title: 'Your YouTube key',
+    fields: (_) => [
+      const Text(
+        'Optional. A YouTube Data API v3 key of your own, from the Google Cloud console. The free quota '
+        'allows about 100 searches a day. The key stays in this device\'s keychain: it is never synced '
+        'or shared. Leave it empty and save to remove it.',
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: key,
+        obscureText: true,
+        autocorrect: false,
+        enableSuggestions: false,
+        decoration: const InputDecoration(labelText: 'YouTube API key'),
+      ),
+    ],
+    onSave: () async {
+      await ResourceSecrets.saveYoutubeKey(store, key.text);
+      ref.invalidate(youtubeKeyProvider);
+      return null;
+    },
   );
 }
 
@@ -162,6 +253,79 @@ class _CareerFileCard extends ConsumerWidget {
       ),
       value: ref.watch(_autoAddProvider).value ?? false,
       onChanged: (v) => ref.mutate((s) => s.book.setAutoAddCareerFile(v), report: false),
+    ),
+  );
+}
+
+/// The weekly time target: progress on Home, never a penalty. Synced, so
+/// every device shows the same target.
+class _WeekTargetCard extends ConsumerWidget {
+  const _WeekTargetCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final target = ref.watch(weekTargetProvider).value ?? 0;
+    return SectionCard(
+      title: 'Weekly time target',
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        title: Text(target == 0 ? 'No target' : '${minutesText(target)} a week'),
+        subtitle: const Text(
+          'Home shows how far you are since Monday. No streaks, nothing lost for a quiet week.',
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => weekTargetDialog(context, ref, target),
+      ),
+    );
+  }
+}
+
+/// Saves the learner's own history (programs, courses, topics, items done,
+/// quiz scores, time and notes) as Markdown or JSON, to keep or move.
+class _HistoryCard extends ConsumerWidget {
+  const _HistoryCard();
+
+  Future<void> _save(BuildContext context, WidgetRef ref, {required bool json}) async {
+    final day = today();
+    final h = await ref.read(sessionProvider).book.history(day);
+    final text = json ? historyJson(h) : historyMarkdown(h);
+    final saved = await FilePicker.saveFile(
+      dialogTitle: 'Export my history',
+      fileName: 'vidya-history-$day.${json ? 'json' : 'md'}',
+      bytes: Uint8List.fromList(utf8.encode(text)),
+      mimeType: json ? 'application/json' : 'text/markdown',
+    );
+    if (saved != null && context.mounted) showMessage(context, 'History saved.');
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => SectionCard(
+    title: 'Your history',
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Everything you studied: programs, courses and topics with their status, items done with your '
+          'takeaways, quiz scores, time and your own notes. Plan text is left out.',
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              icon: const Icon(Icons.description_outlined),
+              label: const Text('Markdown'),
+              onPressed: () => _save(context, ref, json: false),
+            ),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.data_object),
+              label: const Text('JSON'),
+              onPressed: () => _save(context, ref, json: true),
+            ),
+          ],
+        ),
+      ],
     ),
   );
 }

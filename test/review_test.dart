@@ -154,6 +154,28 @@ void main() {
     await dir.delete(recursive: true);
   });
 
+  test('a version 1 upgrade that stopped half way runs again and keeps its rows', () async {
+    final dir = await Directory.systemTemp.createTemp('vidya');
+    addTearDown(() => dir.delete(recursive: true));
+    final file = File('${dir.path}/v1-again.db');
+    var db = AppDatabase(NativeDatabase(file));
+    await LearningBook(await Store.open(db)).logSession(30, today: today);
+    await db.customStatement('DROP TABLE learn_cards');
+    await db.customStatement('DROP TABLE learn_reviews');
+    await db.customStatement('PRAGMA user_version = 1');
+    await db.close();
+    for (var i = 0; i < 2; i++) {
+      db = AppDatabase(NativeDatabase(file));
+      final b = LearningBook(await Store.open(db));
+      if (i == 0) await b.saveCard('Q', 'A', today: today);
+      final s = await b.stats(today);
+      expect((s.sessions.length, s.cards.length), (1, 1));
+      // The tables and their indexes are there, but the version says 1.
+      await db.customStatement('PRAGMA user_version = 1');
+      await db.close();
+    }
+  });
+
   test('a version 2 database gains card media columns and keeps its cards', () async {
     final dir = await Directory.systemTemp.createTemp('vidya');
     final file = File('${dir.path}/v2.db');

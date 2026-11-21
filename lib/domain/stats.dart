@@ -89,8 +89,8 @@ class Stats {
       programsDone * xpProgram +
       portfolio.length * xpPortfolio +
       notes.length * xpNote +
-      assessments.length * xpAssessment +
-      assessments.where((a) => _pct(a) >= 80).length * xpAssessmentHigh +
+      _scored.length * xpAssessment +
+      _scored.where((a) => _pct(a) >= 80).length * xpAssessmentHigh +
       skills.fold<int>(0, (a, s) => a + s.level * xpSkillLevel) +
       unlocked * xpAchievement;
 
@@ -206,6 +206,23 @@ class Stats {
       .toList();
 
   // ---- assessments ----
+
+  /// The tests that earn experience: every test recorded by hand, and one
+  /// (the best) per topic quiz and per interview drill, so retaking either
+  /// cannot buy a level.
+  List<Assessment> get _scored {
+    final best = <String, Assessment>{};
+    final out = <Assessment>[];
+    for (final a in assessments) {
+      final t = a.itemId ?? a.topicId;
+      if (t == null) {
+        out.add(a);
+      } else if (best[t] == null || _pct(a) > _pct(best[t]!)) {
+        best[t] = a;
+      }
+    }
+    return [...out, ...best.values];
+  }
 
   static double _pct(Assessment a) => a.max <= 0 ? 0 : a.score * 100 / a.max;
   static double percentOf(Assessment a) => _pct(a);

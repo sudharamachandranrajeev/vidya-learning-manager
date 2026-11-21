@@ -4,9 +4,13 @@ import 'package:brahma_core/brahma_core.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:http/http.dart' as http;
 
 import '../db/database.dart';
 import '../domain/achievements.dart';
+import '../domain/next_up.dart';
+import '../domain/quiz.dart';
+import '../domain/resources.dart';
 import '../domain/review.dart';
 import '../domain/stats.dart';
 import '../domain/udyoga_link.dart';
@@ -135,6 +139,58 @@ final notesProvider = _rows<$LearnNotesTable, Note>(
 
 final unlocksProvider = _rows<$LearnUnlocksTable, Unlock>((db) => db.learnUnlocks);
 
+/// Every topic's study items still in use (not retired by a plan sent
+/// again), in list order.
+final itemsProvider = FutureProvider<List<StudyItem>>((ref) {
+  ref.watch(revisionProvider);
+  final db = ref.watch(sessionProvider).db;
+  return (db.select(db.learnItems)
+        ..where((i) => i.deleted.not() & i.retired.equals(''))
+        ..orderBy([(i) => OrderingTerm.asc(i.ord), (i) => OrderingTerm.asc(i.id)]))
+      .get();
+});
+
+/// The weekly study target in minutes (a synced pref), 0 when none.
+final weekTargetProvider = FutureProvider<int>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.weekTarget();
+});
+
+/// The one thing to study next, across everything ([courseId] null) or in
+/// one course; null when nothing is waiting (see `nextUp`).
+final nextUpProvider = FutureProvider.family<NextUp?, String?>((ref, courseId) async {
+  final s = await ref.watch(statsProvider.future);
+  final items = await ref.watch(itemsProvider.future);
+  return nextUp(
+    programs: s.programs,
+    courses: s.courses,
+    topics: s.topics,
+    items: items,
+    quizPercents: lastQuizPercents(s.assessments),
+    courseId: courseId,
+  );
+});
+
+/// The criteria plans brought, per program, in plan order.
+final criteriaProvider = _rows<$LearnCriteriaTable, Criterion>(
+  (db) => db.learnCriteria,
+  orderBy: [(c) => OrderingTerm.asc(c.ord)],
+);
+
+/// Splits the study-guide notes older plans made into topic notes and link
+/// items, once when the app opens (see `splitStudyGuides`; running again
+/// changes nothing). Gives how many topics gained something.
+final guideSplitProvider = FutureProvider<int>((ref) async {
+  final n = await ref.watch(sessionProvider).book.splitStudyGuides(today: today());
+  if (n > 0) {
+    Future.microtask(() {
+      ref.read(revisionProvider.notifier).bump();
+      ref.read(syncProvider.notifier).soon();
+    });
+  }
+  return n;
+});
+
 /// Every measure in one place; rebuilt after each write and at midnight's
 /// next write (the day comes from [todayProvider]).
 final statsProvider = FutureProvider<Stats>((ref) {
@@ -158,4 +214,43 @@ final careerFileAutoAddProvider = FutureProvider<List<String>>((ref) async {
     });
   }
   return added;
+});
+
+// ---- free resource search ----
+
+/// The web client the resource search and link reading use. Tests
+/// override it with a mock that answers from fixtures.
+final httpClientProvider = Provider<http.Client>((ref) {
+  final c = http.Client();
+  ref.onDispose(c.close);
+  return c;
+});
+
+/// The no-key catalogues, kept for the life of the app so the Microsoft
+/// Learn copy is read from the device only once a run. That copy lives in
+/// this device's local settings (not synced).
+final freeCataloguesProvider = Provider<List<ResourceCatalogue>>((ref) {
+  final client = ref.watch(httpClientProvider);
+  final db = ref.watch(sessionProvider).db;
+  final cache = KeyValueResourceCache(db.localSetting, db.setLocalSetting);
+  return [
+    MicrosoftLearnCatalogue(client, cache),
+    MitLearnCatalogue(client),
+    OpenLibraryCatalogue(client),
+  ];
+});
+
+/// The learner's own YouTube key from this device's keychain, '' when none.
+final youtubeKeyProvider = FutureProvider<String>(
+  (ref) => ResourceSecrets.youtubeKey(ref.watch(sessionProvider).keys.store),
+);
+
+/// Every catalogue a search asks: the free ones, plus YouTube only when the
+/// learner has added a key.
+final resourceCataloguesProvider = FutureProvider<List<ResourceCatalogue>>((ref) async {
+  final key = await ref.watch(youtubeKeyProvider.future);
+  return [
+    ...ref.watch(freeCataloguesProvider),
+    if (key.isNotEmpty) YouTubeCatalogue(ref.watch(httpClientProvider), key),
+  ];
 });

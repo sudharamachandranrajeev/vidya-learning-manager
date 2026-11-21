@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
 import '../db/database.dart';
+import '../domain/study_items.dart';
 import 'common.dart';
 import 'zen.dart';
 
@@ -21,6 +22,12 @@ class _NotesPageState extends ConsumerState<NotesPage> {
   var _query = '';
   String? _tag;
 
+  /// Whether notes made from a plan (topic notes tagged "from plan" and
+  /// course study guides) are listed.
+  /// Off by default so the learner's own notes are not buried; they are
+  /// never lost, only hidden.
+  var _fromPlans = false;
+
   @override
   Widget build(BuildContext context) => PageScaffold(
     title: 'Notes',
@@ -34,14 +41,14 @@ class _NotesPageState extends ConsumerState<NotesPage> {
       ref.watch(notesProvider),
       onRetry: () => ref.invalidate(notesProvider),
       builder: (notes) {
+        final planNotes = notes.where(isPlanNote).length;
+        final pool = visibleNotes(notes, fromPlans: _fromPlans);
         final tags = <String>{
-          for (final n in notes) ...n.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty),
+          for (final n in pool)
+            ...n.tags.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty && t != planNoteTag),
         }.toList()..sort();
-        final q = _query.toLowerCase();
-        final shown = notes
-            .where((n) => _tag == null || n.tags.split(',').map((t) => t.trim()).contains(_tag))
-            .where((n) => q.isEmpty || n.title.toLowerCase().contains(q) || n.body.toLowerCase().contains(q))
-            .toList();
+        final tag = tags.contains(_tag) ? _tag : null;
+        final shown = visibleNotes(notes, fromPlans: _fromPlans, tag: tag, query: _query);
         return ListView(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 96 + MediaQuery.paddingOf(context).bottom),
           children: [
@@ -58,28 +65,38 @@ class _NotesPageState extends ConsumerState<NotesPage> {
                       ),
                       onChanged: (v) => setState(() => _query = v),
                     ),
-                    if (tags.isNotEmpty)
+                    if (tags.isNotEmpty || planNotes > 0)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Wrap(
                           spacing: 8,
                           runSpacing: 4,
                           children: [
+                            if (planNotes > 0)
+                              FilterChip(
+                                avatar: const Icon(Icons.auto_stories_outlined, size: 18),
+                                label: Text('From plans ($planNotes)'),
+                                selected: _fromPlans,
+                                onSelected: (on) => setState(() => _fromPlans = on),
+                              ),
                             for (final t in tags)
                               FilterChip(
                                 label: Text(t),
-                                selected: _tag == t,
+                                selected: tag == t,
                                 onSelected: (on) => setState(() => _tag = on ? t : null),
                               ),
                           ],
                         ),
                       ),
                     const SizedBox(height: 8),
-                    if (notes.isEmpty)
-                      const EmptyState(
+                    if (notes.isEmpty || (pool.isEmpty && _query.isEmpty && tag == null))
+                      EmptyState(
                         icon: Icons.edit_note,
-                        title: 'No notes yet',
-                        message: 'Writing what you learned in your own words is how it stays.',
+                        title: notes.isEmpty ? 'No notes yet' : 'No notes of your own yet',
+                        message: notes.isEmpty
+                            ? 'Writing what you learned in your own words is how it stays.'
+                            : 'Writing what you learned in your own words is how it stays. Notes made from your '
+                                  'plans are under From plans.',
                       )
                     else if (shown.isEmpty)
                       const EmptyState(icon: Icons.search_off, title: 'Nothing matches'),

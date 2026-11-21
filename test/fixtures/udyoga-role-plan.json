@@ -1,0 +1,149 @@
+{
+  "format": "vidya-curriculum",
+  "version": 1,
+  "part": "1 of 1",
+  "program": {
+    "title": "Approach: IT Trainer",
+    "goal": "Close the gaps for IT Trainer and make the first moves, with evidence for each criterion."
+  },
+  "role": "IT Trainer",
+  "criteria": [
+    {
+      "id": "e1",
+      "text": "ensure patient safety",
+      "essential": true,
+      "kind": "skill",
+      "source": "ESCO",
+      "shown": true
+    },
+    {
+      "id": "e2",
+      "text": "create training materials",
+      "essential": true,
+      "kind": "skill",
+      "source": "ESCO",
+      "shown": false
+    },
+    {
+      "id": "o1",
+      "text": "online moderation techniques",
+      "essential": false,
+      "kind": "skill",
+      "source": "ESCO",
+      "shown": false
+    },
+    {
+      "id": "a1",
+      "text": "Teaching qualification",
+      "essential": true,
+      "kind": "requirement",
+      "source": "AI",
+      "shown": null
+    }
+  ],
+  "courses": [
+    {
+      "title": "Gaps for IT Trainer",
+      "kind": "course",
+      "startWeek": 0,
+      "dueWeek": 6,
+      "summary": "What IT Trainer asks for that your CV does not show yet, most serious first.",
+      "topics": [
+        {
+          "title": "Formal teaching qualification",
+          "minutes": 45,
+          "details": "Severity: major. AI suggestion: Take a short Level 3 award in education and training.",
+          "criteria": [
+            "a1"
+          ],
+          "items": [
+            {
+              "type": "practice task",
+              "title": "Take a short Level 3 award in education and training.",
+              "required": true,
+              "source": "AI"
+            }
+          ]
+        },
+        {
+          "title": "Create training materials",
+          "minutes": 20,
+          "details": "Severity: minor. AI suggestion: Write a one-page guide for the e-observations system.",
+          "criteria": [
+            "e2"
+          ],
+          "items": [
+            {
+              "type": "practice task",
+              "title": "Write a one-page guide for the e-observations system.",
+              "required": true,
+              "source": "AI"
+            }
+          ]
+        },
+        {
+          "title": "online moderation techniques",
+          "minutes": 20,
+          "details": "Severity: minor.",
+          "criteria": [
+            "o1"
+          ],
+          "items": []
+        }
+      ]
+    },
+    {
+      "title": "First moves: IT Trainer",
+      "kind": "practice",
+      "startWeek": 0,
+      "dueWeek": 4,
+      "summary": "Things to do in the next 30 days.",
+      "topics": [
+        {
+          "title": "Ask to be a super-user on the next roll-out.",
+          "minutes": 30,
+          "details": "A first move for the next 30 days (AI suggestion).",
+          "criteria": [
+            "e2"
+          ],
+          "items": [
+            {
+              "type": "practice task",
+              "title": "Ask to be a super-user on the next roll-out.",
+              "required": true,
+              "source": "AI"
+            }
+          ]
+        },
+        {
+          "title": "Book the Level 3 award.",
+          "minutes": 30,
+          "details": "A first move for the next 30 days (AI suggestion).",
+          "criteria": [
+            "a1"
+          ],
+          "items": [
+            {
+              "type": "practice task",
+              "title": "Book the Level 3 award.",
+              "required": true,
+              "source": "AI"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "skills": [],
+  "cards": [],
+  "notes": [
+    {
+      "title": "From Udyoga: IT Trainer",
+      "body": "Made by Udyoga from its role insight for IT Trainer (2026-11-21).\nFit today: 55% (AI).\nTime to reach: 2 years (AI).\n\nCriteria:\n- ensure patient safety (essential, shown in your CV)\n- create training materials (essential)\n- online moderation techniques (optional)\n- Teaching qualification (essential)",
+      "tags": [
+        "udyoga",
+        "role"
+      ]
+    }
+  ]
+}

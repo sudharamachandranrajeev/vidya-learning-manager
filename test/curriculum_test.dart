@@ -88,7 +88,7 @@ Good luck!''');
         says('not valid JSON'),
       );
       expect(() => parseCurriculum('{"format": "vidya-decks", "cards": []}'), says('card file'));
-      expect(() => parseCurriculum(plan({'version': 2})), says('newer Vidya'));
+      expect(() => parseCurriculum(plan({'version': 3})), says('newer Vidya'));
       expect(() => parseCurriculum('{"program": {"goal": "x"}, "courses": [{"title": "c"}]}'), says('title'));
       expect(() => parseCurriculum(plan({'courses': []})), says('no courses'));
       expect(
@@ -108,7 +108,13 @@ Good luck!''');
         curriculumPrompt.indexOf('RULES:'),
       );
       final p = parseCurriculum(example);
-      expect(p.courses.single.topics.single.resources.single, 'Resource name — https://…');
+      final topic = p.courses.single.topics.single;
+      expect(topic.criteria, ['c1']);
+      expect(p.criteria.single.essential, isTrue);
+      expect(topic.items.map((i) => i.type), ['video', 'practice task', 'quiz', 'interview drill']);
+      expect(topic.items.first.url, 'https://…');
+      expect(topic.items[1].content, contains('doneWhen'));
+      expect(curriculumPrompt, contains('"version": $curriculumVersion'));
     });
 
     test('parts pasted one after another read separately; missing parts are named', () {
