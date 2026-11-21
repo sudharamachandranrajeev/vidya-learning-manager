@@ -59,13 +59,13 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   ];
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
-      for (final sql in [..._indexes, ..._v7Indexes]) {
+      for (final sql in [..._indexes, ..._v7Indexes, ..._v8Indexes]) {
         await customStatement(sql);
       }
     },
@@ -117,6 +117,22 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
           await customStatement(sql);
         }
       }
+      if (from < 8) {
+        // Quiz scores and study time per topic; items a plan stopped
+        // sending. New columns only, each added once (a table made above
+        // already has them).
+        final sessions = await _columns('learn_sessions');
+        if (!sessions.contains(learnSessions.topicId.name)) await m.addColumn(learnSessions, learnSessions.topicId);
+        final tests = await _columns('learn_assessments');
+        if (!tests.contains(learnAssessments.topicId.name)) {
+          await m.addColumn(learnAssessments, learnAssessments.topicId);
+        }
+        final items = await _columns('learn_items');
+        if (!items.contains(learnItems.retired.name)) await m.addColumn(learnItems, learnItems.retired);
+        for (final sql in _v8Indexes) {
+          await customStatement(sql);
+        }
+      }
     },
   );
 
@@ -165,5 +181,11 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   static const _v7Indexes = [
     'CREATE INDEX IF NOT EXISTS learn_items_topic ON learn_items (topic_id)',
     'CREATE INDEX IF NOT EXISTS learn_criteria_program ON learn_criteria (program_id)',
+  ];
+
+  // Added in version 8.
+  static const _v8Indexes = [
+    'CREATE INDEX IF NOT EXISTS learn_sessions_topic ON learn_sessions (topic_id)',
+    'CREATE INDEX IF NOT EXISTS learn_assessments_topic ON learn_assessments (topic_id)',
   ];
 }

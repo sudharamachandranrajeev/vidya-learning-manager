@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../db/database.dart';
 import '../domain/achievements.dart';
+import '../domain/next_up.dart';
+import '../domain/quiz.dart';
 import '../domain/review.dart';
 import '../domain/stats.dart';
 import '../domain/udyoga_link.dart';
@@ -135,11 +137,37 @@ final notesProvider = _rows<$LearnNotesTable, Note>(
 
 final unlocksProvider = _rows<$LearnUnlocksTable, Unlock>((db) => db.learnUnlocks);
 
-/// Every topic's study items, in list order.
-final itemsProvider = _rows<$LearnItemsTable, StudyItem>(
-  (db) => db.learnItems,
-  orderBy: [(i) => OrderingTerm.asc(i.ord), (i) => OrderingTerm.asc(i.id)],
-);
+/// Every topic's study items still in use (not retired by a plan sent
+/// again), in list order.
+final itemsProvider = FutureProvider<List<StudyItem>>((ref) {
+  ref.watch(revisionProvider);
+  final db = ref.watch(sessionProvider).db;
+  return (db.select(db.learnItems)
+        ..where((i) => i.deleted.not() & i.retired.equals(''))
+        ..orderBy([(i) => OrderingTerm.asc(i.ord), (i) => OrderingTerm.asc(i.id)]))
+      .get();
+});
+
+/// The weekly study target in minutes (a synced pref), 0 when none.
+final weekTargetProvider = FutureProvider<int>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.weekTarget();
+});
+
+/// The one thing to study next, across everything ([courseId] null) or in
+/// one course; null when nothing is waiting (see `nextUp`).
+final nextUpProvider = FutureProvider.family<NextUp?, String?>((ref, courseId) async {
+  final s = await ref.watch(statsProvider.future);
+  final items = await ref.watch(itemsProvider.future);
+  return nextUp(
+    programs: s.programs,
+    courses: s.courses,
+    topics: s.topics,
+    items: items,
+    quizPercents: lastQuizPercents(s.assessments),
+    courseId: courseId,
+  );
+});
 
 /// The criteria plans brought, per program, in plan order.
 final criteriaProvider = _rows<$LearnCriteriaTable, Criterion>(

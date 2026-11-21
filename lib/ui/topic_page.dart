@@ -5,8 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
 import '../db/database.dart';
+import '../domain/next_up.dart';
+import '../domain/quiz.dart';
 import '../domain/study_items.dart';
 import 'common.dart';
+import 'dialogs.dart';
+import 'quiz_page.dart';
 import 'zen.dart';
 
 /// Everything one topic page shows, read in one go.
@@ -20,6 +24,18 @@ typedef TopicView = ({
   Note? note,
   double courseHours,
   String today,
+
+  /// The last quiz score in percent, null when never taken.
+  int? quizPercent,
+
+  /// Minutes logged on this topic.
+  int topicMinutes,
+
+  /// Items a plan sent again without; kept, not counted.
+  List<StudyItem> retired,
+
+  /// Practice tasks already in the portfolio (by item id).
+  Set<String> inPortfolio,
 });
 
 final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) async {
@@ -31,11 +47,12 @@ final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) as
   final course = await (db.select(
     db.learnCourses,
   )..where((c) => c.id.equals(topic.courseId) & c.deleted.not())).getSingleOrNull();
-  final items =
+  final all =
       await (db.select(db.learnItems)
             ..where((i) => i.topicId.equals(id) & i.deleted.not())
             ..orderBy([(i) => OrderingTerm.asc(i.ord), (i) => OrderingTerm.asc(i.id)]))
           .get();
+  final items = activeItems(all);
   final pid = course?.programId;
   final criteria = pid == null
       ? <Criterion>[]
@@ -47,15 +64,32 @@ final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) as
   final note = await (db.select(db.learnNotes)..where((n) => n.id.equals(noteId) & n.deleted.not())).getSingleOrNull();
   final sessions = await (db.select(
     db.learnSessions,
-  )..where((s) => s.courseId.equals(topic.courseId) & s.deleted.not())).get();
+  )..where((s) => (s.courseId.equals(topic.courseId) | s.topicId.equals(id)) & s.deleted.not())).get();
+  final tests = await (db.select(
+    db.learnAssessments,
+  )..where((a) => a.topicId.equals(id) & a.deleted.not())).get();
+  final tasks = [
+    for (final i in items)
+      if (i.type == 'practice task') taskPortfolioId(i.id),
+  ];
+  final portfolio = tasks.isEmpty
+      ? const <PortfolioItem>[]
+      : await (db.select(db.learnPortfolio)..where((p) => p.id.isIn(tasks) & p.deleted.not())).get();
   return (
     topic: topic,
     course: course,
     items: items,
     criteria: criteria,
     note: note,
-    courseHours: sessions.fold(0, (a, s) => a + s.minutes) / 60,
+    courseHours: sessions.where((s) => s.courseId == topic.courseId).fold(0, (a, s) => a + s.minutes) / 60,
     today: today,
+    quizPercent: lastQuizPercents(tests)[id],
+    topicMinutes: minutesByTopic(sessions)[id] ?? 0,
+    retired: [
+      for (final i in all)
+        if (i.retired.isNotEmpty) i,
+    ],
+    inPortfolio: {for (final p in portfolio) p.id.substring(0, p.id.length - '.portfolio'.length)},
   );
 });
 
@@ -71,10 +105,12 @@ Future<void> tickTopic(
   Iterable<StudyItem> items,
   bool done, {
   required String today,
+  int? quizPercent,
 }) async {
   String? note;
-  if (done && tickNeedsNote(items)) {
+  if (done && tickNeedsNote(items, quizPercent: quizPercent)) {
     final open = openRequired(items).length;
+    final quiz = quizPending(items, quizPercent);
     final why = TextEditingController();
     final ok = await showFormDialog(
       context,
@@ -82,8 +118,11 @@ Future<void> tickTopic(
       action: 'Tick off',
       fields: (_) => [
         Text(
-          '$open required ${open == 1 ? 'item is' : 'items are'} not done yet. '
-          'Say in a few words why this topic is done, for when you look back.',
+          [
+            if (open > 0) '$open required ${open == 1 ? 'item is' : 'items are'} not done yet.',
+            if (quiz) 'The quiz is not passed yet ($passPercent% or more).',
+            'Say in a few words why this topic is done, for when you look back.',
+          ].join(' '),
         ),
         const SizedBox(height: 12),
         Field(why, 'Why it is done', autofocus: true, hint: 'I already do this at work'),
@@ -125,6 +164,11 @@ class TopicPage extends ConsumerWidget {
           appBar: AppBar(
             title: Text(t.title),
             actions: [
+              IconButton(
+                tooltip: 'Log time on this topic',
+                icon: const Icon(Icons.timer_outlined),
+                onPressed: () => logSessionDialog(context, ref, courseId: t.courseId, topicId: t.id),
+              ),
               PopupMenuButton<String>(
                 onSelected: (k) async {
                   if (k == 'delete') {
@@ -168,12 +212,19 @@ class TopicPage extends ConsumerWidget {
                             : Column(
                                 children: [
                                   for (final (k, i) in study.indexed)
-                                    _ItemTile(i, today: v.today, first: k == 0, last: k == study.length - 1),
+                                    _ItemTile(
+                                      i,
+                                      today: v.today,
+                                      first: k == 0,
+                                      last: k == study.length - 1,
+                                      inPortfolio: v.inPortfolio.contains(i.id),
+                                    ),
                                 ],
                               ),
                       ),
                       _MyNotes(v),
-                      _CheckYourself(checks, v.criteria),
+                      _CheckYourself(t.id, checks, v.criteria, quizPercent: v.quizPercent),
+                      if (v.retired.isNotEmpty) _Retired(v.retired),
                     ],
                   ),
                 ),
@@ -197,6 +248,7 @@ class _Header extends ConsumerWidget {
     final required = v.items.where((i) => i.required).length;
     final requiredDone = required - openRequired(v.items).length;
     final doneMinutes = v.items.where((i) => i.done != null).fold(0, (a, i) => a + i.minutes);
+    final hasQuiz = topicQuiz(v.items) != null;
     final text = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -223,16 +275,20 @@ class _Header extends ConsumerWidget {
               ),
             Chip(label: Text('${minutesText(t.minutes)} planned')),
             if (doneMinutes > 0) Chip(label: Text('${minutesText(doneMinutes)} of items done')),
+            if (v.topicMinutes > 0) Chip(label: Text('${minutesText(v.topicMinutes)} studied')),
             if (v.courseHours > 0) Chip(label: Text('${v.courseHours.toStringAsFixed(1)} h logged on the course')),
-            const Chip(label: Text('Last quiz: not taken')),
+            Chip(label: Text(v.quizPercent == null ? 'Last quiz: not taken' : 'Last quiz: ${v.quizPercent}%')),
           ],
         ),
         const SizedBox(height: 8),
-        if (required > 0)
+        if (required > 0 || hasQuiz)
           Text(
-            topicEarned(v.items)
-                ? 'All $required required items done. This topic is earned.'
-                : '$requiredDone of $required required items done.',
+            topicEarned(v.items, quizPercent: v.quizPercent)
+                ? 'Required items done${hasQuiz ? ' and quiz passed' : ''}. This topic is earned.'
+                : [
+                    if (required > 0) '$requiredDone of $required required items done.',
+                    if (hasQuiz) quizPending(v.items, v.quizPercent) ? 'Quiz: $passPercent% or more to earn it.' : 'Quiz passed.',
+                  ].join(' '),
             style: text.bodyMedium,
           ),
         const SizedBox(height: 8),
@@ -243,12 +299,12 @@ class _Header extends ConsumerWidget {
                   ? FilledButton.icon(
                       icon: const Icon(Icons.check),
                       label: const Text('Tick off topic'),
-                      onPressed: () => tickTopic(context, ref, t, v.items, true, today: v.today),
+                      onPressed: () => tickTopic(context, ref, t, v.items, true, today: v.today, quizPercent: v.quizPercent),
                     )
                   : OutlinedButton.icon(
                       icon: const Icon(Icons.undo),
                       label: Text('Done ${relativeDay(t.done!, v.today)}. Open again'),
-                      onPressed: () => tickTopic(context, ref, t, v.items, false, today: v.today),
+                      onPressed: () => tickTopic(context, ref, t, v.items, false, today: v.today, quizPercent: v.quizPercent),
                     ),
             ),
           ],
@@ -285,13 +341,18 @@ class _WhyItMatters extends StatelessWidget {
 }
 
 class _ItemTile extends ConsumerWidget {
-  const _ItemTile(this.i, {required this.today, required this.first, required this.last});
+  const _ItemTile(this.i, {required this.today, required this.first, required this.last, this.inPortfolio = false});
   final StudyItem i;
   final String today;
   final bool first, last;
 
+  /// Whether this practice task is already a portfolio item.
+  final bool inPortfolio;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final task = i.type == 'practice task';
+    final content = itemContent(i);
     final facts = [
       itemTypes[i.type] ?? i.type,
       if (i.minutes > 0) minutesText(i.minutes),
@@ -300,12 +361,14 @@ class _ItemTile extends ConsumerWidget {
       if (i.licence.isNotEmpty) i.licence,
     ].join(' · ');
     final extra = [
+      if (content['instructions'] case final String s when task && s.isNotEmpty) s,
+      if (content['doneWhen'] case final String s when task && s.isNotEmpty) 'Done when: $s',
       if (i.done != null) 'Done ${relativeDay(i.done!, today)}',
-      if (stoppableTypes.contains(i.type) && i.stoppedAt.isNotEmpty) 'Stopped at ${i.stoppedAt}',
-      if (i.takeaway.isNotEmpty) i.type == 'note' ? i.takeaway : 'Takeaway: ${i.takeaway}',
-      if (i.type == 'practice task' && i.evidence.isNotEmpty) 'Evidence: ${i.evidence}',
+      if (resumeText(i) case final r when r.isNotEmpty && i.done == null) r,
+      if (i.takeaway.isNotEmpty) i.type == 'note' ? i.takeaway : (task ? 'Note: ${i.takeaway}' : 'Takeaway: ${i.takeaway}'),
+      if (task && i.evidence.isNotEmpty) 'Evidence: ${i.evidence}',
     ];
-    return ListTile(
+    final tile = ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Checkbox(value: i.done != null, onChanged: (v) => _setDone(context, ref, i, v ?? false, today)),
       title: Text(i.title, style: i.done != null ? const TextStyle(decoration: TextDecoration.lineThrough) : null),
@@ -339,34 +402,68 @@ class _ItemTile extends ConsumerWidget {
         ],
       ),
     );
+    if (!task || i.done == null) return tile;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        tile,
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 40, bottom: 8),
+            child: TextButton.icon(
+              icon: Icon(inPortfolio ? Icons.check : Icons.work_outline),
+              label: Text(inPortfolio ? 'In your portfolio' : 'Add to portfolio'),
+              onPressed: inPortfolio
+                  ? null
+                  : () async {
+                      await ref.mutate((s) => s.book.taskToPortfolio(i, today: today));
+                      if (context.mounted) showMessage(context, 'Added to your portfolio.');
+                    },
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
-/// Marks an item done. An article or book asks for a one-line takeaway
-/// and a practice task for an evidence link; both can be left blank.
+/// Marks an item done. An article or book asks for a one-line takeaway (it
+/// can be left blank). A practice task needs its evidence link, or a short
+/// note on what was done when there is nothing to link to.
 Future<void> _setDone(BuildContext context, WidgetRef ref, StudyItem i, bool done, String today) async {
   if (!done || !(takeawayTypes.contains(i.type) || i.type == 'practice task')) {
     await ref.mutate((s) => s.book.setItemDone(i, done, today: today));
     return;
   }
-  final task = i.type == 'practice task';
-  final c = TextEditingController(text: task ? i.evidence : i.takeaway);
+  if (i.type == 'practice task') {
+    final evidence = TextEditingController(text: i.evidence);
+    final note = TextEditingController(text: i.takeaway);
+    final doneWhen = itemContent(i)['doneWhen'];
+    await showFormDialog(
+      context,
+      title: 'Done: ${i.title}',
+      action: 'Done',
+      fields: (_) => [
+        if (doneWhen is String && doneWhen.isNotEmpty)
+          Padding(padding: const EdgeInsets.only(bottom: 12), child: Text('Done when: $doneWhen')),
+        Field(evidence, 'Evidence link', autofocus: true, hint: 'Where the work is'),
+        Field(note, 'Or a short note on what you did', lines: 2),
+      ],
+      onSave: () => ref.mutate(
+        (s) => s.book.completeTask(i, evidence: evidence.text, note: note.text, today: today),
+      ),
+    );
+    return;
+  }
+  final c = TextEditingController(text: i.takeaway);
   await showFormDialog(
     context,
     title: 'Done: ${i.title}',
     action: 'Done',
-    fields: (_) => [
-      task
-          ? Field(c, 'Evidence link', autofocus: true, hint: 'Where the work is (optional)')
-          : Field(c, 'One-line takeaway', autofocus: true, hint: 'What you will remember (optional)'),
-    ],
+    fields: (_) => [Field(c, 'One-line takeaway', autofocus: true, hint: 'What you will remember (optional)')],
     onSave: () async {
-      final v = c.text.trim();
-      await ref.mutate(
-        (s) => s.book.saveItem(
-          i.copyWith(done: Value(today), evidence: task ? v : i.evidence, takeaway: task ? i.takeaway : v),
-        ),
-      );
+      await ref.mutate((s) => s.book.saveItem(i.copyWith(done: Value(today), takeaway: c.text.trim())));
       return null;
     },
   );
@@ -540,38 +637,116 @@ class _TopicNoteEditorState extends ConsumerState<_TopicNoteEditor> {
   );
 }
 
-class _CheckYourself extends StatelessWidget {
-  const _CheckYourself(this.items, this.criteria);
+/// The topic's quiz (take it, or add and edit its questions) and its
+/// interview drills.
+class _CheckYourself extends ConsumerWidget {
+  const _CheckYourself(this.topicId, this.items, this.criteria, {this.quizPercent});
+  final String topicId;
   final List<StudyItem> items;
   final List<Criterion> criteria;
+  final int? quizPercent;
 
   /// A drill's criterion: the program criterion with that ref, or the text.
   String _criterion(String c) => criteria.where((x) => x.ref == c).firstOrNull?.body ?? c;
 
   @override
-  Widget build(BuildContext context) => SectionCard(
-    title: 'Check yourself',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final quiz = topicQuiz(items);
+    final drills = [
+      for (final i in items)
+        if (i.type == 'interview drill') i,
+    ];
+    return SectionCard(
+      title: 'Check yourself',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (quiz == null) ...[
+            const Text('No quiz yet. Three to ten questions of your own help it stick.'),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Add questions'),
+                onPressed: () => openQuizEditor(context, topicId),
+              ),
+            ),
+          ] else ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.quiz_outlined),
+              title: Text(quiz.title),
+              subtitle: Text(
+                [
+                  '${quizLength(quiz)} questions',
+                  quizPercent == null ? 'not taken yet' : 'last score $quizPercent%',
+                ].join(' · '),
+              ),
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  icon: const Icon(Icons.play_arrow),
+                  label: Text(quizPercent == null ? 'Take the quiz' : 'Take it again'),
+                  onPressed: () => openQuiz(context, quiz),
+                ),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit questions'),
+                  onPressed: () => openQuizEditor(context, topicId),
+                ),
+              ],
+            ),
+          ],
+          if (drills.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Interview drills: practise them out loud. Timed practice comes with interview training.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            for (final i in drills)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.record_voice_over_outlined),
+                title: Text(i.title),
+                subtitle: Text(
+                  [
+                    'Interview drill',
+                    if (itemContent(i)['criterion'] case final String c when c.isNotEmpty) 'tests ${_criterion(c)}',
+                  ].join(' · '),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Items a plan sent again without: kept with what the learner did on them,
+/// not counted. Each can be put back in use.
+class _Retired extends ConsumerWidget {
+  const _Retired(this.items);
+  final List<StudyItem> items;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => SectionCard(
+    title: 'No longer in the plan',
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          items.isEmpty
-              ? 'No quiz or interview drills for this topic yet.'
-              : 'Taking quizzes and practising drills here comes in the next update. '
-                    'For now they are listed so you know what to check.',
-        ),
+        const Text('The plan stopped sending these. They are kept, but no longer count for the topic.'),
         for (final i in items)
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(i.type == 'quiz' ? Icons.quiz_outlined : Icons.record_voice_over_outlined),
             title: Text(i.title),
-            subtitle: Text(switch (i.type) {
-              'quiz' => '${quizLength(i)} questions',
-              _ => [
-                'Interview drill',
-                if (itemContent(i)['criterion'] case final String c when c.isNotEmpty) 'tests ${_criterion(c)}',
-              ].join(' · '),
-            }),
+            subtitle: Text('${itemTypes[i.type] ?? i.type} · set aside ${niceDate(i.retired)}'),
+            trailing: TextButton(
+              onPressed: () => ref.mutate((s) => s.book.unretireItem(i)),
+              child: const Text('Use again'),
+            ),
           ),
       ],
     ),

@@ -2173,6 +2173,18 @@ class $LearnItemsTable extends LearnItems
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _retiredMeta = const VerificationMeta(
+    'retired',
+  );
+  @override
+  late final GeneratedColumn<String> retired = GeneratedColumn<String>(
+    'retired',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2193,6 +2205,7 @@ class $LearnItemsTable extends LearnItems
     evidence,
     ref,
     content,
+    retired,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2317,6 +2330,12 @@ class $LearnItemsTable extends LearnItems
         content.isAcceptableOrUnknown(data['content']!, _contentMeta),
       );
     }
+    if (data.containsKey('retired')) {
+      context.handle(
+        _retiredMeta,
+        retired.isAcceptableOrUnknown(data['retired']!, _retiredMeta),
+      );
+    }
     return context;
   }
 
@@ -2398,6 +2417,10 @@ class $LearnItemsTable extends LearnItems
         DriftSqlType.string,
         data['${effectivePrefix}content'],
       )!,
+      retired: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}retired'],
+      )!,
     );
   }
 
@@ -2451,6 +2474,12 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
   /// `criterion`, `rubric` and `story`, a task's `instructions` and
   /// `doneWhen`. '' when there is nothing more.
   final String content;
+
+  /// The day a plan sent again without this item, '' while it is in use. A
+  /// retired item is kept (with anything the learner did on it) but no
+  /// longer counts towards the topic or shows as next up. Items the learner
+  /// had already done are never retired.
+  final String retired;
   const StudyItem({
     required this.id,
     required this.hlc,
@@ -2470,6 +2499,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
     required this.evidence,
     required this.ref,
     required this.content,
+    required this.retired,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2494,6 +2524,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
     map['evidence'] = Variable<String>(evidence);
     map['ref'] = Variable<String>(ref);
     map['content'] = Variable<String>(content);
+    map['retired'] = Variable<String>(retired);
     return map;
   }
 
@@ -2517,6 +2548,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
       evidence: Value(evidence),
       ref: Value(ref),
       content: Value(content),
+      retired: Value(retired),
     );
   }
 
@@ -2544,6 +2576,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
       evidence: serializer.fromJson<String>(json['evidence']),
       ref: serializer.fromJson<String>(json['ref']),
       content: serializer.fromJson<String>(json['content']),
+      retired: serializer.fromJson<String>(json['retired']),
     );
   }
   @override
@@ -2568,6 +2601,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
       'evidence': serializer.toJson<String>(evidence),
       'ref': serializer.toJson<String>(ref),
       'content': serializer.toJson<String>(content),
+      'retired': serializer.toJson<String>(retired),
     };
   }
 
@@ -2590,6 +2624,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
     String? evidence,
     String? ref,
     String? content,
+    String? retired,
   }) => StudyItem(
     id: id ?? this.id,
     hlc: hlc ?? this.hlc,
@@ -2609,6 +2644,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
     evidence: evidence ?? this.evidence,
     ref: ref ?? this.ref,
     content: content ?? this.content,
+    retired: retired ?? this.retired,
   );
   StudyItem copyWithCompanion(LearnItemsCompanion data) {
     return StudyItem(
@@ -2630,6 +2666,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
       evidence: data.evidence.present ? data.evidence.value : this.evidence,
       ref: data.ref.present ? data.ref.value : this.ref,
       content: data.content.present ? data.content.value : this.content,
+      retired: data.retired.present ? data.retired.value : this.retired,
     );
   }
 
@@ -2653,7 +2690,8 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
           ..write('takeaway: $takeaway, ')
           ..write('evidence: $evidence, ')
           ..write('ref: $ref, ')
-          ..write('content: $content')
+          ..write('content: $content, ')
+          ..write('retired: $retired')
           ..write(')'))
         .toString();
   }
@@ -2678,6 +2716,7 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
     evidence,
     ref,
     content,
+    retired,
   );
   @override
   bool operator ==(Object other) =>
@@ -2700,7 +2739,8 @@ class StudyItem extends DataClass implements Insertable<StudyItem> {
           other.takeaway == this.takeaway &&
           other.evidence == this.evidence &&
           other.ref == this.ref &&
-          other.content == this.content);
+          other.content == this.content &&
+          other.retired == this.retired);
 }
 
 class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
@@ -2722,6 +2762,7 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
   final Value<String> evidence;
   final Value<String> ref;
   final Value<String> content;
+  final Value<String> retired;
   final Value<int> rowid;
   const LearnItemsCompanion({
     this.id = const Value.absent(),
@@ -2742,6 +2783,7 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
     this.evidence = const Value.absent(),
     this.ref = const Value.absent(),
     this.content = const Value.absent(),
+    this.retired = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LearnItemsCompanion.insert({
@@ -2763,6 +2805,7 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
     this.evidence = const Value.absent(),
     this.ref = const Value.absent(),
     this.content = const Value.absent(),
+    this.retired = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        topicId = Value(topicId),
@@ -2786,6 +2829,7 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
     Expression<String>? evidence,
     Expression<String>? ref,
     Expression<String>? content,
+    Expression<String>? retired,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2807,6 +2851,7 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
       if (evidence != null) 'evidence': evidence,
       if (ref != null) 'ref': ref,
       if (content != null) 'content': content,
+      if (retired != null) 'retired': retired,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2830,6 +2875,7 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
     Value<String>? evidence,
     Value<String>? ref,
     Value<String>? content,
+    Value<String>? retired,
     Value<int>? rowid,
   }) {
     return LearnItemsCompanion(
@@ -2851,6 +2897,7 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
       evidence: evidence ?? this.evidence,
       ref: ref ?? this.ref,
       content: content ?? this.content,
+      retired: retired ?? this.retired,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2912,6 +2959,9 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
     if (content.present) {
       map['content'] = Variable<String>(content.value);
     }
+    if (retired.present) {
+      map['retired'] = Variable<String>(retired.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2939,6 +2989,7 @@ class LearnItemsCompanion extends UpdateCompanion<StudyItem> {
           ..write('evidence: $evidence, ')
           ..write('ref: $ref, ')
           ..write('content: $content, ')
+          ..write('retired: $retired, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3644,6 +3695,17 @@ class $LearnSessionsTable extends LearnSessions
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _topicIdMeta = const VerificationMeta(
+    'topicId',
+  );
+  @override
+  late final GeneratedColumn<String> topicId = GeneratedColumn<String>(
+    'topic_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _dayMeta = const VerificationMeta('day');
   @override
   late final GeneratedColumn<String> day = GeneratedColumn<String>(
@@ -3680,6 +3742,7 @@ class $LearnSessionsTable extends LearnSessions
     hlc,
     deleted,
     courseId,
+    topicId,
     day,
     minutes,
     note,
@@ -3717,6 +3780,12 @@ class $LearnSessionsTable extends LearnSessions
       context.handle(
         _courseIdMeta,
         courseId.isAcceptableOrUnknown(data['course_id']!, _courseIdMeta),
+      );
+    }
+    if (data.containsKey('topic_id')) {
+      context.handle(
+        _topicIdMeta,
+        topicId.isAcceptableOrUnknown(data['topic_id']!, _topicIdMeta),
       );
     }
     if (data.containsKey('day')) {
@@ -3766,6 +3835,10 @@ class $LearnSessionsTable extends LearnSessions
         DriftSqlType.string,
         data['${effectivePrefix}course_id'],
       ),
+      topicId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic_id'],
+      ),
       day: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}day'],
@@ -3792,6 +3865,9 @@ class StudySession extends DataClass implements Insertable<StudySession> {
   final String hlc;
   final bool deleted;
   final String? courseId;
+
+  /// The topic studied, when the time was logged on a topic page.
+  final String? topicId;
   final String day;
   final int minutes;
   final String note;
@@ -3800,6 +3876,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
     required this.hlc,
     required this.deleted,
     this.courseId,
+    this.topicId,
     required this.day,
     required this.minutes,
     required this.note,
@@ -3812,6 +3889,9 @@ class StudySession extends DataClass implements Insertable<StudySession> {
     map['deleted'] = Variable<bool>(deleted);
     if (!nullToAbsent || courseId != null) {
       map['course_id'] = Variable<String>(courseId);
+    }
+    if (!nullToAbsent || topicId != null) {
+      map['topic_id'] = Variable<String>(topicId);
     }
     map['day'] = Variable<String>(day);
     map['minutes'] = Variable<int>(minutes);
@@ -3827,6 +3907,9 @@ class StudySession extends DataClass implements Insertable<StudySession> {
       courseId: courseId == null && nullToAbsent
           ? const Value.absent()
           : Value(courseId),
+      topicId: topicId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(topicId),
       day: Value(day),
       minutes: Value(minutes),
       note: Value(note),
@@ -3843,6 +3926,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
       hlc: serializer.fromJson<String>(json['hlc']),
       deleted: serializer.fromJson<bool>(json['deleted']),
       courseId: serializer.fromJson<String?>(json['courseId']),
+      topicId: serializer.fromJson<String?>(json['topicId']),
       day: serializer.fromJson<String>(json['day']),
       minutes: serializer.fromJson<int>(json['minutes']),
       note: serializer.fromJson<String>(json['note']),
@@ -3856,6 +3940,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
       'hlc': serializer.toJson<String>(hlc),
       'deleted': serializer.toJson<bool>(deleted),
       'courseId': serializer.toJson<String?>(courseId),
+      'topicId': serializer.toJson<String?>(topicId),
       'day': serializer.toJson<String>(day),
       'minutes': serializer.toJson<int>(minutes),
       'note': serializer.toJson<String>(note),
@@ -3867,6 +3952,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
     String? hlc,
     bool? deleted,
     Value<String?> courseId = const Value.absent(),
+    Value<String?> topicId = const Value.absent(),
     String? day,
     int? minutes,
     String? note,
@@ -3875,6 +3961,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
     hlc: hlc ?? this.hlc,
     deleted: deleted ?? this.deleted,
     courseId: courseId.present ? courseId.value : this.courseId,
+    topicId: topicId.present ? topicId.value : this.topicId,
     day: day ?? this.day,
     minutes: minutes ?? this.minutes,
     note: note ?? this.note,
@@ -3885,6 +3972,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
       hlc: data.hlc.present ? data.hlc.value : this.hlc,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       courseId: data.courseId.present ? data.courseId.value : this.courseId,
+      topicId: data.topicId.present ? data.topicId.value : this.topicId,
       day: data.day.present ? data.day.value : this.day,
       minutes: data.minutes.present ? data.minutes.value : this.minutes,
       note: data.note.present ? data.note.value : this.note,
@@ -3898,6 +3986,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
           ..write('hlc: $hlc, ')
           ..write('deleted: $deleted, ')
           ..write('courseId: $courseId, ')
+          ..write('topicId: $topicId, ')
           ..write('day: $day, ')
           ..write('minutes: $minutes, ')
           ..write('note: $note')
@@ -3907,7 +3996,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
 
   @override
   int get hashCode =>
-      Object.hash(id, hlc, deleted, courseId, day, minutes, note);
+      Object.hash(id, hlc, deleted, courseId, topicId, day, minutes, note);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3916,6 +4005,7 @@ class StudySession extends DataClass implements Insertable<StudySession> {
           other.hlc == this.hlc &&
           other.deleted == this.deleted &&
           other.courseId == this.courseId &&
+          other.topicId == this.topicId &&
           other.day == this.day &&
           other.minutes == this.minutes &&
           other.note == this.note);
@@ -3926,6 +4016,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
   final Value<String> hlc;
   final Value<bool> deleted;
   final Value<String?> courseId;
+  final Value<String?> topicId;
   final Value<String> day;
   final Value<int> minutes;
   final Value<String> note;
@@ -3935,6 +4026,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     this.hlc = const Value.absent(),
     this.deleted = const Value.absent(),
     this.courseId = const Value.absent(),
+    this.topicId = const Value.absent(),
     this.day = const Value.absent(),
     this.minutes = const Value.absent(),
     this.note = const Value.absent(),
@@ -3945,6 +4037,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     this.hlc = const Value.absent(),
     this.deleted = const Value.absent(),
     this.courseId = const Value.absent(),
+    this.topicId = const Value.absent(),
     required String day,
     required int minutes,
     this.note = const Value.absent(),
@@ -3957,6 +4050,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     Expression<String>? hlc,
     Expression<bool>? deleted,
     Expression<String>? courseId,
+    Expression<String>? topicId,
     Expression<String>? day,
     Expression<int>? minutes,
     Expression<String>? note,
@@ -3967,6 +4061,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
       if (hlc != null) 'hlc': hlc,
       if (deleted != null) 'deleted': deleted,
       if (courseId != null) 'course_id': courseId,
+      if (topicId != null) 'topic_id': topicId,
       if (day != null) 'day': day,
       if (minutes != null) 'minutes': minutes,
       if (note != null) 'note': note,
@@ -3979,6 +4074,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     Value<String>? hlc,
     Value<bool>? deleted,
     Value<String?>? courseId,
+    Value<String?>? topicId,
     Value<String>? day,
     Value<int>? minutes,
     Value<String>? note,
@@ -3989,6 +4085,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
       hlc: hlc ?? this.hlc,
       deleted: deleted ?? this.deleted,
       courseId: courseId ?? this.courseId,
+      topicId: topicId ?? this.topicId,
       day: day ?? this.day,
       minutes: minutes ?? this.minutes,
       note: note ?? this.note,
@@ -4010,6 +4107,9 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
     }
     if (courseId.present) {
       map['course_id'] = Variable<String>(courseId.value);
+    }
+    if (topicId.present) {
+      map['topic_id'] = Variable<String>(topicId.value);
     }
     if (day.present) {
       map['day'] = Variable<String>(day.value);
@@ -4033,6 +4133,7 @@ class LearnSessionsCompanion extends UpdateCompanion<StudySession> {
           ..write('hlc: $hlc, ')
           ..write('deleted: $deleted, ')
           ..write('courseId: $courseId, ')
+          ..write('topicId: $topicId, ')
           ..write('day: $day, ')
           ..write('minutes: $minutes, ')
           ..write('note: $note, ')
@@ -4093,6 +4194,17 @@ class $LearnAssessmentsTable extends LearnAssessments
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _topicIdMeta = const VerificationMeta(
+    'topicId',
+  );
+  @override
+  late final GeneratedColumn<String> topicId = GeneratedColumn<String>(
+    'topic_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -4136,6 +4248,7 @@ class $LearnAssessmentsTable extends LearnAssessments
     hlc,
     deleted,
     courseId,
+    topicId,
     title,
     day,
     score,
@@ -4174,6 +4287,12 @@ class $LearnAssessmentsTable extends LearnAssessments
       context.handle(
         _courseIdMeta,
         courseId.isAcceptableOrUnknown(data['course_id']!, _courseIdMeta),
+      );
+    }
+    if (data.containsKey('topic_id')) {
+      context.handle(
+        _topicIdMeta,
+        topicId.isAcceptableOrUnknown(data['topic_id']!, _topicIdMeta),
       );
     }
     if (data.containsKey('title')) {
@@ -4231,6 +4350,10 @@ class $LearnAssessmentsTable extends LearnAssessments
         DriftSqlType.string,
         data['${effectivePrefix}course_id'],
       ),
+      topicId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}topic_id'],
+      ),
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}title'],
@@ -4261,6 +4384,9 @@ class Assessment extends DataClass implements Insertable<Assessment> {
   final String hlc;
   final bool deleted;
   final String? courseId;
+
+  /// The topic whose quiz this is, null for a test recorded by hand.
+  final String? topicId;
   final String title;
   final String day;
   final double score;
@@ -4270,6 +4396,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     required this.hlc,
     required this.deleted,
     this.courseId,
+    this.topicId,
     required this.title,
     required this.day,
     required this.score,
@@ -4283,6 +4410,9 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     map['deleted'] = Variable<bool>(deleted);
     if (!nullToAbsent || courseId != null) {
       map['course_id'] = Variable<String>(courseId);
+    }
+    if (!nullToAbsent || topicId != null) {
+      map['topic_id'] = Variable<String>(topicId);
     }
     map['title'] = Variable<String>(title);
     map['day'] = Variable<String>(day);
@@ -4299,6 +4429,9 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       courseId: courseId == null && nullToAbsent
           ? const Value.absent()
           : Value(courseId),
+      topicId: topicId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(topicId),
       title: Value(title),
       day: Value(day),
       score: Value(score),
@@ -4316,6 +4449,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       hlc: serializer.fromJson<String>(json['hlc']),
       deleted: serializer.fromJson<bool>(json['deleted']),
       courseId: serializer.fromJson<String?>(json['courseId']),
+      topicId: serializer.fromJson<String?>(json['topicId']),
       title: serializer.fromJson<String>(json['title']),
       day: serializer.fromJson<String>(json['day']),
       score: serializer.fromJson<double>(json['score']),
@@ -4330,6 +4464,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       'hlc': serializer.toJson<String>(hlc),
       'deleted': serializer.toJson<bool>(deleted),
       'courseId': serializer.toJson<String?>(courseId),
+      'topicId': serializer.toJson<String?>(topicId),
       'title': serializer.toJson<String>(title),
       'day': serializer.toJson<String>(day),
       'score': serializer.toJson<double>(score),
@@ -4342,6 +4477,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     String? hlc,
     bool? deleted,
     Value<String?> courseId = const Value.absent(),
+    Value<String?> topicId = const Value.absent(),
     String? title,
     String? day,
     double? score,
@@ -4351,6 +4487,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     hlc: hlc ?? this.hlc,
     deleted: deleted ?? this.deleted,
     courseId: courseId.present ? courseId.value : this.courseId,
+    topicId: topicId.present ? topicId.value : this.topicId,
     title: title ?? this.title,
     day: day ?? this.day,
     score: score ?? this.score,
@@ -4362,6 +4499,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       hlc: data.hlc.present ? data.hlc.value : this.hlc,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       courseId: data.courseId.present ? data.courseId.value : this.courseId,
+      topicId: data.topicId.present ? data.topicId.value : this.topicId,
       title: data.title.present ? data.title.value : this.title,
       day: data.day.present ? data.day.value : this.day,
       score: data.score.present ? data.score.value : this.score,
@@ -4376,6 +4514,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
           ..write('hlc: $hlc, ')
           ..write('deleted: $deleted, ')
           ..write('courseId: $courseId, ')
+          ..write('topicId: $topicId, ')
           ..write('title: $title, ')
           ..write('day: $day, ')
           ..write('score: $score, ')
@@ -4386,7 +4525,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
 
   @override
   int get hashCode =>
-      Object.hash(id, hlc, deleted, courseId, title, day, score, max);
+      Object.hash(id, hlc, deleted, courseId, topicId, title, day, score, max);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4395,6 +4534,7 @@ class Assessment extends DataClass implements Insertable<Assessment> {
           other.hlc == this.hlc &&
           other.deleted == this.deleted &&
           other.courseId == this.courseId &&
+          other.topicId == this.topicId &&
           other.title == this.title &&
           other.day == this.day &&
           other.score == this.score &&
@@ -4406,6 +4546,7 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
   final Value<String> hlc;
   final Value<bool> deleted;
   final Value<String?> courseId;
+  final Value<String?> topicId;
   final Value<String> title;
   final Value<String> day;
   final Value<double> score;
@@ -4416,6 +4557,7 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     this.hlc = const Value.absent(),
     this.deleted = const Value.absent(),
     this.courseId = const Value.absent(),
+    this.topicId = const Value.absent(),
     this.title = const Value.absent(),
     this.day = const Value.absent(),
     this.score = const Value.absent(),
@@ -4427,6 +4569,7 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     this.hlc = const Value.absent(),
     this.deleted = const Value.absent(),
     this.courseId = const Value.absent(),
+    this.topicId = const Value.absent(),
     required String title,
     required String day,
     required double score,
@@ -4441,6 +4584,7 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     Expression<String>? hlc,
     Expression<bool>? deleted,
     Expression<String>? courseId,
+    Expression<String>? topicId,
     Expression<String>? title,
     Expression<String>? day,
     Expression<double>? score,
@@ -4452,6 +4596,7 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
       if (hlc != null) 'hlc': hlc,
       if (deleted != null) 'deleted': deleted,
       if (courseId != null) 'course_id': courseId,
+      if (topicId != null) 'topic_id': topicId,
       if (title != null) 'title': title,
       if (day != null) 'day': day,
       if (score != null) 'score': score,
@@ -4465,6 +4610,7 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     Value<String>? hlc,
     Value<bool>? deleted,
     Value<String?>? courseId,
+    Value<String?>? topicId,
     Value<String>? title,
     Value<String>? day,
     Value<double>? score,
@@ -4476,6 +4622,7 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
       hlc: hlc ?? this.hlc,
       deleted: deleted ?? this.deleted,
       courseId: courseId ?? this.courseId,
+      topicId: topicId ?? this.topicId,
       title: title ?? this.title,
       day: day ?? this.day,
       score: score ?? this.score,
@@ -4498,6 +4645,9 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     }
     if (courseId.present) {
       map['course_id'] = Variable<String>(courseId.value);
+    }
+    if (topicId.present) {
+      map['topic_id'] = Variable<String>(topicId.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -4524,6 +4674,7 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
           ..write('hlc: $hlc, ')
           ..write('deleted: $deleted, ')
           ..write('courseId: $courseId, ')
+          ..write('topicId: $topicId, ')
           ..write('title: $title, ')
           ..write('day: $day, ')
           ..write('score: $score, ')
@@ -10562,6 +10713,7 @@ typedef $$LearnItemsTableCreateCompanionBuilder = LearnItemsCompanion Function({
   Value<String> evidence,
   Value<String> ref,
   Value<String> content,
+  Value<String> retired,
   Value<int> rowid,
 });
 typedef $$LearnItemsTableUpdateCompanionBuilder = LearnItemsCompanion Function({
@@ -10583,6 +10735,7 @@ typedef $$LearnItemsTableUpdateCompanionBuilder = LearnItemsCompanion Function({
   Value<String> evidence,
   Value<String> ref,
   Value<String> content,
+  Value<String> retired,
   Value<int> rowid,
 });
 
@@ -10682,6 +10835,11 @@ class $$LearnItemsTableFilterComposer
 
   ColumnFilters<String> get content => $composableBuilder(
     column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get retired => $composableBuilder(
+    column: $table.retired,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10784,6 +10942,11 @@ class $$LearnItemsTableOrderingComposer
     column: $table.content,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get retired => $composableBuilder(
+    column: $table.retired,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LearnItemsTableAnnotationComposer
@@ -10848,6 +11011,9 @@ class $$LearnItemsTableAnnotationComposer
 
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get retired =>
+      $composableBuilder(column: $table.retired, builder: (column) => column);
 }
 
 class $$LearnItemsTableTableManager
@@ -10899,6 +11065,7 @@ class $$LearnItemsTableTableManager
                 Value<String> evidence = const Value.absent(),
                 Value<String> ref = const Value.absent(),
                 Value<String> content = const Value.absent(),
+                Value<String> retired = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnItemsCompanion(
                 id: id,
@@ -10919,6 +11086,7 @@ class $$LearnItemsTableTableManager
                 evidence: evidence,
                 ref: ref,
                 content: content,
+                retired: retired,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10941,6 +11109,7 @@ class $$LearnItemsTableTableManager
                 Value<String> evidence = const Value.absent(),
                 Value<String> ref = const Value.absent(),
                 Value<String> content = const Value.absent(),
+                Value<String> retired = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnItemsCompanion.insert(
                 id: id,
@@ -10961,6 +11130,7 @@ class $$LearnItemsTableTableManager
                 evidence: evidence,
                 ref: ref,
                 content: content,
+                retired: retired,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -11323,6 +11493,7 @@ typedef $$LearnSessionsTableCreateCompanionBuilder =
       Value<String> hlc,
       Value<bool> deleted,
       Value<String?> courseId,
+      Value<String?> topicId,
       required String day,
       required int minutes,
       Value<String> note,
@@ -11334,6 +11505,7 @@ typedef $$LearnSessionsTableUpdateCompanionBuilder =
       Value<String> hlc,
       Value<bool> deleted,
       Value<String?> courseId,
+      Value<String?> topicId,
       Value<String> day,
       Value<int> minutes,
       Value<String> note,
@@ -11366,6 +11538,11 @@ class $$LearnSessionsTableFilterComposer
 
   ColumnFilters<String> get courseId => $composableBuilder(
     column: $table.courseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get topicId => $composableBuilder(
+    column: $table.topicId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11414,6 +11591,11 @@ class $$LearnSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get topicId => $composableBuilder(
+    column: $table.topicId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get day => $composableBuilder(
     column: $table.day,
     builder: (column) => ColumnOrderings(column),
@@ -11450,6 +11632,9 @@ class $$LearnSessionsTableAnnotationComposer
 
   GeneratedColumn<String> get courseId =>
       $composableBuilder(column: $table.courseId, builder: (column) => column);
+
+  GeneratedColumn<String> get topicId =>
+      $composableBuilder(column: $table.topicId, builder: (column) => column);
 
   GeneratedColumn<String> get day =>
       $composableBuilder(column: $table.day, builder: (column) => column);
@@ -11496,6 +11681,7 @@ class $$LearnSessionsTableTableManager
                 Value<String> hlc = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
+                Value<String?> topicId = const Value.absent(),
                 Value<String> day = const Value.absent(),
                 Value<int> minutes = const Value.absent(),
                 Value<String> note = const Value.absent(),
@@ -11505,6 +11691,7 @@ class $$LearnSessionsTableTableManager
                 hlc: hlc,
                 deleted: deleted,
                 courseId: courseId,
+                topicId: topicId,
                 day: day,
                 minutes: minutes,
                 note: note,
@@ -11516,6 +11703,7 @@ class $$LearnSessionsTableTableManager
                 Value<String> hlc = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
+                Value<String?> topicId = const Value.absent(),
                 required String day,
                 required int minutes,
                 Value<String> note = const Value.absent(),
@@ -11525,6 +11713,7 @@ class $$LearnSessionsTableTableManager
                 hlc: hlc,
                 deleted: deleted,
                 courseId: courseId,
+                topicId: topicId,
                 day: day,
                 minutes: minutes,
                 note: note,
@@ -11570,6 +11759,7 @@ typedef $$LearnAssessmentsTableCreateCompanionBuilder =
       Value<String> hlc,
       Value<bool> deleted,
       Value<String?> courseId,
+      Value<String?> topicId,
       required String title,
       required String day,
       required double score,
@@ -11582,6 +11772,7 @@ typedef $$LearnAssessmentsTableUpdateCompanionBuilder =
       Value<String> hlc,
       Value<bool> deleted,
       Value<String?> courseId,
+      Value<String?> topicId,
       Value<String> title,
       Value<String> day,
       Value<double> score,
@@ -11615,6 +11806,11 @@ class $$LearnAssessmentsTableFilterComposer
 
   ColumnFilters<String> get courseId => $composableBuilder(
     column: $table.courseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get topicId => $composableBuilder(
+    column: $table.topicId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -11668,6 +11864,11 @@ class $$LearnAssessmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get topicId => $composableBuilder(
+    column: $table.topicId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
     builder: (column) => ColumnOrderings(column),
@@ -11709,6 +11910,9 @@ class $$LearnAssessmentsTableAnnotationComposer
 
   GeneratedColumn<String> get courseId =>
       $composableBuilder(column: $table.courseId, builder: (column) => column);
+
+  GeneratedColumn<String> get topicId =>
+      $composableBuilder(column: $table.topicId, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -11760,6 +11964,7 @@ class $$LearnAssessmentsTableTableManager
                 Value<String> hlc = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
+                Value<String?> topicId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String> day = const Value.absent(),
                 Value<double> score = const Value.absent(),
@@ -11770,6 +11975,7 @@ class $$LearnAssessmentsTableTableManager
                 hlc: hlc,
                 deleted: deleted,
                 courseId: courseId,
+                topicId: topicId,
                 title: title,
                 day: day,
                 score: score,
@@ -11782,6 +11988,7 @@ class $$LearnAssessmentsTableTableManager
                 Value<String> hlc = const Value.absent(),
                 Value<bool> deleted = const Value.absent(),
                 Value<String?> courseId = const Value.absent(),
+                Value<String?> topicId = const Value.absent(),
                 required String title,
                 required String day,
                 required double score,
@@ -11792,6 +11999,7 @@ class $$LearnAssessmentsTableTableManager
                 hlc: hlc,
                 deleted: deleted,
                 courseId: courseId,
+                topicId: topicId,
                 title: title,
                 day: day,
                 score: score,

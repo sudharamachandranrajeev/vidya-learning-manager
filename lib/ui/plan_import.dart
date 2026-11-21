@@ -165,6 +165,7 @@ Future<void> importPlanDialog(BuildContext context, WidgetRef ref) async {
           retiredCards: 0,
           notes: 0,
           items: 0,
+          retiredItems: 0,
         );
         // Parts merge by title, so importing them one by one builds one program.
         for (final p in parts) {
@@ -178,6 +179,7 @@ Future<void> importPlanDialog(BuildContext context, WidgetRef ref) async {
             retiredCards: total.retiredCards + x.retiredCards,
             notes: total.notes + x.notes,
             items: total.items + x.items,
+            retiredItems: total.retiredItems + x.retiredItems,
           );
         }
         return total;
@@ -188,6 +190,7 @@ Future<void> importPlanDialog(BuildContext context, WidgetRef ref) async {
           '${r.updatedCards > 0 ? ' ${r.updatedCards} changed cards updated, reviews kept.' : ''}'
           '${retiredNote(r.retiredCards)}'
           '${r.items > 0 ? ' ${r.items} study items added to topics.' : ''}'
+          '${retiredItemsNote(r.retiredItems)}'
           '${r.notes > 0 || r.items > 0 ? ' Open a topic for its details, links and notes.' : ''}';
       return null;
     },

@@ -1,8 +1,15 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:brahma_core/brahma_core.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../domain/export.dart';
 import '../domain/review.dart';
+import '../ui/common.dart';
+import '../ui/dialogs.dart';
 import '../domain/udyoga_link.dart';
 import 'providers.dart';
 import 'reminders.dart';
@@ -15,9 +22,11 @@ class SettingsPage extends StatelessWidget {
     title: 'Settings',
     children: [
       _StreaksCard(),
+      _WeekTargetCard(),
       _PaceCard(),
       _RemindersCard(),
       _CareerFileCard(),
+      _HistoryCard(),
       AppLockCard(),
       HintsCard(),
       SyncCard(),
@@ -162,6 +171,79 @@ class _CareerFileCard extends ConsumerWidget {
       ),
       value: ref.watch(_autoAddProvider).value ?? false,
       onChanged: (v) => ref.mutate((s) => s.book.setAutoAddCareerFile(v), report: false),
+    ),
+  );
+}
+
+/// The weekly time target: progress on Home, never a penalty. Synced, so
+/// every device shows the same target.
+class _WeekTargetCard extends ConsumerWidget {
+  const _WeekTargetCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final target = ref.watch(weekTargetProvider).value ?? 0;
+    return SectionCard(
+      title: 'Weekly time target',
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        title: Text(target == 0 ? 'No target' : '${minutesText(target)} a week'),
+        subtitle: const Text(
+          'Home shows how far you are since Monday. No streaks, nothing lost for a quiet week.',
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => weekTargetDialog(context, ref, target),
+      ),
+    );
+  }
+}
+
+/// Saves the learner's own history (programs, courses, topics, items done,
+/// quiz scores, time and notes) as Markdown or JSON, to keep or move.
+class _HistoryCard extends ConsumerWidget {
+  const _HistoryCard();
+
+  Future<void> _save(BuildContext context, WidgetRef ref, {required bool json}) async {
+    final day = today();
+    final h = await ref.read(sessionProvider).book.history(day);
+    final text = json ? historyJson(h) : historyMarkdown(h);
+    final saved = await FilePicker.saveFile(
+      dialogTitle: 'Export my history',
+      fileName: 'vidya-history-$day.${json ? 'json' : 'md'}',
+      bytes: Uint8List.fromList(utf8.encode(text)),
+      mimeType: json ? 'application/json' : 'text/markdown',
+    );
+    if (saved != null && context.mounted) showMessage(context, 'History saved.');
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => SectionCard(
+    title: 'Your history',
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Everything you studied: programs, courses and topics with their status, items done with your '
+          'takeaways, quiz scores, time and your own notes. Plan text is left out.',
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              icon: const Icon(Icons.description_outlined),
+              label: const Text('Markdown'),
+              onPressed: () => _save(context, ref, json: false),
+            ),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.data_object),
+              label: const Text('JSON'),
+              onPressed: () => _save(context, ref, json: true),
+            ),
+          ],
+        ),
+      ],
     ),
   );
 }

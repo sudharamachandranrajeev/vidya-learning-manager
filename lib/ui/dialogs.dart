@@ -107,7 +107,13 @@ Future<void> addTopicDialog(BuildContext context, WidgetRef ref, String courseId
 }
 
 /// Logs study time, optionally against a course.
-Future<void> logSessionDialog(BuildContext context, WidgetRef ref, {String? courseId}) async {
+/// Logs study time, on a course and, from a topic page, on that [topicId].
+Future<void> logSessionDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  String? courseId,
+  String? topicId,
+}) async {
   final courses = (await ref.read(coursesProvider.future))
       .where((c) => c.status != 'done' && c.status != 'dropped')
       .toList();
@@ -116,7 +122,7 @@ Future<void> logSessionDialog(BuildContext context, WidgetRef ref, {String? cour
   var course = courseId ?? '';
   await showFormDialog(
     context,
-    title: 'Log study time',
+    title: topicId != null ? 'Log time on this topic' : 'Log study time',
     action: 'Log',
     fields: (setState) => [
       Field(minutes, 'Minutes', number: true, autofocus: true),
@@ -140,6 +146,8 @@ Future<void> logSessionDialog(BuildContext context, WidgetRef ref, {String? cour
           m,
           today: today(),
           courseId: course.isEmpty ? null : course,
+          // The topic only while its own course is chosen.
+          topicId: course == courseId ? topicId : null,
           note: note.text.trim(),
         ),
       );
@@ -314,6 +322,36 @@ Future<void> editCourseDialog(BuildContext context, WidgetRef ref, Course c) asy
           c.id,
         ),
       );
+      return null;
+    },
+  );
+}
+
+/// The weekly time target choices, in minutes (0: no target).
+const weekTargets = [0, 30, 60, 90, 120, 180, 240, 300, 420, 600];
+
+/// Sets the weekly study target. It only shows progress: there is no
+/// streak, no penalty and no reminder about a missed week.
+Future<void> weekTargetDialog(BuildContext context, WidgetRef ref, int current) async {
+  var minutes = weekTargets.contains(current) ? current : 0;
+  await showFormDialog(
+    context,
+    title: 'Weekly time target',
+    fields: (setState) => [
+      const Text(
+        'How much study a week feels right. Home shows how far you are since Monday; '
+        'a quiet week costs nothing.',
+      ),
+      const SizedBox(height: 12),
+      Choice<int>(
+        label: 'Minutes a week',
+        value: minutes,
+        options: {for (final m in weekTargets) m: m == 0 ? 'No target' : minutesText(m)},
+        onChanged: (v) => setState(() => minutes = v),
+      ),
+    ],
+    onSave: () async {
+      await ref.mutate((s) => s.book.setWeekTarget(minutes), report: false);
       return null;
     },
   );

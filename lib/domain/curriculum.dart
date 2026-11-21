@@ -573,7 +573,7 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
 RULES:
 - "kind" is one of: course, book, certification, degree, project, practice.
 - An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note. Give links and titles only; never copy a course's text.
-- A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card.
+- A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card. Add a one-sentence "explain" where it helps.
 - "criteria" lists what the goal asks for (for a job: the essential and desirable criteria); each topic's "criteria" names the ids it works towards. Leave both out if there are none.
 - Plain JSON: double quotes, no comments, no trailing commas, \\n for line breaks inside text.
 - Every card's "course" must match a course title exactly.

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Quizzes: take a topic's quiz one question at a time (pick an option, type a short answer that is marked leniently or by you, or recall a card), with the explanation after each. The score is saved on the topic ("Last quiz: 80%") and each missed question becomes a review card in the course's deck, once, however often you retake. Add and edit questions by hand; with an AI connected for Ask AI, it can write a few, labelled AI and editable. Retaking a quiz earns experience once per topic.
+- A topic is earned when its required items are done and, if it has a quiz, the last score is 70% or more. Ticking earlier still works with a short note.
+- Practice tasks show their instructions and "done when" line, need an evidence link or a note to be done, and become a portfolio project in one tap.
+- Next up: Home and each course show the next unfinished required item (then an unpassed quiz), skipping paused programs and dropped courses, with one tap to open it; a video or book shows "Resume at …". Calm when nothing is waiting.
+- Weekly time target (Settings or Home): progress since Monday, no streaks, nothing lost for a quiet week. Time can be logged on a topic, and the topic page shows it.
+- Settings, *Your history*: export programs, courses, topics with status, items done with takeaways, quiz and test scores, time and your own notes as Markdown or JSON.
+- Notes made from plans (topic notes and study guides) are behind a *From plans* filter on Notes, so your own come first.
+- An item a re-sent plan no longer has is set aside on its topic page, not deleted, and no longer counts; items you had done are never set aside; it comes back if the plan sends it again.
+- Database version 8: sessions and tests can name a topic; items can be set aside. The upgrade keeps every row.
+
 - Topic pages: tap a topic to open it. Each has its status (not started, studying, review, done), why it matters (the job criteria a plan links to it), its study items (course, video, article, book, practice task, quiz, interview drill or note, each with its own fields: where you stopped, a one-line takeaway, an evidence link), your own Markdown note, and a "Check yourself" list of its quiz and drills. The tick box stays on the course page. A topic whose required items are all done is earned; ticking it earlier asks for a short note.
 - Study plans format 2: per-topic `items`, `quiz` and `drills`, plan `criteria` and `role`. Udyoga's role plans arrive with their criteria and items. Format 1 plans still import. A plan sent again updates its items in place and keeps what you marked done. The AI prompt asks for items, quizzes and drills.
 - Study-guide notes from earlier plans are split into one note per topic, with their links as items, the first time this version opens. The guide notes are kept. Notes made from a plan earn no experience until you write in them.

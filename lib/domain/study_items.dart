@@ -97,6 +97,10 @@ const planNoteTag = 'from plan';
 
 bool hasPlanNoteTag(Note n) => n.tags.split(',').any((t) => t.trim() == planNoteTag);
 
+/// Whether a note is a plan's text rather than the learner's: a topic note
+/// still tagged [planNoteTag], or a course's study guide.
+bool isPlanNote(Note n) => n.tags.split(',').any((t) => t.trim() == planNoteTag || t.trim() == 'study guide');
+
 enum TopicStatus {
   notStarted('Not started'),
   studying('Studying'),
@@ -117,19 +121,66 @@ TopicStatus topicStatus(Topic t, Iterable<StudyItem> items, {bool wroteNote = fa
   return TopicStatus.notStarted;
 }
 
-/// The required items still open.
-List<StudyItem> openRequired(Iterable<StudyItem> items) => [
+/// Items still in use: not retired by a plan sent again (see
+/// `LearnItems.retired`).
+List<StudyItem> activeItems(Iterable<StudyItem> items) => [
   for (final i in items)
-    if (i.required && i.done == null) i,
+    if (i.retired.isEmpty) i,
 ];
 
-/// Whether the topic is earned: it has required items and all are done.
-/// (Version 2 adds a quiz score of at least 70%.)
-bool topicEarned(Iterable<StudyItem> items) => items.any((i) => i.required) && openRequired(items).isEmpty;
+/// The required items still open (retired ones do not count).
+List<StudyItem> openRequired(Iterable<StudyItem> items) => [
+  for (final i in items)
+    if (i.required && i.done == null && i.retired.isEmpty) i,
+];
 
-/// Whether ticking the topic now asks for a short note: some required item
-/// is still open.
-bool tickNeedsNote(Iterable<StudyItem> items) => openRequired(items).isNotEmpty;
+/// The lowest last-quiz score, in percent, that earns a topic.
+const passPercent = 70;
+
+/// The topic's quiz item that has questions, or null.
+StudyItem? topicQuiz(Iterable<StudyItem> items) =>
+    items.where((i) => i.type == 'quiz' && i.retired.isEmpty && quizLength(i) > 0).firstOrNull;
+
+/// Whether the topic's quiz still stands between it and being earned: it
+/// has one, and the last score ([quizPercent], null when never taken) is
+/// under 70%.
+bool quizPending(Iterable<StudyItem> items, int? quizPercent) =>
+    topicQuiz(items) != null && (quizPercent == null || quizPercent < passPercent);
+
+/// Whether the topic is earned: it has something to earn it by (required
+/// items or a quiz), every required item is done, and, when it has a quiz,
+/// the last score was at least 70%.
+bool topicEarned(Iterable<StudyItem> items, {int? quizPercent}) =>
+    (items.any((i) => i.required && i.retired.isEmpty) || topicQuiz(items) != null) &&
+    openRequired(items).isEmpty &&
+    !quizPending(items, quizPercent);
+
+/// Whether ticking the topic now asks for a short note: a required item is
+/// still open, or its quiz is not yet passed.
+bool tickNeedsNote(Iterable<StudyItem> items, {int? quizPercent}) =>
+    openRequired(items).isNotEmpty || quizPending(items, quizPercent);
+
+/// Whether a practice task can be marked done: it needs an evidence link
+/// or, when there is nothing to link to, a short note on what was done.
+bool taskCanBeDone(String evidence, String note) => evidence.trim().isNotEmpty || note.trim().isNotEmpty;
+
+/// The row id of the portfolio item made from a practice task, so a second
+/// tap (or another device) finds the same one.
+String taskPortfolioId(String itemId) => '$itemId.portfolio';
+
+/// The notes the Notes page lists: notes made from a plan ([isPlanNote])
+/// are hidden unless [fromPlans] is on, then the [tag] and the search
+/// [query] narrow it.
+List<Note> visibleNotes(Iterable<Note> notes, {bool fromPlans = false, String? tag, String query = ''}) {
+  final q = query.trim().toLowerCase();
+  return [
+    for (final n in notes)
+      if ((fromPlans || !isPlanNote(n)) &&
+          (tag == null || n.tags.split(',').map((t) => t.trim()).contains(tag)) &&
+          (q.isEmpty || n.title.toLowerCase().contains(q) || n.body.toLowerCase().contains(q)))
+        n,
+  ];
+}
 
 /// The topic's criteria refs.
 List<String> criteriaRefs(Topic t) => [

@@ -202,3 +202,9 @@ String retiredNote(int n) => n == 0
     ? ''
     : ' ${n == 1 ? '1 card is' : '$n cards are'} no longer in the plan: '
           'set aside with ${n == 1 ? 'its' : 'their'} reviews, not shown for review.';
+
+/// The import message's note on study items a re-sent plan no longer has.
+String retiredItemsNote(int n) => n == 0
+    ? ''
+    : ' ${n == 1 ? '1 study item is' : '$n study items are'} no longer in the plan: '
+          'set aside on ${n == 1 ? 'its' : 'their'} topic page, not counted. Items you had done stay as they are.';

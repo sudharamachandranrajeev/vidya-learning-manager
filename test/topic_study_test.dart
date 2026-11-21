@@ -273,7 +273,9 @@ void main() {
       expect(topicStatus(t, items), TopicStatus.review);
       await book.setItemDone(items[1], true, today: today);
       items = await itemsOf('Centering');
-      expect((topicEarned(items), tickNeedsNote(items)), (true, false));
+      // The topic has a quiz: required items alone do not earn it.
+      expect((topicEarned(items), tickNeedsNote(items)), (false, true));
+      expect((topicEarned(items, quizPercent: 70), tickNeedsNote(items, quizPercent: 70)), (true, false));
 
       await book.setTopicDone(t, true, today: today, note: 'Did it at work');
       t = await topic('Centering');

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/achievements.dart';
+import '../domain/next_up.dart';
 import '../domain/stats.dart';
 import '../domain/udyoga_link.dart';
 import 'charts.dart';
@@ -12,6 +13,7 @@ import 'common.dart';
 import 'course_page.dart';
 import 'dialogs.dart';
 import 'focus_page.dart';
+import 'next_up_card.dart';
 import 'notes_page.dart';
 import 'review_page.dart';
 import 'zen.dart';
@@ -67,7 +69,8 @@ class _Body extends ConsumerWidget {
     final unlocks = [...(ref.watch(unlocksProvider).value ?? const <Unlock>[])]
       ..sort((a, b) => b.day.compareTo(a.day));
     final byKey = {for (final a in achievements) a.key: a};
-    final next = _upNext(s);
+    final target = ref.watch(weekTargetProvider).value ?? 0;
+    final sinceMonday = minutesThisWeek(s.sessions, s.today);
     final week = s.lastWeek;
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     final labels = [
@@ -101,6 +104,7 @@ class _Body extends ConsumerWidget {
                   ),
                 ),
                 const _OfferedPlans(),
+                const FadeIn(delay: Duration(milliseconds: 30), child: NextUpCard()),
                 FadeIn(
                   delay: const Duration(milliseconds: 60),
                   child: _LevelCard(s, streaks: streaks),
@@ -114,34 +118,42 @@ class _Body extends ConsumerWidget {
                     minutesText(week.fold(0, (a, b) => a + b)),
                     style: t.bodyMedium?.copyWith(color: muted(context)),
                   ),
-                  child: BarChart(values: week, labels: labels, unit: ' min', height: 90),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      BarChart(values: week, labels: labels, unit: ' min', height: 90),
+                      const SizedBox(height: 12),
+                      if (target > 0) ...[
+                        LinearProgressIndicator(value: (sinceMonday / target).clamp(0, 1).toDouble()),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                weekTargetText(sinceMonday, target),
+                                style: t.bodyMedium?.copyWith(color: muted(context)),
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Change weekly target',
+                              icon: const Icon(Icons.tune),
+                              onPressed: () => weekTargetDialog(context, ref, target),
+                            ),
+                          ],
+                        ),
+                      ] else
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            icon: const Icon(Icons.flag_outlined),
+                            label: const Text('Set a weekly time target'),
+                            onPressed: () => weekTargetDialog(context, ref, 0),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 if (s.skills.any((k) => k.category == interviewCategory)) _InterviewReadiness(s),
-                if (next.isNotEmpty)
-                  SectionCard(
-                    title: 'Up next',
-                    child: Column(
-                      children: [
-                        for (final (course, topic) in next)
-                          CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            controlAffinity: ListTileControlAffinity.leading,
-                            value: false,
-                            title: Text(topic.title),
-                            subtitle: Text('${course.title} · ${minutesText(topic.minutes)}'),
-                            secondary: IconButton(
-                              tooltip: 'Open course',
-                              icon: const Icon(Icons.chevron_right),
-                              onPressed: () =>
-                                  Navigator.of(context)
-                                      .push(MaterialPageRoute(builder: (_) => CoursePage(course.id))),
-                            ),
-                            onChanged: (_) =>
-                                ref.mutate((x) => x.book.setTopicDone(topic, true, today: s.today)),
-                          ),
-                      ],
-                    ),
-                  ),
                 if (s.overdue.isNotEmpty)
                   SectionCard(
                     title: 'Past due',
@@ -185,12 +197,6 @@ class _Body extends ConsumerWidget {
       ],
     );
   }
-
-  /// The next open topic of each course being studied.
-  List<(Course, Topic)> _upNext(Stats s) => [
-    for (final c in s.courses.where((c) => c.status == 'doing'))
-      if (s.topicsOf(c.id).where((t) => t.done == null).firstOrNull case final t?) (c, t),
-  ].take(4).toList();
 }
 
 /// Plans another app sent through sync, re-read after every write and
@@ -256,7 +262,8 @@ class _OfferedPlansState extends ConsumerState<_OfferedPlans> {
                               '${o.plan.title}: ${r.courses} courses, ${r.topics} topics, ${r.cards} cards, '
                               '${r.skills} skills and ${r.notes} notes added.'
                               '${r.updatedCards > 0 ? ' ${r.updatedCards} changed cards updated, reviews kept.' : ''}'
-                              '${retiredNote(r.retiredCards)}',
+                              '${retiredNote(r.retiredCards)}'
+                              '${retiredItemsNote(r.retiredItems)}',
                             );
                           }
                         },

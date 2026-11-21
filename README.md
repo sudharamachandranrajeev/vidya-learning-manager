@@ -38,14 +38,22 @@ progress. Status: **early test releases**. It needs no internet and no account.
 - 🤖 **Plans drafted by AI** – describe your goal or exam and let the AI you set up for
   **Ask AI** write the plan, or copy Vidya's prompt into any AI chat and paste the reply back.
   Courses with due dates, topics, study notes, skills and flashcards arrive in one go.
-- ⏱️ **Focus timer and study log** – run a quiet 15 to 60 minute timer, or log time by hand.
-  Record test scores as you go.
+- ▶️ **Next up** – Home and each course show the one thing to study next, with one tap to start
+  it (a video picks up where you stopped, "Resume at 12:30").
+- 📖 **Topic pages** – each topic holds its videos, articles, books, practice tasks and your own
+  notes. Take its quiz: missed questions become flashcards by themselves. A practice task needs
+  an evidence link (or a note) to be done, and goes into your portfolio in one tap.
+- ⏱️ **Focus timer and study log** – run a quiet 15 to 60 minute timer, or log time by hand, on a
+  course or a topic. Set a weekly time target if you like: Home shows how far you are since
+  Monday, and a quiet week costs nothing. Record test scores as you go.
 - 🃏 **Flashcards that stick** – cards come back just before you would forget them (spaced
   repetition). See what is due today and this week.
 - 📈 **Skills and gaps** – rate each skill 0 to 5 and set a target. The gap is your to-do list.
 - 🏆 **A portfolio** – projects, certificates, talks and degrees, each linked to the skills it
   proves. Copy it all as text for a CV.
-- 📝 **Notes** – a searchable knowledge base with tags.
+- 📝 **Notes** – a searchable knowledge base with tags. Notes a plan made sit behind **From plans**
+  so your own come first.
+- 📤 **Your history, yours** – export everything you studied as Markdown or JSON from Settings.
 - 📊 **Progress you did not type in** – study time, streaks, scores, retention and a weekly chart,
   all worked out from what you record.
 - 🌱 **Quietly game-like** – three small quests a day, levels from Seed to Sage and 34
@@ -181,11 +189,31 @@ Plans made before topic pages (format 1) still import. Format 2 adds, all option
   The type is one of course, video, article, book, practice task, quiz, interview drill or note.
   A practice task may add `instructions` and `doneWhen`. An `id` keeps an item the same when
   the plan comes again.
-- per topic, `quiz`: `{ "question", "kind": "choice" | "short" | "card", "options", "answer" }`,
-  and `drills`: `{ "question", "criterion", "rubric", "story" }`. They are listed under
+- per topic, `quiz`: `{ "question", "kind": "choice" | "short" | "card", "options", "answer",
+  "explain" }`, and `drills`: `{ "question", "criterion", "rubric", "story" }`. They are under
   **Check yourself** on the topic page.
 - for the plan, `criteria`: `{ "id", "text", "essential", "kind", "source", "shown" }`, and a
   `role`; each topic lists the criteria it works towards in its own `criteria` (ids).
+
+An item the plan stops sending is set aside on its topic page (**No longer in the plan**), not
+deleted, and no longer counts; items you had done stay as they are. Quiz questions you add or
+change are kept when the plan comes again.
+
+#### Topics, quizzes and practice tasks
+
+1. Tap a topic on a course page to open it. Tick items as you go; a video or book keeps where
+   you stopped.
+2. Under **Check yourself**, tap **Take the quiz**. Tap an option, type a short answer (a close
+   match is marked right by itself; otherwise compare with the answer and mark yourself), or
+   recall a card and mark yourself. Each missed question becomes a flashcard in the course's
+   deck, once, however often you retake it.
+3. **Edit questions** adds your own. If you connected an AI for **Ask AI**, **Write questions
+   with AI** adds a few, labelled AI and editable; only the topic and item titles are sent.
+4. A topic is earned when its required items are done and, if it has a quiz, your last score was
+   70% or more. You can still tick it off earlier with a short note.
+5. A practice task shows its instructions and "done when" line. Marking it done asks for an
+   evidence link, or a note when there is nothing to link to; then **Add to portfolio** makes it
+   a portfolio project in one tap.
 
 Vidya keeps links and titles only, never a course's text. Study-guide notes from older plans
 are split into topic notes and link items once, when Vidya opens; the guide itself is kept.

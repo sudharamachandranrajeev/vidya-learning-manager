@@ -117,6 +117,12 @@ class LearnItems extends Table with SyncedRow {
   /// `criterion`, `rubric` and `story`, a task's `instructions` and
   /// `doneWhen`. '' when there is nothing more.
   TextColumn get content => text().withDefault(const Constant(''))();
+
+  /// The day a plan sent again without this item, '' while it is in use. A
+  /// retired item is kept (with anything the learner did on it) but no
+  /// longer counts towards the topic or shows as next up. Items the learner
+  /// had already done are never retired.
+  TextColumn get retired => text().withDefault(const Constant(''))();
 }
 
 /// What a job (or any goal) asks for, from a plan: one row per essential or
@@ -145,6 +151,9 @@ class LearnCriteria extends Table with SyncedRow {
 @DataClassName('StudySession')
 class LearnSessions extends Table with SyncedRow {
   TextColumn get courseId => text().nullable()();
+
+  /// The topic studied, when the time was logged on a topic page.
+  TextColumn get topicId => text().nullable()();
   TextColumn get day => text()();
   IntColumn get minutes => integer()();
   TextColumn get note => text().withDefault(const Constant(''))();
@@ -154,6 +163,9 @@ class LearnSessions extends Table with SyncedRow {
 @DataClassName('Assessment')
 class LearnAssessments extends Table with SyncedRow {
   TextColumn get courseId => text().nullable()();
+
+  /// The topic whose quiz this is, null for a test recorded by hand.
+  TextColumn get topicId => text().nullable()();
   TextColumn get title => text()();
   TextColumn get day => text()();
   RealColumn get score => real()();
