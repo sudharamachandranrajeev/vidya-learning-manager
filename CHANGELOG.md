@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Topic pages: tap a topic to open it. Each has its status (not started, studying, review, done), why it matters (the job criteria a plan links to it), its study items (course, video, article, book, practice task, quiz, interview drill or note, each with its own fields: where you stopped, a one-line takeaway, an evidence link), your own Markdown note, and a "Check yourself" list of its quiz and drills. The tick box stays on the course page. A topic whose required items are all done is earned; ticking it earlier asks for a short note.
+- Study plans format 2: per-topic `items`, `quiz` and `drills`, plan `criteria` and `role`. Udyoga's role plans arrive with their criteria and items. Format 1 plans still import. A plan sent again updates its items in place and keeps what you marked done. The AI prompt asks for items, quizzes and drills.
+- Study-guide notes from earlier plans are split into one note per topic, with their links as items, the first time this version opens. The guide notes are kept. Notes made from a plan earn no experience until you write in them.
+
 - Study plans from your career file (the `settings/vidya-*.json` files Udyoga syncs) are offered on Home as "A study plan from your career file", one tap to add. Settings, *Plans from your career file*, can add them, and update them when the file changes, without asking; Udyoga's own plans still wait for a tap.
 - A study plan Udyoga sends through sync is offered on Home and added in one tap; adding a re-sent plan updates the same program. What you finish and the skills you rate go back to Udyoga by themselves. Importing a plan file still works without sync.
 - A plan card the re-sent plan no longer has (a story deleted in Udyoga) is set aside, not deleted: its reviews are kept, it is never due, and it comes back as it was if the plan sends it again. Review shows how many are set aside.

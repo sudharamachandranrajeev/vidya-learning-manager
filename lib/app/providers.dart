@@ -135,6 +135,32 @@ final notesProvider = _rows<$LearnNotesTable, Note>(
 
 final unlocksProvider = _rows<$LearnUnlocksTable, Unlock>((db) => db.learnUnlocks);
 
+/// Every topic's study items, in list order.
+final itemsProvider = _rows<$LearnItemsTable, StudyItem>(
+  (db) => db.learnItems,
+  orderBy: [(i) => OrderingTerm.asc(i.ord), (i) => OrderingTerm.asc(i.id)],
+);
+
+/// The criteria plans brought, per program, in plan order.
+final criteriaProvider = _rows<$LearnCriteriaTable, Criterion>(
+  (db) => db.learnCriteria,
+  orderBy: [(c) => OrderingTerm.asc(c.ord)],
+);
+
+/// Splits the study-guide notes older plans made into topic notes and link
+/// items, once when the app opens (see `splitStudyGuides`; running again
+/// changes nothing). Gives how many topics gained something.
+final guideSplitProvider = FutureProvider<int>((ref) async {
+  final n = await ref.watch(sessionProvider).book.splitStudyGuides(today: today());
+  if (n > 0) {
+    Future.microtask(() {
+      ref.read(revisionProvider.notifier).bump();
+      ref.read(syncProvider.notifier).soon();
+    });
+  }
+  return n;
+});
+
 /// Every measure in one place; rebuilt after each write and at midnight's
 /// next write (the day comes from [todayProvider]).
 final statsProvider = FutureProvider<Stats>((ref) {

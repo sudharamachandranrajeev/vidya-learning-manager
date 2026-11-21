@@ -15,6 +15,9 @@ class LearnPrograms extends Table with SyncedRow {
   TextColumn get status => text().withDefault(const Constant('active'))();
   TextColumn get started => text()();
   TextColumn get target => text().nullable()();
+
+  /// The job role a plan from Udyoga is for ("IT Trainer"), '' otherwise.
+  TextColumn get role => text().withDefault(const Constant(''))();
 }
 
 /// One course, book, certification or project inside a program.
@@ -48,8 +51,94 @@ class LearnTopics extends Table with SyncedRow {
   IntColumn get minutes => integer().withDefault(const Constant(30))();
   IntColumn get ord => integer().withDefault(const Constant(0))();
 
-  /// The day it was finished, null while open.
+  /// The day it was finished, null while open. Stats and achievements
+  /// count a topic as finished by this alone.
   TextColumn get done => text().nullable()();
+
+  /// What the learner says about an open topic: '' (worked out from its
+  /// items, see `topicStatus`), `studying` or `review`. A ticked topic is
+  /// done whatever this says.
+  TextColumn get status => text().withDefault(const Constant(''))();
+
+  /// The topic's own Markdown note (a row of [LearnNotes]), '' until made.
+  TextColumn get noteId => text().withDefault(const Constant(''))();
+
+  /// Comma-separated ids of the program's criteria ([LearnCriteria.ref])
+  /// this topic works towards: the "why it matters".
+  TextColumn get criteria => text().withDefault(const Constant(''))();
+
+  /// The short note given when the topic was ticked before its required
+  /// items were done, '' otherwise.
+  TextColumn get tickNote => text().withDefault(const Constant(''))();
+}
+
+/// One thing to study or do for a topic: a course, video, article, book,
+/// practice task, quiz, interview drill or note (see study_items.dart).
+/// Only links and the learner's own words are kept, never course text.
+@DataClassName('StudyItem')
+class LearnItems extends Table with SyncedRow {
+  TextColumn get topicId => text()();
+
+  /// course | video | article | book | practice task | quiz |
+  /// interview drill | note
+  TextColumn get type => text().withDefault(const Constant('article'))();
+  TextColumn get title => text()();
+  TextColumn get url => text().withDefault(const Constant(''))();
+
+  /// Where it comes from: a site, channel, publisher, or "AI".
+  TextColumn get source => text().withDefault(const Constant(''))();
+  TextColumn get licence => text().withDefault(const Constant(''))();
+
+  /// Estimated minutes, 0 when not known.
+  IntColumn get minutes => integer().withDefault(const Constant(0))();
+
+  /// Whether the topic is earned only once this is done.
+  BoolColumn get required => boolean().withDefault(const Constant(false))();
+  IntColumn get ord => integer().withDefault(const Constant(0))();
+
+  /// The day it was done, null while open.
+  TextColumn get done => text().nullable()();
+
+  /// Where the learner stopped in a video or book ("12:30", "page 84").
+  TextColumn get stoppedAt => text().withDefault(const Constant(''))();
+
+  /// One line in the learner's words after an article or book; the text of
+  /// a note item.
+  TextColumn get takeaway => text().withDefault(const Constant(''))();
+
+  /// A link to what a practice task produced.
+  TextColumn get evidence => text().withDefault(const Constant(''))();
+
+  /// The plan's stable id for the item, '' for the learner's own. A plan
+  /// sent again updates the item with the same ref in place.
+  TextColumn get ref => text().withDefault(const Constant(''))();
+
+  /// More, as JSON, by type: a quiz's `questions`, a drill's `question`,
+  /// `criterion`, `rubric` and `story`, a task's `instructions` and
+  /// `doneWhen`. '' when there is nothing more.
+  TextColumn get content => text().withDefault(const Constant(''))();
+}
+
+/// What a job (or any goal) asks for, from a plan: one row per essential or
+/// desirable criterion, so each can later show its own evidence.
+@DataClassName('Criterion')
+class LearnCriteria extends Table with SyncedRow {
+  TextColumn get programId => text()();
+
+  /// The plan's id for it ("e1"), which topics list in their criteria.
+  TextColumn get ref => text()();
+  TextColumn get body => text()();
+  BoolColumn get essential => boolean().withDefault(const Constant(false))();
+
+  /// skill | requirement | value | knowledge … as the sender names it.
+  TextColumn get kind => text().withDefault(const Constant(''))();
+
+  /// Where it comes from: "ESCO", "advert", "AI".
+  TextColumn get source => text().withDefault(const Constant(''))();
+
+  /// Whether the learner's CV already shows it; null when not known.
+  BoolColumn get shown => boolean().nullable()();
+  IntColumn get ord => integer().withDefault(const Constant(0))();
 }
 
 /// Time spent studying.

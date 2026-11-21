@@ -151,6 +151,10 @@ Vidya opens on **Home**, with today's quests. Every screen works empty.
 2. **Study**: tap **Focus** at the top of **Home** and pick a length. The time is logged when it
    ends. Or open a course and tap **Log time**.
 3. **Tick off topics** on the course page. The course and the goal move on by themselves.
+   Tap a topic to open its page: what to watch, read and do (add your own items, mark them
+   done, note where you stopped in a video or book), why it matters for the job, and your
+   own notes. A topic whose required items are all done is earned; ticking it before then
+   asks for a short note on why.
 4. **Add flashcards**: on **Review**, tap **Card**. Come back daily and tap **Begin review**.
 
 #### Import a whole study plan
@@ -166,8 +170,25 @@ Vidya opens on **Home**, with today's quests. Every screen works empty.
      tap **Open a file** for a saved `.json` plan.
 3. Check the summary (courses, topics, cards, and any missing parts), then tap **Import**.
 
-Each course's topic details and resources land in a study-guide note. Due dates count from the
-day you import. Importing the same plan again, or a part you left out, adds only what is new.
+Each course's topic details land in a study-guide note, and each topic also gets them as its
+own note, with its links as items on the topic page. Due dates count from the day you import.
+Importing the same plan again, or a part you left out, adds only what is new; items the plan
+sends again are updated in place and keep what you marked done.
+
+Plans made before topic pages (format 1) still import. Format 2 adds, all optional:
+
+- per topic, `items`: `{ "type", "title", "url", "source", "licence", "minutes", "required" }`.
+  The type is one of course, video, article, book, practice task, quiz, interview drill or note.
+  A practice task may add `instructions` and `doneWhen`. An `id` keeps an item the same when
+  the plan comes again.
+- per topic, `quiz`: `{ "question", "kind": "choice" | "short" | "card", "options", "answer" }`,
+  and `drills`: `{ "question", "criterion", "rubric", "story" }`. They are listed under
+  **Check yourself** on the topic page.
+- for the plan, `criteria`: `{ "id", "text", "essential", "kind", "source", "shown" }`, and a
+  `role`; each topic lists the criteria it works towards in its own `criteria` (ids).
+
+Vidya keeps links and titles only, never a course's text. Study-guide notes from older plans
+are split into topic notes and link items once, when Vidya opens; the guide itself is kept.
 See [`docs/examples/2026-11-08-car-inspector-7612.json`](docs/examples/2026-11-08-car-inspector-7612.json)
 for a full example: a plan for NYC Transit's Car Inspector exam 7612.
 

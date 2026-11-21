@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
+import '../db/database.dart';
 import '../domain/book.dart';
 import '../domain/stats.dart';
 import 'charts.dart';
 import 'common.dart';
 import 'dialogs.dart';
 import 'focus_page.dart';
+import 'topic_page.dart';
 import 'zen.dart';
 
 class CoursePage extends ConsumerWidget {
@@ -27,6 +29,7 @@ class CoursePage extends ConsumerWidget {
         final tests = s.assessments.where((a) => a.courseId == id).toList()
           ..sort((a, b) => b.day.compareTo(a.day));
         final spent = s.hoursOn(id);
+        final items = ref.watch(itemsProvider).value ?? const [];
         return Scaffold(
           appBar: AppBar(
             title: Text(c.title),
@@ -132,27 +135,11 @@ class CoursePage extends ConsumerWidget {
                                         child: const Icon(Icons.delete_outline),
                                       ),
                                       confirmDismiss: (_) => askSure(context, 'Delete topic?', tp.title),
-                                      onDismissed: (_) =>
-                                          ref.mutate((x) => x.book.remove(x.db.learnTopics, tp.id)),
-                                      child: CheckboxListTile(
-                                        contentPadding: EdgeInsets.zero,
-                                        controlAffinity: ListTileControlAffinity.leading,
-                                        value: tp.done != null,
-                                        title: Text(
-                                          tp.title,
-                                          style: tp.done != null
-                                              ? const TextStyle(decoration: TextDecoration.lineThrough)
-                                              : null,
-                                        ),
-                                        subtitle: Text(
-                                          tp.done != null
-                                              ? 'Done ${relativeDay(tp.done!, s.today)}'
-                                              : minutesText(tp.minutes),
-                                        ),
-                                        onChanged: (v) => ref.mutate(
-                                          (x) => x.book.setTopicDone(tp, v ?? false, today: s.today),
-                                        ),
-                                      ),
+                                      onDismissed: (_) => ref.mutate((x) => x.book.removeTopic(tp.id)),
+                                      child: _TopicTile(tp, [
+                                        for (final i in items)
+                                          if (i.topicId == tp.id) i,
+                                      ], today: s.today),
                                     ),
                                 ],
                               ),
@@ -199,4 +186,33 @@ class CoursePage extends ConsumerWidget {
       },
     ),
   );
+}
+
+/// A topic on the course page: the box ticks it off, a tap opens its page.
+class _TopicTile extends ConsumerWidget {
+  const _TopicTile(this.tp, this.items, {required this.today});
+  final Topic tp;
+  final List<StudyItem> items;
+  final String today;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final done = items.where((i) => i.done != null).length;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Checkbox(
+        value: tp.done != null,
+        onChanged: (v) => tickTopic(context, ref, tp, items, v ?? false, today: today),
+      ),
+      title: Text(tp.title, style: tp.done != null ? const TextStyle(decoration: TextDecoration.lineThrough) : null),
+      subtitle: Text(
+        [
+          tp.done != null ? 'Done ${relativeDay(tp.done!, today)}' : minutesText(tp.minutes),
+          if (items.isNotEmpty) '$done of ${items.length} items',
+        ].join(' · '),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => openTopic(context, tp.id),
+    );
+  }
 }
