@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/export.dart';
+import '../domain/resources.dart';
 import '../domain/review.dart';
 import '../ui/common.dart';
 import '../ui/dialogs.dart';
@@ -27,18 +28,99 @@ class SettingsPage extends StatelessWidget {
       _RemindersCard(),
       _CareerFileCard(),
       _HistoryCard(),
+      _DataSourcesCard(),
       AppLockCard(),
       HintsCard(),
       SyncCard(),
       SecurityCard(
         network:
-            'Vidya makes no network requests of its own. It talks to your sync server only if you sign in.',
+            'Vidya goes online only when you search for free resources or read a pasted link\'s title, '
+            'and talks to your sync server only if you sign in.',
       ),
       AboutCard(
         description:
             'Learning and knowledge management: programs, courses, skills, portfolio, notes and progress.',
       ),
     ],
+  );
+}
+
+/// The catalogues the free resource search asks, each with its licence or
+/// terms, and the optional YouTube key (this device's keychain only).
+class _DataSourcesCard extends ConsumerWidget {
+  const _DataSourcesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasKey = (ref.watch(youtubeKeyProvider).value ?? '').isNotEmpty;
+    return SectionCard(
+      title: 'Data sources',
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Find free resources asks these catalogues, only when you search. Vidya keeps each link and its '
+            'facts (title, length, level, licence), never the lesson text.',
+          ),
+          for (final d in dataSources)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(d.name),
+              subtitle: Text('${d.what}\nLicence or terms: ${d.terms}'),
+              isThreeLine: true,
+              trailing: IconButton(
+                tooltip: 'Open the ${d.name} terms',
+                icon: const Icon(Icons.open_in_new),
+                onPressed: () => openLink(context, d.url),
+              ),
+            ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.key_outlined),
+            title: const Text('Your YouTube key'),
+            subtitle: Text(
+              hasKey
+                  ? 'Added. YouTube search is on. Kept in this device\'s keychain, never synced.'
+                  : 'Not added, so YouTube search is off. Pasted YouTube links still work.',
+            ),
+            trailing: TextButton(
+              onPressed: () => _youtubeKeyDialog(context, ref, hasKey),
+              child: Text(hasKey ? 'Change' : 'Add'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _youtubeKeyDialog(BuildContext context, WidgetRef ref, bool hasKey) async {
+  final key = TextEditingController();
+  final store = ref.read(sessionProvider).keys.store;
+  await showFormDialog(
+    context,
+    title: 'Your YouTube key',
+    fields: (_) => [
+      const Text(
+        'Optional. A YouTube Data API v3 key of your own, from the Google Cloud console. The free quota '
+        'allows about 100 searches a day. The key stays in this device\'s keychain: it is never synced '
+        'or shared. Leave it empty and save to remove it.',
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: key,
+        obscureText: true,
+        autocorrect: false,
+        enableSuggestions: false,
+        decoration: const InputDecoration(labelText: 'YouTube API key'),
+      ),
+    ],
+    onSave: () async {
+      await ResourceSecrets.saveYoutubeKey(store, key.text);
+      ref.invalidate(youtubeKeyProvider);
+      return null;
+    },
   );
 }
 

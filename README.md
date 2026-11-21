@@ -43,6 +43,10 @@ progress. Status: **early test releases**. It needs no internet and no account.
 - 📖 **Topic pages** – each topic holds its videos, articles, books, practice tasks and your own
   notes. Take its quiz: missed questions become flashcards by themselves. A practice task needs
   an evidence link (or a note) to be done, and goes into your portfolio in one tap.
+- 🔎 **Find free resources** – search Microsoft Learn, MIT Learn, OpenLearn and Open Library at
+  once for a topic or a role. Free results come first, each with its length, level, a free /
+  audit / paid badge and its licence; one tap adds it to a topic. Paste any other link (Coursera,
+  YouTube, NHS e-LfH…) and Vidya reads its title for you.
 - ⏱️ **Focus timer and study log** – run a quiet 15 to 60 minute timer, or log time by hand, on a
   course or a topic. Set a weekly time target if you like: Home shows how far you are since
   Monday, and a quiet week costs nothing. Record test scores as you go.
@@ -215,6 +219,24 @@ change are kept when the plan comes again.
    evidence link, or a note when there is nothing to link to; then **Add to portfolio** makes it
    a portfolio project in one tap.
 
+#### Find free resources
+
+1. On a topic page, tap **Find free resources** (or the 🔍 button on a course or a goal, which
+   searches for that course or role). The topic's name is already filled in; change it and tap
+   **Search**.
+2. Microsoft Learn, MIT Learn, OpenLearn and Open Library are asked at the same time. Each has
+   its own line ("MIT Learn: 20 found"); if one is down, the others still answer.
+3. Free results come first. Each shows its source, length, level, a **Free**, **Free to audit**,
+   **Free to borrow** or **Paid** badge, and its licence. Tap **Add** to put it on the topic.
+4. "Free" changes. If a course turns out to be paid, open the item, tap **Edit** and change
+   **Free or paid**.
+5. Anything else: tap **+** on a topic, paste the link and tap the **T** button. Vidya reads the
+   title from that one page (YouTube and Vimeo through their oEmbed service). If it cannot, type
+   the title yourself.
+6. Optional: add your own YouTube Data API key in **Settings → Data sources** to search YouTube
+   too (about 100 searches a day on the free quota). The key stays in this device's keychain and
+   is never synced. Settings also lists each catalogue with its licence or terms.
+
 Vidya keeps links and titles only, never a course's text. Study-guide notes from older plans
 are split into topic notes and link items once, when Vidya opens; the guide itself is kept.
 See [`docs/examples/2026-11-08-car-inspector-7612.json`](docs/examples/2026-11-08-car-inspector-7612.json)
@@ -261,8 +283,11 @@ flowchart LR
   every course and the goal is done.
 - **On each device**, Vidya keeps your data in an encrypted database. Without your key it is
   unreadable.
-- **Vidya makes no network requests of its own.** It talks to your sync server only if you sign
-  in. The next release also asks GitHub once a day for a newer version (you can switch this off).
+- **Vidya goes online only when you ask it to.** It searches the free catalogues when you tap
+  **Search**, reads a pasted link's title when you tap the **T** button, and talks to your sync
+  server only if you sign in. The Microsoft Learn catalogue and the OpenLearn feed are kept on
+  the device for a day, so a second search does not ask again. The next release also asks
+  GitHub once a day for a newer version (you can switch this off).
 
 > [!IMPORTANT]
 > Your password and recovery key are the only ways to unlock synced data. If you lose both, nobody

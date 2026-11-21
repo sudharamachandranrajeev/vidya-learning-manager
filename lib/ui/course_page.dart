@@ -12,6 +12,7 @@ import 'common.dart';
 import 'dialogs.dart';
 import 'focus_page.dart';
 import 'next_up_card.dart';
+import 'resource_search.dart';
 import 'topic_page.dart';
 import 'zen.dart';
 
@@ -37,6 +38,11 @@ class CoursePage extends ConsumerWidget {
           appBar: AppBar(
             title: Text(c.title),
             actions: [
+              IconButton(
+                tooltip: 'Find free resources for this course',
+                icon: const Icon(Icons.travel_explore),
+                onPressed: () => openResourceSearch(context, query: c.title, topics: topics),
+              ),
               IconButton(
                 tooltip: 'Focus on this course',
                 icon: const Icon(Icons.self_improvement),

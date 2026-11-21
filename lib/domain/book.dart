@@ -202,7 +202,8 @@ class LearningBook {
     await save(db.learnTopics, fresh.copyWith(status: status), t.id);
   }
 
-  /// Adds the learner's own item at the end of a topic's list.
+  /// Adds the learner's own item at the end of a topic's list (typed in,
+  /// pasted as a link, or picked from a free resource search).
   Future<String> addItem(
     String topicId,
     String type,
@@ -214,6 +215,8 @@ class LearningBook {
     String stoppedAt = '',
     String takeaway = '',
     String evidence = '',
+    String licence = '',
+    String content = '',
   }) async {
     final last =
         await (db.select(db.learnItems)
@@ -237,6 +240,8 @@ class LearningBook {
         stoppedAt: Value(stoppedAt),
         takeaway: Value(takeaway),
         evidence: Value(evidence),
+        licence: Value(licence),
+        content: Value(content),
       ),
       id,
     );

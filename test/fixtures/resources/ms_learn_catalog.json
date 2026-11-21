@@ -1,0 +1,77 @@
+{
+  "modules": [
+    {
+      "summary": "Learn how a made-up ward rota tool stores shifts, and practise reading a shift report.",
+      "levels": ["beginner"],
+      "roles": ["functional-consultant", "business-user"],
+      "products": ["power-apps"],
+      "subjects": ["process-workflow"],
+      "uid": "learn.example.rota-basics",
+      "type": "module",
+      "title": "Introduction to rota reports",
+      "duration_in_minutes": 42,
+      "popularity": 0.9,
+      "icon_url": "https://learn.microsoft.com/en-us/training/achievements/example.svg",
+      "locale": "en-us",
+      "last_modified": "2026-11-06T18:11:00+00:00",
+      "url": "https://learn.microsoft.com/en-us/training/modules/example-rota-basics/?WT.mc_id=api_CatalogApi",
+      "firstUnitUrl": "https://learn.microsoft.com/en-us/training/modules/example-rota-basics/1-introduction/?WT.mc_id=api_CatalogApi",
+      "units": ["learn.example.rota-basics.introduction"],
+      "number_of_children": 6
+    },
+    {
+      "summary": "<p>Plan a training session for new users of a clinical system.</p>",
+      "levels": ["intermediate"],
+      "roles": ["trainer"],
+      "products": ["microsoft-365"],
+      "uid": "learn.example.train-the-trainer",
+      "type": "module",
+      "title": "Deliver system training to new staff",
+      "duration_in_minutes": 65,
+      "popularity": 0.1,
+      "locale": "en-us",
+      "last_modified": "2026-10-01T10:00:00+00:00",
+      "url": "https://learn.microsoft.com/en-us/training/modules/example-train-the-trainer/?WT.mc_id=api_CatalogApi",
+      "units": [],
+      "number_of_children": 5
+    }
+  ],
+  "learningPaths": [
+    {
+      "summary": "Get started with data reports for teams.",
+      "levels": ["beginner"],
+      "roles": ["data-analyst"],
+      "products": ["power-bi"],
+      "subjects": ["data-visualization"],
+      "uid": "learn.example.reports-path",
+      "type": "learningPath",
+      "title": "Build your first data report",
+      "duration_in_minutes": 180,
+      "rating": {"count": 0},
+      "popularity": 0.5,
+      "locale": "en-us",
+      "last_modified": "2026-10-28T17:12:00+00:00",
+      "url": "https://learn.microsoft.com/en-us/training/paths/example-reports-path/?WT.mc_id=api_CatalogApi",
+      "modules": ["learn.example.rota-basics"],
+      "number_of_children": 1
+    }
+  ],
+  "courses": [
+    {
+      "uid": "course.ex-100t00",
+      "course_number": "EX-100T00",
+      "title": "Data reports with a trainer",
+      "summary": "<p>A classroom course on data reports.</p>\n<h4>Audience</h4>",
+      "duration_in_hours": 24,
+      "url": "https://learn.microsoft.com/en-us/training/courses/ex-100t00/?WT.mc_id=api_CatalogApi",
+      "locales": ["en"],
+      "last_modified": "2025-08-12T23:28:00+00:00",
+      "type": "course",
+      "levels": ["intermediate"],
+      "roles": ["data-analyst"],
+      "products": ["power-bi"],
+      "study_guide": [{"uid": "learn.example.reports-path", "type": "learningPath"}],
+      "recommendation_list": []
+    }
+  ]
+}

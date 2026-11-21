@@ -7,10 +7,12 @@ import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/next_up.dart';
 import '../domain/quiz.dart';
+import '../domain/resources.dart';
 import '../domain/study_items.dart';
 import 'common.dart';
 import 'dialogs.dart';
 import 'quiz_page.dart';
+import 'resource_search.dart';
 import 'zen.dart';
 
 /// Everything one topic page shows, read in one go.
@@ -202,25 +204,45 @@ class TopicPage extends ConsumerWidget {
                       _WhyItMatters(linked),
                       SectionCard(
                         title: 'Items',
-                        trailing: IconButton(
-                          tooltip: 'Add item',
-                          icon: const Icon(Icons.add),
-                          onPressed: () => itemDialog(context, ref, t.id),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Find free resources',
+                              icon: const Icon(Icons.travel_explore),
+                              onPressed: () => openResourceSearch(context, query: t.title, topicId: t.id),
+                            ),
+                            IconButton(
+                              tooltip: 'Add item',
+                              icon: const Icon(Icons.add),
+                              onPressed: () => itemDialog(context, ref, t.id),
+                            ),
+                          ],
                         ),
-                        child: study.isEmpty
-                            ? const Text('Add what you will watch, read or do for this topic.')
-                            : Column(
-                                children: [
-                                  for (final (k, i) in study.indexed)
-                                    _ItemTile(
-                                      i,
-                                      today: v.today,
-                                      first: k == 0,
-                                      last: k == study.length - 1,
-                                      inPortfolio: v.inPortfolio.contains(i.id),
-                                    ),
-                                ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (study.isEmpty)
+                              const Text('Add what you will watch, read or do for this topic.')
+                            else
+                              for (final (k, i) in study.indexed)
+                                _ItemTile(
+                                  i,
+                                  today: v.today,
+                                  first: k == 0,
+                                  last: k == study.length - 1,
+                                  inPortfolio: v.inPortfolio.contains(i.id),
+                                ),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                icon: const Icon(Icons.travel_explore),
+                                label: const Text('Find free resources'),
+                                onPressed: () => openResourceSearch(context, query: t.title, topicId: t.id),
                               ),
+                            ),
+                          ],
+                        ),
                       ),
                       _MyNotes(v),
                       _CheckYourself(t.id, checks, v.criteria, quizPercent: v.quizPercent),
@@ -357,6 +379,7 @@ class _ItemTile extends ConsumerWidget {
       itemTypes[i.type] ?? i.type,
       if (i.minutes > 0) minutesText(i.minutes),
       if (i.required) 'required',
+      if (accessTypes.contains(i.type) && itemAccess(content) != Access.unknown) itemAccess(content).label,
       if (i.source.isNotEmpty) i.source,
       if (i.licence.isNotEmpty) i.licence,
     ].join(' · ');
@@ -469,7 +492,12 @@ Future<void> _setDone(BuildContext context, WidgetRef ref, StudyItem i, bool don
   );
 }
 
+/// Item types that carry a free/paid badge the learner can correct.
+const accessTypes = {'course', 'video', 'article', 'book'};
+
 /// Adds an item to a topic, or edits [item]. The fields follow the type.
+/// A pasted link can fill in the title (and the type, source and length)
+/// from the page's own metadata; if that fails the learner types it.
 Future<void> itemDialog(BuildContext context, WidgetRef ref, String topicId, {StudyItem? item}) async {
   final title = TextEditingController(text: item?.title ?? '');
   final url = TextEditingController(text: item?.url ?? '');
@@ -478,18 +506,82 @@ Future<void> itemDialog(BuildContext context, WidgetRef ref, String topicId, {St
   final stopped = TextEditingController(text: item?.stoppedAt ?? '');
   final takeaway = TextEditingController(text: item?.takeaway ?? '');
   final evidence = TextEditingController(text: item?.evidence ?? '');
+  final content = item == null ? const <String, Object?>{} : itemContent(item);
   var type = item?.type ?? 'video';
   var required = item?.required ?? false;
+  var access = itemAccess(content);
+  var reading = false;
+  String? linkNote;
+
+  Future<void> readTitle(StateSetter setState) async {
+    setState(() {
+      reading = true;
+      linkNote = null;
+    });
+    try {
+      final info = await readLinkInfo(ref.read(httpClientProvider), url.text);
+      title.text = info.title;
+      if (source.text.trim().isEmpty) source.text = info.source;
+      if (minutes.text.trim().isEmpty && info.minutes > 0) minutes.text = '${info.minutes}';
+      if (item == null) type = info.type;
+      if (access == Access.unknown) access = info.access;
+      linkNote = 'Title read from the page. Check it, and the free or paid badge.';
+    } on ResourceError catch (e) {
+      linkNote = 'Could not read the title: ${e.message} Type it in.';
+    } finally {
+      // The dialog may have been closed while the page was being read.
+      try {
+        setState(() => reading = false);
+      } on FlutterError {
+        // Closed: nothing to show.
+      }
+    }
+  }
+
   await showFormDialog(
     context,
     title: item == null ? 'Add item' : 'Edit item',
     fields: (setState) => [
       Choice(label: 'Type', value: type, options: itemTypes, onChanged: (v) => setState(() => type = v)),
+      if (type != 'note')
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: TextField(
+            controller: url,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              labelText: 'Link',
+              hintText: 'Paste any link: https://…',
+              helperText: linkNote,
+              helperMaxLines: 3,
+              suffixIcon: reading
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  : IconButton(
+                      tooltip: 'Read the title from the link',
+                      icon: const Icon(Icons.title),
+                      onPressed: () {
+                        if (url.text.trim().isEmpty) return;
+                        readTitle(setState);
+                      },
+                    ),
+            ),
+          ),
+        ),
       Field(title, 'Title', autofocus: item == null),
-      if (type != 'note') Field(url, 'Link', hint: 'https://…'),
       if (type != 'note') Field(source, 'Source', hint: 'Site, channel or publisher'),
       Field(minutes, 'Minutes', number: true),
-      if (stoppableTypes.contains(type)) Field(stopped, 'Stopped at', hint: type == 'video' ? '12:30' : 'page 84'),
+      if (accessTypes.contains(type))
+        Choice<Access>(
+          label: 'Free or paid',
+          value: access,
+          options: {for (final a in Access.values) a: a.label},
+          onChanged: (v) => setState(() => access = v),
+        ),
+      if (stoppableTypes.contains(type))
+        Field(stopped, 'Stopped at', hint: type == 'video' ? '12:30' : 'page 84'),
       if (takeawayTypes.contains(type)) Field(takeaway, 'One-line takeaway'),
       if (type == 'note') Field(takeaway, 'Text', lines: 4),
       if (type == 'practice task') Field(evidence, 'Evidence link'),
@@ -507,6 +599,7 @@ Future<void> itemDialog(BuildContext context, WidgetRef ref, String topicId, {St
       final link = type == 'note' ? '' : url.text.trim();
       final m = (numberIn(minutes)?.round() ?? 0).clamp(0, 6000);
       final keepsTakeaway = type == 'note' || takeawayTypes.contains(type);
+      final extras = accessTypes.contains(type) ? withAccess(content, access) : (item?.content ?? '');
       await ref.mutate((s) async {
         if (item == null) {
           await s.book.addItem(
@@ -520,6 +613,7 @@ Future<void> itemDialog(BuildContext context, WidgetRef ref, String topicId, {St
             stoppedAt: stoppableTypes.contains(type) ? stopped.text.trim() : '',
             takeaway: keepsTakeaway ? takeaway.text.trim() : '',
             evidence: type == 'practice task' ? evidence.text.trim() : '',
+            content: extras,
           );
         } else {
           await s.book.saveItem(
@@ -533,6 +627,7 @@ Future<void> itemDialog(BuildContext context, WidgetRef ref, String topicId, {St
               stoppedAt: stoppableTypes.contains(type) ? stopped.text.trim() : item.stoppedAt,
               takeaway: keepsTakeaway ? takeaway.text.trim() : item.takeaway,
               evidence: type == 'practice task' ? evidence.text.trim() : item.evidence,
+              content: extras,
             ),
           );
         }

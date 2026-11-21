@@ -11,6 +11,7 @@ import 'common.dart';
 import 'course_page.dart';
 import 'dialogs.dart';
 import 'plan_import.dart';
+import 'resource_search.dart';
 import 'zen.dart';
 
 class LearnPage extends ConsumerWidget {
@@ -236,6 +237,15 @@ class ProgramPage extends ConsumerWidget {
             appBar: AppBar(
               title: Text(p.title),
               actions: [
+                IconButton(
+                  tooltip: 'Find free resources for this role',
+                  icon: const Icon(Icons.travel_explore),
+                  onPressed: () => openResourceSearch(
+                    context,
+                    query: p.title,
+                    topics: [for (final c in courses) ...s.topicsOf(c.id)],
+                  ),
+                ),
                 PopupMenuButton<String>(
                   onSelected: (v) async {
                     if (v == 'delete') {

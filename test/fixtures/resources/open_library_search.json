@@ -1,0 +1,33 @@
+{
+  "numFound": 2,
+  "start": 0,
+  "numFoundExact": true,
+  "q": "clinical teaching",
+  "docs": [
+    {
+      "author_name": ["A. Example", "B. Sample"],
+      "ebook_access": "no_ebook",
+      "first_publish_year": 2014,
+      "has_fulltext": false,
+      "isbn": ["9780000000002"],
+      "key": "/works/OL1000001W",
+      "number_of_pages_median": 331,
+      "title": "Clinical teaching made simple"
+    },
+    {
+      "ebook_access": "public",
+      "first_publish_year": 1911,
+      "has_fulltext": true,
+      "key": "/works/OL1000002W",
+      "title": "The art of teaching"
+    },
+    {
+      "author_name": ["C. Placeholder"],
+      "ebook_access": "borrowable",
+      "first_publish_year": 2000,
+      "key": "/works/OL1000003W",
+      "number_of_pages_median": 154,
+      "title": "Teaching in wards"
+    }
+  ]
+}

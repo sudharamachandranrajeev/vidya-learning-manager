@@ -4,11 +4,13 @@ import 'package:brahma_core/brahma_core.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:http/http.dart' as http;
 
 import '../db/database.dart';
 import '../domain/achievements.dart';
 import '../domain/next_up.dart';
 import '../domain/quiz.dart';
+import '../domain/resources.dart';
 import '../domain/review.dart';
 import '../domain/stats.dart';
 import '../domain/udyoga_link.dart';
@@ -212,4 +214,44 @@ final careerFileAutoAddProvider = FutureProvider<List<String>>((ref) async {
     });
   }
   return added;
+});
+
+// ---- free resource search ----
+
+/// The web client the resource search and link reading use. Tests
+/// override it with a mock that answers from fixtures.
+final httpClientProvider = Provider<http.Client>((ref) {
+  final c = http.Client();
+  ref.onDispose(c.close);
+  return c;
+});
+
+/// The no-key catalogues, kept for the life of the app so the Microsoft
+/// Learn and OpenLearn copies are read from the device only once a run.
+/// Their copies live in this device's local settings (not synced).
+final freeCataloguesProvider = Provider<List<ResourceCatalogue>>((ref) {
+  final client = ref.watch(httpClientProvider);
+  final db = ref.watch(sessionProvider).db;
+  final cache = KeyValueResourceCache(db.localSetting, db.setLocalSetting);
+  return [
+    MicrosoftLearnCatalogue(client, cache),
+    MitLearnCatalogue(client),
+    OpenLearnCatalogue(client, cache),
+    OpenLibraryCatalogue(client),
+  ];
+});
+
+/// The learner's own YouTube key from this device's keychain, '' when none.
+final youtubeKeyProvider = FutureProvider<String>(
+  (ref) => ResourceSecrets.youtubeKey(ref.watch(sessionProvider).keys.store),
+);
+
+/// Every catalogue a search asks: the free ones, plus YouTube only when the
+/// learner has added a key.
+final resourceCataloguesProvider = FutureProvider<List<ResourceCatalogue>>((ref) async {
+  final key = await ref.watch(youtubeKeyProvider.future);
+  return [
+    ...ref.watch(freeCataloguesProvider),
+    if (key.isNotEmpty) YouTubeCatalogue(ref.watch(httpClientProvider), key),
+  ];
 });

@@ -1,0 +1,15 @@
+{
+  "kind": "youtube#searchListResponse",
+  "items": [
+    {
+      "kind": "youtube#searchResult",
+      "id": {"kind": "youtube#video", "videoId": "abc123XYZ00"},
+      "snippet": {"title": "Teaching a skill in 10 minutes &amp; why it works", "channelTitle": "Example Channel", "description": "Made-up video."}
+    },
+    {
+      "kind": "youtube#searchResult",
+      "id": {"kind": "youtube#channel", "channelId": "UCexample"},
+      "snippet": {"title": "A channel, not a video", "channelTitle": "Example Channel"}
+    }
+  ]
+}
