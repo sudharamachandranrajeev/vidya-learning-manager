@@ -43,6 +43,10 @@ progress. Status: **early test releases**. It needs no internet and no account.
 - 📖 **Topic pages** – each topic holds its videos, articles, books, practice tasks and your own
   notes. Take its quiz: missed questions become flashcards by themselves. A practice task needs
   an evidence link (or a note) to be done, and goes into your portfolio in one tap.
+- 🎤 **Interview training** – practise each interview drill out loud against a timer, then rate
+  yourself on four checks (situation, own actions, result, link to the criterion). Keep a story
+  bank shown as STAR or CAR, answer scenario questions with a check / scope / escalate / hand
+  over frame, review weak criteria first before the interview, and log how a real interview went.
 - 🔎 **Find free resources** – search Microsoft Learn, MIT Learn and Open Library at once for
   a topic or a role (OpenLearn opens in your browser). Free results come first, each with its length, level, a free /
   audit / paid badge and its licence; one tap adds it to a topic. Paste any other link (Coursera,
@@ -219,6 +223,38 @@ change are kept when the plan comes again.
    evidence link, or a note when there is nothing to link to; then **Add to portfolio** makes it
    a portfolio project in one tap.
 
+#### Interview training
+
+1. **Practise a drill.** On a topic page, under **Check yourself**, tap an interview drill (or
+   **Add drill** to write your own and say what it tests). The page shows the question and the
+   criterion it tests. Press **Start** on the timer (two minutes; **+** and **−** change it by 30
+   seconds) and answer out loud as you would to the panel. Vidya does not record sound; your
+   phone's own voice recorder works if you want to listen back.
+2. **Rate yourself** on four checks, each **No**, **Partly** or **Yes** (0, 1 or 2): situation
+   clear, your own actions, the result, and linked back to the criterion. **Save this attempt**
+   keeps the score (out of 8) on the topic and the drill. Under 5 of 8 flags the drill as weak.
+   Delete any attempt from **Past attempts**.
+3. **Scenario questions** ("What would you do if…") open the scenario frame: what you would
+   check first, how you would stay within your role, when you would escalate, and how you would
+   write it down or hand it over. It is saved with the attempt. Switch it on for any drill.
+4. **Practise in Udyoga** hands the drill to Udyoga's voice simulator through your own sync. When
+   Udyoga sends a score back, it shows on the drill (see "Practise in Udyoga" below).
+5. **Story bank** (on a topic page, or the book button on **Before the interview**): your
+   Udyoga stories and your own, each shown as **STAR** (Situation, Task, Action, Result) or
+   **CAR** (Context, Action, Result) from the same text. Link a story to the criteria it shows
+   and the drills it answers. Picking a story while you practise links it too.
+6. **Before the interview**: on a goal, tap the **Interview training** button (a speaking head) at the top. Set the interview date for a
+   countdown. The page lists the weak criteria first (no practice yet, then low scores;
+   essential before desirable), then the stories linked to them, then the drills, weak ones
+   first.
+7. **After a real interview**, tap **Log a real interview**: the date, the employer and role,
+   the criteria and questions that went badly, and notes. The log is saved in **Notes** (tagged
+   *interview feedback*), and each weak criterion becomes a new drill on a topic linked to it,
+   or on an **Interview follow-ups** topic when none is.
+
+Your stories, scores and feedback logs stay on this device, or travel only through your own
+sync. Nothing is sent anywhere else.
+
 #### Find free resources
 
 1. On a topic page, tap **Find free resources** (or the 🔍 button on a course or a goal, which
@@ -271,6 +307,39 @@ the plan and your progress.
    most once every ten minutes.
 5. **Home → Interview readiness** shows each interview competency against its target. Press
    **Rehearse** to practise only your interview stories that are due.
+
+#### Practise in Udyoga (hand-off format)
+
+**Practise in Udyoga** on a drill writes one extra row to the shared `bridge_study_progress`
+table, with the id `vidya.practise-requests`. Udyoga reads progress rows only by its own plan
+ids, so today's Udyoga ignores this row; reading it is a follow-up for Udyoga. The row's
+`progress` is:
+
+```json
+{
+  "learning": [], "skills": [],
+  "format": "vidya-practise-requests", "version": 1,
+  "requests": [
+    {"id": "<Vidya drill row id>", "ref": "<plan drill id, if any>",
+     "question": "Tell me about a time…", "criterion": "<what it tests, in words>",
+     "role": "<the goal's role>", "topic": "<topic title>",
+     "story": "<Udyoga story id, if one is linked>", "asked": "<UTC ISO 8601>"}
+  ]
+}
+```
+
+Newest first, at most 30, one per drill (asking again moves it to the top). Only the story's
+id goes, never its text. Udyoga is to send its scores back as a `bridge_study_plans` row with
+the id `udyoga.practise-results` (a plan row, because each app writes only its own table):
+
+```json
+{"format": "udyoga-practise-results", "version": 1,
+ "results": [{"id": "<Vidya drill row id>", "day": "2026-11-21", "score": 7, "max": 10,
+              "summary": "optional"}]}
+```
+
+Vidya shows the newest score per drill, never offers that row as a plan, and counts the score
+like a self-rated one (scaled to 8) when it is newer than your own last attempt.
 
 ## 🧭 How it works
 

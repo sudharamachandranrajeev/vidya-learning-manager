@@ -173,12 +173,13 @@ bool autoCorrect(QuizQuestion q, String given) =>
 int percentOf(num score, num max) => max <= 0 ? 0 : (score * 100 / max).round();
 
 /// The latest quiz result for each topic, as a percent, from the recorded
-/// tests (the newest day wins; on one day, the last written).
+/// tests (the newest day wins; on one day, the last written). Interview
+/// drill attempts (rows with a detail) are not quizzes and are left out.
 Map<String, int> lastQuizPercents(Iterable<Assessment> tests) {
   final latest = <String, Assessment>{};
   for (final a in tests) {
     final t = a.topicId;
-    if (t == null || a.deleted) continue;
+    if (t == null || a.deleted || a.detail.isNotEmpty) continue;
     final had = latest[t];
     if (had == null || a.day.compareTo(had.day) > 0 || (a.day == had.day && a.hlc.compareTo(had.hlc) > 0)) {
       latest[t] = a;

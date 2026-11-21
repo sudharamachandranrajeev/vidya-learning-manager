@@ -561,9 +561,8 @@ List<Resource> parseMitLearn(String body) {
 /// OpenLearn's own search page for [query], opened in the browser by the
 /// "Search OpenLearn" row. Vidya does not read OpenLearn over the network:
 /// its feeds block apps, and the project skips sites that do.
-Uri openLearnSearchUrl(String query) => Uri.https('www.open.edu', '/openlearn/local/ocwglobalsearch/search.php', {
-  'q': query.trim(),
-});
+Uri openLearnSearchUrl(String query) =>
+    Uri.https('www.open.edu', '/openlearn/local/ocwglobalsearch/search.php', {'q': query.trim()});
 
 // ---- Open Library ----
 

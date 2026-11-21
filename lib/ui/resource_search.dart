@@ -224,7 +224,10 @@ class _OpenLearnRow extends StatelessWidget {
         const Icon(Icons.open_in_new, size: 16),
         const SizedBox(width: 8),
         Expanded(
-          child: Text('OpenLearn: link only, opens in your browser', style: Theme.of(context).textTheme.bodySmall),
+          child: Text(
+            'OpenLearn: link only, opens in your browser',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ),
         TextButton(
           onPressed: () => openLink(context, openLearnSearchUrl(query).toString()),

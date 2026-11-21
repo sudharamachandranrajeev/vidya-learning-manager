@@ -21,6 +21,7 @@ part 'database.g.dart';
     LearnSkills,
     LearnPortfolio,
     LearnNotes,
+    LearnStories,
     LearnUnlocks,
     LearnCards,
     LearnReviews,
@@ -50,6 +51,7 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
     'learn_skills',
     'learn_portfolio',
     'learn_notes',
+    'learn_stories',
     'learn_unlocks',
     'learn_cards',
     'learn_reviews',
@@ -59,13 +61,13 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   ];
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
-      for (final sql in [..._indexes, ..._v7Indexes, ..._v8Indexes]) {
+      for (final sql in [..._indexes, ..._v7Indexes, ..._v8Indexes, ..._v9Indexes]) {
         await customStatement(sql);
       }
     },
@@ -133,6 +135,21 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
           await customStatement(sql);
         }
       }
+      if (from < 9) {
+        // Interview training: a drill attempt's item and detail on its
+        // result, and the story bank. New columns and a new table only.
+        final tests = await _columns('learn_assessments');
+        for (final c in [learnAssessments.itemId, learnAssessments.detail]) {
+          if (!tests.contains(c.name)) await m.addColumn(learnAssessments, c);
+        }
+        final tables = await customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table'",
+        ).map((r) => r.read<String>('name')).get();
+        if (!tables.contains(learnStories.actualTableName)) await m.createTable(learnStories);
+        for (final sql in _v9Indexes) {
+          await customStatement(sql);
+        }
+      }
     },
   );
 
@@ -187,5 +204,10 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   static const _v8Indexes = [
     'CREATE INDEX IF NOT EXISTS learn_sessions_topic ON learn_sessions (topic_id)',
     'CREATE INDEX IF NOT EXISTS learn_assessments_topic ON learn_assessments (topic_id)',
+  ];
+
+  // Added in version 9.
+  static const _v9Indexes = [
+    'CREATE INDEX IF NOT EXISTS learn_assessments_item ON learn_assessments (item_id)',
   ];
 }

@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
 import '../db/database.dart';
+import '../domain/interview.dart';
 import '../domain/next_up.dart';
 import '../domain/quiz.dart';
 import '../domain/resources.dart';
 import '../domain/study_items.dart';
 import 'common.dart';
 import 'dialogs.dart';
+import 'interview_pages.dart';
 import 'quiz_page.dart';
 import 'resource_search.dart';
 import 'zen.dart';
@@ -38,13 +40,18 @@ typedef TopicView = ({
 
   /// Practice tasks already in the portfolio (by item id).
   Set<String> inPortfolio,
+
+  /// Each interview drill's practice so far (by item id).
+  Map<String, DrillEvidence> drills,
 });
 
 final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) async {
   ref.watch(revisionProvider);
   final today = ref.watch(todayProvider);
   final db = ref.watch(sessionProvider).db;
-  final topic = await (db.select(db.learnTopics)..where((t) => t.id.equals(id) & t.deleted.not())).getSingleOrNull();
+  final topic = await (db.select(
+    db.learnTopics,
+  )..where((t) => t.id.equals(id) & t.deleted.not())).getSingleOrNull();
   if (topic == null) return null;
   final course = await (db.select(
     db.learnCourses,
@@ -77,6 +84,10 @@ final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) as
   final portfolio = tasks.isEmpty
       ? const <PortfolioItem>[]
       : await (db.select(db.learnPortfolio)..where((p) => p.id.isIn(tasks) & p.deleted.not())).get();
+  final drills = await ref.watch(sessionProvider).book.drillEvidence([
+    for (final i in items)
+      if (i.type == 'interview drill') i.id,
+  ]);
   return (
     topic: topic,
     course: course,
@@ -92,6 +103,7 @@ final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) as
         if (i.retired.isNotEmpty) i,
     ],
     inPortfolio: {for (final p in portfolio) p.id.substring(0, p.id.length - '.portfolio'.length)},
+    drills: drills,
   );
 });
 
@@ -245,7 +257,14 @@ class TopicPage extends ConsumerWidget {
                         ),
                       ),
                       _MyNotes(v),
-                      _CheckYourself(t.id, checks, v.criteria, quizPercent: v.quizPercent),
+                      _CheckYourself(
+                        t.id,
+                        checks,
+                        v.criteria,
+                        quizPercent: v.quizPercent,
+                        evidence: v.drills,
+                        programId: v.course?.programId,
+                      ),
                       if (v.retired.isNotEmpty) _Retired(v.retired),
                     ],
                   ),
@@ -735,14 +754,24 @@ class _TopicNoteEditorState extends ConsumerState<_TopicNoteEditor> {
 /// The topic's quiz (take it, or add and edit its questions) and its
 /// interview drills.
 class _CheckYourself extends ConsumerWidget {
-  const _CheckYourself(this.topicId, this.items, this.criteria, {this.quizPercent});
+  const _CheckYourself(
+    this.topicId,
+    this.items,
+    this.criteria, {
+    this.quizPercent,
+    this.evidence = const {},
+    this.programId,
+  });
   final String topicId;
   final List<StudyItem> items;
   final List<Criterion> criteria;
   final int? quizPercent;
 
-  /// A drill's criterion: the program criterion with that ref, or the text.
-  String _criterion(String c) => criteria.where((x) => x.ref == c).firstOrNull?.body ?? c;
+  /// Each drill's practice so far.
+  final Map<String, DrillEvidence> evidence;
+
+  /// The topic's program, null for a course outside one.
+  final String? programId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -795,25 +824,54 @@ class _CheckYourself extends ConsumerWidget {
               ],
             ),
           ],
-          if (drills.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Interview drills: practise them out loud. Timed practice comes with interview training.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            for (final i in drills)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.record_voice_over_outlined),
-                title: Text(i.title),
-                subtitle: Text(
-                  [
-                    'Interview drill',
-                    if (itemContent(i)['criterion'] case final String c when c.isNotEmpty) 'tests ${_criterion(c)}',
-                  ].join(' · '),
-                ),
+          const SizedBox(height: 12),
+          Text(
+            drills.isEmpty
+                ? 'No interview drills yet. Add a question a panel might ask about this topic.'
+                : 'Interview drills: tap one to practise it out loud against a timer and rate yourself.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          for (final i in drills)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                evidence[i.id]?.weak ?? false ? Icons.flag : Icons.record_voice_over_outlined,
+                color: evidence[i.id]?.weak ?? false ? Theme.of(context).colorScheme.error : null,
               ),
-          ],
+              title: Text(i.title),
+              subtitle: Text(
+                [
+                  'Interview drill',
+                  if (drillCriterionText(i, criteria) case final c when c.isNotEmpty) 'tests $c',
+                  if (isScenarioDrill(i)) 'scenario',
+                  drillEvidenceText(evidence[i.id] ?? const DrillEvidence()),
+                ].join(' · '),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => openDrill(context, i.id),
+            ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Add drill'),
+                onPressed: () => addDrillDialog(context, ref, topicId, criteria),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.menu_book_outlined),
+                label: const Text('Story bank'),
+                onPressed: () => openStoryBank(context, programId: programId),
+              ),
+              if (programId != null)
+                TextButton.icon(
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: const Text('Before the interview'),
+                  onPressed: () => openBeforeInterview(context, programId!),
+                ),
+            ],
+          ),
         ],
       ),
     );

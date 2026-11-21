@@ -4242,6 +4242,25 @@ class $LearnAssessmentsTable extends LearnAssessments
     requiredDuringInsert: false,
     defaultValue: const Constant(100),
   );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
+    'item_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _detailMeta = const VerificationMeta('detail');
+  @override
+  late final GeneratedColumn<String> detail = GeneratedColumn<String>(
+    'detail',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4253,6 +4272,8 @@ class $LearnAssessmentsTable extends LearnAssessments
     day,
     score,
     max,
+    itemId,
+    detail,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4325,6 +4346,18 @@ class $LearnAssessmentsTable extends LearnAssessments
         max.isAcceptableOrUnknown(data['max']!, _maxMeta),
       );
     }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    }
+    if (data.containsKey('detail')) {
+      context.handle(
+        _detailMeta,
+        detail.isAcceptableOrUnknown(data['detail']!, _detailMeta),
+      );
+    }
     return context;
   }
 
@@ -4370,6 +4403,14 @@ class $LearnAssessmentsTable extends LearnAssessments
         DriftSqlType.double,
         data['${effectivePrefix}max'],
       )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}item_id'],
+      ),
+      detail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}detail'],
+      )!,
     );
   }
 
@@ -4391,6 +4432,16 @@ class Assessment extends DataClass implements Insertable<Assessment> {
   final String day;
   final double score;
   final double max;
+
+  /// The study item this result is for (an interview drill practised on
+  /// its topic), null for a quiz or a test recorded by hand.
+  final String? itemId;
+
+  /// More about the attempt, as JSON, '' for quizzes and tests. A drill
+  /// attempt keeps its four self-rated checks, the seconds used, the
+  /// scenario frame, the story used and a note (see interview.dart). Only
+  /// rows with a detail are drill attempts.
+  final String detail;
   const Assessment({
     required this.id,
     required this.hlc,
@@ -4401,6 +4452,8 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     required this.day,
     required this.score,
     required this.max,
+    this.itemId,
+    required this.detail,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4418,6 +4471,10 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     map['day'] = Variable<String>(day);
     map['score'] = Variable<double>(score);
     map['max'] = Variable<double>(max);
+    if (!nullToAbsent || itemId != null) {
+      map['item_id'] = Variable<String>(itemId);
+    }
+    map['detail'] = Variable<String>(detail);
     return map;
   }
 
@@ -4436,6 +4493,10 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       day: Value(day),
       score: Value(score),
       max: Value(max),
+      itemId: itemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(itemId),
+      detail: Value(detail),
     );
   }
 
@@ -4454,6 +4515,8 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       day: serializer.fromJson<String>(json['day']),
       score: serializer.fromJson<double>(json['score']),
       max: serializer.fromJson<double>(json['max']),
+      itemId: serializer.fromJson<String?>(json['itemId']),
+      detail: serializer.fromJson<String>(json['detail']),
     );
   }
   @override
@@ -4469,6 +4532,8 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       'day': serializer.toJson<String>(day),
       'score': serializer.toJson<double>(score),
       'max': serializer.toJson<double>(max),
+      'itemId': serializer.toJson<String?>(itemId),
+      'detail': serializer.toJson<String>(detail),
     };
   }
 
@@ -4482,6 +4547,8 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     String? day,
     double? score,
     double? max,
+    Value<String?> itemId = const Value.absent(),
+    String? detail,
   }) => Assessment(
     id: id ?? this.id,
     hlc: hlc ?? this.hlc,
@@ -4492,6 +4559,8 @@ class Assessment extends DataClass implements Insertable<Assessment> {
     day: day ?? this.day,
     score: score ?? this.score,
     max: max ?? this.max,
+    itemId: itemId.present ? itemId.value : this.itemId,
+    detail: detail ?? this.detail,
   );
   Assessment copyWithCompanion(LearnAssessmentsCompanion data) {
     return Assessment(
@@ -4504,6 +4573,8 @@ class Assessment extends DataClass implements Insertable<Assessment> {
       day: data.day.present ? data.day.value : this.day,
       score: data.score.present ? data.score.value : this.score,
       max: data.max.present ? data.max.value : this.max,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      detail: data.detail.present ? data.detail.value : this.detail,
     );
   }
 
@@ -4518,14 +4589,27 @@ class Assessment extends DataClass implements Insertable<Assessment> {
           ..write('title: $title, ')
           ..write('day: $day, ')
           ..write('score: $score, ')
-          ..write('max: $max')
+          ..write('max: $max, ')
+          ..write('itemId: $itemId, ')
+          ..write('detail: $detail')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, hlc, deleted, courseId, topicId, title, day, score, max);
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    courseId,
+    topicId,
+    title,
+    day,
+    score,
+    max,
+    itemId,
+    detail,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4538,7 +4622,9 @@ class Assessment extends DataClass implements Insertable<Assessment> {
           other.title == this.title &&
           other.day == this.day &&
           other.score == this.score &&
-          other.max == this.max);
+          other.max == this.max &&
+          other.itemId == this.itemId &&
+          other.detail == this.detail);
 }
 
 class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
@@ -4551,6 +4637,8 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
   final Value<String> day;
   final Value<double> score;
   final Value<double> max;
+  final Value<String?> itemId;
+  final Value<String> detail;
   final Value<int> rowid;
   const LearnAssessmentsCompanion({
     this.id = const Value.absent(),
@@ -4562,6 +4650,8 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     this.day = const Value.absent(),
     this.score = const Value.absent(),
     this.max = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.detail = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   LearnAssessmentsCompanion.insert({
@@ -4574,6 +4664,8 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     required String day,
     required double score,
     this.max = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.detail = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title),
@@ -4589,6 +4681,8 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     Expression<String>? day,
     Expression<double>? score,
     Expression<double>? max,
+    Expression<String>? itemId,
+    Expression<String>? detail,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4601,6 +4695,8 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
       if (day != null) 'day': day,
       if (score != null) 'score': score,
       if (max != null) 'max': max,
+      if (itemId != null) 'item_id': itemId,
+      if (detail != null) 'detail': detail,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4615,6 +4711,8 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     Value<String>? day,
     Value<double>? score,
     Value<double>? max,
+    Value<String?>? itemId,
+    Value<String>? detail,
     Value<int>? rowid,
   }) {
     return LearnAssessmentsCompanion(
@@ -4627,6 +4725,8 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
       day: day ?? this.day,
       score: score ?? this.score,
       max: max ?? this.max,
+      itemId: itemId ?? this.itemId,
+      detail: detail ?? this.detail,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4661,6 +4761,12 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
     if (max.present) {
       map['max'] = Variable<double>(max.value);
     }
+    if (itemId.present) {
+      map['item_id'] = Variable<String>(itemId.value);
+    }
+    if (detail.present) {
+      map['detail'] = Variable<String>(detail.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4679,6 +4785,8 @@ class LearnAssessmentsCompanion extends UpdateCompanion<Assessment> {
           ..write('day: $day, ')
           ..write('score: $score, ')
           ..write('max: $max, ')
+          ..write('itemId: $itemId, ')
+          ..write('detail: $detail, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6195,6 +6303,737 @@ class LearnNotesCompanion extends UpdateCompanion<Note> {
           ..write('title: $title, ')
           ..write('body: $body, ')
           ..write('tags: $tags, ')
+          ..write('created: $created, ')
+          ..write('updated: $updated, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LearnStoriesTable extends LearnStories
+    with TableInfo<$LearnStoriesTable, StoryRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LearnStoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _situationMeta = const VerificationMeta(
+    'situation',
+  );
+  @override
+  late final GeneratedColumn<String> situation = GeneratedColumn<String>(
+    'situation',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _taskMeta = const VerificationMeta('task');
+  @override
+  late final GeneratedColumn<String> task = GeneratedColumn<String>(
+    'task',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _actionMeta = const VerificationMeta('action');
+  @override
+  late final GeneratedColumn<String> action = GeneratedColumn<String>(
+    'action',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _resultMeta = const VerificationMeta('result');
+  @override
+  late final GeneratedColumn<String> result = GeneratedColumn<String>(
+    'result',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _criteriaMeta = const VerificationMeta(
+    'criteria',
+  );
+  @override
+  late final GeneratedColumn<String> criteria = GeneratedColumn<String>(
+    'criteria',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _drillsMeta = const VerificationMeta('drills');
+  @override
+  late final GeneratedColumn<String> drills = GeneratedColumn<String>(
+    'drills',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _refMeta = const VerificationMeta('ref');
+  @override
+  late final GeneratedColumn<String> ref = GeneratedColumn<String>(
+    'ref',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdMeta = const VerificationMeta(
+    'created',
+  );
+  @override
+  late final GeneratedColumn<String> created = GeneratedColumn<String>(
+    'created',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedMeta = const VerificationMeta(
+    'updated',
+  );
+  @override
+  late final GeneratedColumn<String> updated = GeneratedColumn<String>(
+    'updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hlc,
+    deleted,
+    title,
+    situation,
+    task,
+    action,
+    result,
+    criteria,
+    drills,
+    ref,
+    created,
+    updated,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'learn_stories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StoryRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('situation')) {
+      context.handle(
+        _situationMeta,
+        situation.isAcceptableOrUnknown(data['situation']!, _situationMeta),
+      );
+    }
+    if (data.containsKey('task')) {
+      context.handle(
+        _taskMeta,
+        task.isAcceptableOrUnknown(data['task']!, _taskMeta),
+      );
+    }
+    if (data.containsKey('action')) {
+      context.handle(
+        _actionMeta,
+        action.isAcceptableOrUnknown(data['action']!, _actionMeta),
+      );
+    }
+    if (data.containsKey('result')) {
+      context.handle(
+        _resultMeta,
+        result.isAcceptableOrUnknown(data['result']!, _resultMeta),
+      );
+    }
+    if (data.containsKey('criteria')) {
+      context.handle(
+        _criteriaMeta,
+        criteria.isAcceptableOrUnknown(data['criteria']!, _criteriaMeta),
+      );
+    }
+    if (data.containsKey('drills')) {
+      context.handle(
+        _drillsMeta,
+        drills.isAcceptableOrUnknown(data['drills']!, _drillsMeta),
+      );
+    }
+    if (data.containsKey('ref')) {
+      context.handle(
+        _refMeta,
+        ref.isAcceptableOrUnknown(data['ref']!, _refMeta),
+      );
+    }
+    if (data.containsKey('created')) {
+      context.handle(
+        _createdMeta,
+        created.isAcceptableOrUnknown(data['created']!, _createdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdMeta);
+    }
+    if (data.containsKey('updated')) {
+      context.handle(
+        _updatedMeta,
+        updated.isAcceptableOrUnknown(data['updated']!, _updatedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StoryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StoryRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      situation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}situation'],
+      )!,
+      task: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task'],
+      )!,
+      action: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action'],
+      )!,
+      result: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}result'],
+      )!,
+      criteria: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}criteria'],
+      )!,
+      drills: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}drills'],
+      )!,
+      ref: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ref'],
+      )!,
+      created: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created'],
+      )!,
+      updated: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated'],
+      )!,
+    );
+  }
+
+  @override
+  $LearnStoriesTable createAlias(String alias) {
+    return $LearnStoriesTable(attachedDatabase, alias);
+  }
+}
+
+class StoryRow extends DataClass implements Insertable<StoryRow> {
+  final String id;
+  final String hlc;
+  final bool deleted;
+  final String title;
+  final String situation;
+  final String task;
+  final String action;
+  final String result;
+
+  /// Comma-separated row ids of the criteria ([LearnCriteria]) it shows.
+  final String criteria;
+
+  /// Comma-separated row ids of the interview drills ([LearnItems]) it
+  /// answers.
+  final String drills;
+
+  /// The Udyoga story card it links (`udyoga.story.<id>`), '' for the
+  /// learner's own story.
+  final String ref;
+  final String created;
+  final String updated;
+  const StoryRow({
+    required this.id,
+    required this.hlc,
+    required this.deleted,
+    required this.title,
+    required this.situation,
+    required this.task,
+    required this.action,
+    required this.result,
+    required this.criteria,
+    required this.drills,
+    required this.ref,
+    required this.created,
+    required this.updated,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['title'] = Variable<String>(title);
+    map['situation'] = Variable<String>(situation);
+    map['task'] = Variable<String>(task);
+    map['action'] = Variable<String>(action);
+    map['result'] = Variable<String>(result);
+    map['criteria'] = Variable<String>(criteria);
+    map['drills'] = Variable<String>(drills);
+    map['ref'] = Variable<String>(ref);
+    map['created'] = Variable<String>(created);
+    map['updated'] = Variable<String>(updated);
+    return map;
+  }
+
+  LearnStoriesCompanion toCompanion(bool nullToAbsent) {
+    return LearnStoriesCompanion(
+      id: Value(id),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      title: Value(title),
+      situation: Value(situation),
+      task: Value(task),
+      action: Value(action),
+      result: Value(result),
+      criteria: Value(criteria),
+      drills: Value(drills),
+      ref: Value(ref),
+      created: Value(created),
+      updated: Value(updated),
+    );
+  }
+
+  factory StoryRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StoryRow(
+      id: serializer.fromJson<String>(json['id']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      title: serializer.fromJson<String>(json['title']),
+      situation: serializer.fromJson<String>(json['situation']),
+      task: serializer.fromJson<String>(json['task']),
+      action: serializer.fromJson<String>(json['action']),
+      result: serializer.fromJson<String>(json['result']),
+      criteria: serializer.fromJson<String>(json['criteria']),
+      drills: serializer.fromJson<String>(json['drills']),
+      ref: serializer.fromJson<String>(json['ref']),
+      created: serializer.fromJson<String>(json['created']),
+      updated: serializer.fromJson<String>(json['updated']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'title': serializer.toJson<String>(title),
+      'situation': serializer.toJson<String>(situation),
+      'task': serializer.toJson<String>(task),
+      'action': serializer.toJson<String>(action),
+      'result': serializer.toJson<String>(result),
+      'criteria': serializer.toJson<String>(criteria),
+      'drills': serializer.toJson<String>(drills),
+      'ref': serializer.toJson<String>(ref),
+      'created': serializer.toJson<String>(created),
+      'updated': serializer.toJson<String>(updated),
+    };
+  }
+
+  StoryRow copyWith({
+    String? id,
+    String? hlc,
+    bool? deleted,
+    String? title,
+    String? situation,
+    String? task,
+    String? action,
+    String? result,
+    String? criteria,
+    String? drills,
+    String? ref,
+    String? created,
+    String? updated,
+  }) => StoryRow(
+    id: id ?? this.id,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    title: title ?? this.title,
+    situation: situation ?? this.situation,
+    task: task ?? this.task,
+    action: action ?? this.action,
+    result: result ?? this.result,
+    criteria: criteria ?? this.criteria,
+    drills: drills ?? this.drills,
+    ref: ref ?? this.ref,
+    created: created ?? this.created,
+    updated: updated ?? this.updated,
+  );
+  StoryRow copyWithCompanion(LearnStoriesCompanion data) {
+    return StoryRow(
+      id: data.id.present ? data.id.value : this.id,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      title: data.title.present ? data.title.value : this.title,
+      situation: data.situation.present ? data.situation.value : this.situation,
+      task: data.task.present ? data.task.value : this.task,
+      action: data.action.present ? data.action.value : this.action,
+      result: data.result.present ? data.result.value : this.result,
+      criteria: data.criteria.present ? data.criteria.value : this.criteria,
+      drills: data.drills.present ? data.drills.value : this.drills,
+      ref: data.ref.present ? data.ref.value : this.ref,
+      created: data.created.present ? data.created.value : this.created,
+      updated: data.updated.present ? data.updated.value : this.updated,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StoryRow(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('title: $title, ')
+          ..write('situation: $situation, ')
+          ..write('task: $task, ')
+          ..write('action: $action, ')
+          ..write('result: $result, ')
+          ..write('criteria: $criteria, ')
+          ..write('drills: $drills, ')
+          ..write('ref: $ref, ')
+          ..write('created: $created, ')
+          ..write('updated: $updated')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    title,
+    situation,
+    task,
+    action,
+    result,
+    criteria,
+    drills,
+    ref,
+    created,
+    updated,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StoryRow &&
+          other.id == this.id &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.title == this.title &&
+          other.situation == this.situation &&
+          other.task == this.task &&
+          other.action == this.action &&
+          other.result == this.result &&
+          other.criteria == this.criteria &&
+          other.drills == this.drills &&
+          other.ref == this.ref &&
+          other.created == this.created &&
+          other.updated == this.updated);
+}
+
+class LearnStoriesCompanion extends UpdateCompanion<StoryRow> {
+  final Value<String> id;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> title;
+  final Value<String> situation;
+  final Value<String> task;
+  final Value<String> action;
+  final Value<String> result;
+  final Value<String> criteria;
+  final Value<String> drills;
+  final Value<String> ref;
+  final Value<String> created;
+  final Value<String> updated;
+  final Value<int> rowid;
+  const LearnStoriesCompanion({
+    this.id = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.title = const Value.absent(),
+    this.situation = const Value.absent(),
+    this.task = const Value.absent(),
+    this.action = const Value.absent(),
+    this.result = const Value.absent(),
+    this.criteria = const Value.absent(),
+    this.drills = const Value.absent(),
+    this.ref = const Value.absent(),
+    this.created = const Value.absent(),
+    this.updated = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LearnStoriesCompanion.insert({
+    required String id,
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    required String title,
+    this.situation = const Value.absent(),
+    this.task = const Value.absent(),
+    this.action = const Value.absent(),
+    this.result = const Value.absent(),
+    this.criteria = const Value.absent(),
+    this.drills = const Value.absent(),
+    this.ref = const Value.absent(),
+    required String created,
+    required String updated,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       created = Value(created),
+       updated = Value(updated);
+  static Insertable<StoryRow> custom({
+    Expression<String>? id,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? title,
+    Expression<String>? situation,
+    Expression<String>? task,
+    Expression<String>? action,
+    Expression<String>? result,
+    Expression<String>? criteria,
+    Expression<String>? drills,
+    Expression<String>? ref,
+    Expression<String>? created,
+    Expression<String>? updated,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (title != null) 'title': title,
+      if (situation != null) 'situation': situation,
+      if (task != null) 'task': task,
+      if (action != null) 'action': action,
+      if (result != null) 'result': result,
+      if (criteria != null) 'criteria': criteria,
+      if (drills != null) 'drills': drills,
+      if (ref != null) 'ref': ref,
+      if (created != null) 'created': created,
+      if (updated != null) 'updated': updated,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LearnStoriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? title,
+    Value<String>? situation,
+    Value<String>? task,
+    Value<String>? action,
+    Value<String>? result,
+    Value<String>? criteria,
+    Value<String>? drills,
+    Value<String>? ref,
+    Value<String>? created,
+    Value<String>? updated,
+    Value<int>? rowid,
+  }) {
+    return LearnStoriesCompanion(
+      id: id ?? this.id,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      title: title ?? this.title,
+      situation: situation ?? this.situation,
+      task: task ?? this.task,
+      action: action ?? this.action,
+      result: result ?? this.result,
+      criteria: criteria ?? this.criteria,
+      drills: drills ?? this.drills,
+      ref: ref ?? this.ref,
+      created: created ?? this.created,
+      updated: updated ?? this.updated,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (situation.present) {
+      map['situation'] = Variable<String>(situation.value);
+    }
+    if (task.present) {
+      map['task'] = Variable<String>(task.value);
+    }
+    if (action.present) {
+      map['action'] = Variable<String>(action.value);
+    }
+    if (result.present) {
+      map['result'] = Variable<String>(result.value);
+    }
+    if (criteria.present) {
+      map['criteria'] = Variable<String>(criteria.value);
+    }
+    if (drills.present) {
+      map['drills'] = Variable<String>(drills.value);
+    }
+    if (ref.present) {
+      map['ref'] = Variable<String>(ref.value);
+    }
+    if (created.present) {
+      map['created'] = Variable<String>(created.value);
+    }
+    if (updated.present) {
+      map['updated'] = Variable<String>(updated.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LearnStoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('title: $title, ')
+          ..write('situation: $situation, ')
+          ..write('task: $task, ')
+          ..write('action: $action, ')
+          ..write('result: $result, ')
+          ..write('criteria: $criteria, ')
+          ..write('drills: $drills, ')
+          ..write('ref: $ref, ')
           ..write('created: $created, ')
           ..write('updated: $updated, ')
           ..write('rowid: $rowid')
@@ -9682,6 +10521,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LearnSkillsTable learnSkills = $LearnSkillsTable(this);
   late final $LearnPortfolioTable learnPortfolio = $LearnPortfolioTable(this);
   late final $LearnNotesTable learnNotes = $LearnNotesTable(this);
+  late final $LearnStoriesTable learnStories = $LearnStoriesTable(this);
   late final $LearnUnlocksTable learnUnlocks = $LearnUnlocksTable(this);
   late final $LearnCardsTable learnCards = $LearnCardsTable(this);
   late final $LearnReviewsTable learnReviews = $LearnReviewsTable(this);
@@ -9709,6 +10549,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     learnSkills,
     learnPortfolio,
     learnNotes,
+    learnStories,
     learnUnlocks,
     learnCards,
     learnReviews,
@@ -11764,6 +12605,8 @@ typedef $$LearnAssessmentsTableCreateCompanionBuilder =
       required String day,
       required double score,
       Value<double> max,
+      Value<String?> itemId,
+      Value<String> detail,
       Value<int> rowid,
     });
 typedef $$LearnAssessmentsTableUpdateCompanionBuilder =
@@ -11777,6 +12620,8 @@ typedef $$LearnAssessmentsTableUpdateCompanionBuilder =
       Value<String> day,
       Value<double> score,
       Value<double> max,
+      Value<String?> itemId,
+      Value<String> detail,
       Value<int> rowid,
     });
 
@@ -11831,6 +12676,16 @@ class $$LearnAssessmentsTableFilterComposer
 
   ColumnFilters<double> get max => $composableBuilder(
     column: $table.max,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get detail => $composableBuilder(
+    column: $table.detail,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11888,6 +12743,16 @@ class $$LearnAssessmentsTableOrderingComposer
     column: $table.max,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get itemId => $composableBuilder(
+    column: $table.itemId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get detail => $composableBuilder(
+    column: $table.detail,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LearnAssessmentsTableAnnotationComposer
@@ -11925,6 +12790,12 @@ class $$LearnAssessmentsTableAnnotationComposer
 
   GeneratedColumn<double> get max =>
       $composableBuilder(column: $table.max, builder: (column) => column);
+
+  GeneratedColumn<String> get itemId =>
+      $composableBuilder(column: $table.itemId, builder: (column) => column);
+
+  GeneratedColumn<String> get detail =>
+      $composableBuilder(column: $table.detail, builder: (column) => column);
 }
 
 class $$LearnAssessmentsTableTableManager
@@ -11969,6 +12840,8 @@ class $$LearnAssessmentsTableTableManager
                 Value<String> day = const Value.absent(),
                 Value<double> score = const Value.absent(),
                 Value<double> max = const Value.absent(),
+                Value<String?> itemId = const Value.absent(),
+                Value<String> detail = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnAssessmentsCompanion(
                 id: id,
@@ -11980,6 +12853,8 @@ class $$LearnAssessmentsTableTableManager
                 day: day,
                 score: score,
                 max: max,
+                itemId: itemId,
+                detail: detail,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11993,6 +12868,8 @@ class $$LearnAssessmentsTableTableManager
                 required String day,
                 required double score,
                 Value<double> max = const Value.absent(),
+                Value<String?> itemId = const Value.absent(),
+                Value<String> detail = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LearnAssessmentsCompanion.insert(
                 id: id,
@@ -12004,6 +12881,8 @@ class $$LearnAssessmentsTableTableManager
                 day: day,
                 score: score,
                 max: max,
+                itemId: itemId,
+                detail: detail,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -12843,6 +13722,364 @@ typedef $$LearnNotesTableProcessedTableManager =
       $$LearnNotesTableUpdateCompanionBuilder,
       (Note, BaseReferences<_$AppDatabase, $LearnNotesTable, Note>),
       Note,
+      PrefetchHooks Function()
+    >;
+typedef $$LearnStoriesTableCreateCompanionBuilder =
+    LearnStoriesCompanion Function({
+      required String id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      required String title,
+      Value<String> situation,
+      Value<String> task,
+      Value<String> action,
+      Value<String> result,
+      Value<String> criteria,
+      Value<String> drills,
+      Value<String> ref,
+      required String created,
+      required String updated,
+      Value<int> rowid,
+    });
+typedef $$LearnStoriesTableUpdateCompanionBuilder =
+    LearnStoriesCompanion Function({
+      Value<String> id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> title,
+      Value<String> situation,
+      Value<String> task,
+      Value<String> action,
+      Value<String> result,
+      Value<String> criteria,
+      Value<String> drills,
+      Value<String> ref,
+      Value<String> created,
+      Value<String> updated,
+      Value<int> rowid,
+    });
+
+class $$LearnStoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $LearnStoriesTable> {
+  $$LearnStoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get situation => $composableBuilder(
+    column: $table.situation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get task => $composableBuilder(
+    column: $table.task,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get result => $composableBuilder(
+    column: $table.result,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get criteria => $composableBuilder(
+    column: $table.criteria,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get drills => $composableBuilder(
+    column: $table.drills,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get created => $composableBuilder(
+    column: $table.created,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LearnStoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LearnStoriesTable> {
+  $$LearnStoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get situation => $composableBuilder(
+    column: $table.situation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get task => $composableBuilder(
+    column: $table.task,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get action => $composableBuilder(
+    column: $table.action,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get result => $composableBuilder(
+    column: $table.result,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get criteria => $composableBuilder(
+    column: $table.criteria,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get drills => $composableBuilder(
+    column: $table.drills,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ref => $composableBuilder(
+    column: $table.ref,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get created => $composableBuilder(
+    column: $table.created,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LearnStoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LearnStoriesTable> {
+  $$LearnStoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get situation =>
+      $composableBuilder(column: $table.situation, builder: (column) => column);
+
+  GeneratedColumn<String> get task =>
+      $composableBuilder(column: $table.task, builder: (column) => column);
+
+  GeneratedColumn<String> get action =>
+      $composableBuilder(column: $table.action, builder: (column) => column);
+
+  GeneratedColumn<String> get result =>
+      $composableBuilder(column: $table.result, builder: (column) => column);
+
+  GeneratedColumn<String> get criteria =>
+      $composableBuilder(column: $table.criteria, builder: (column) => column);
+
+  GeneratedColumn<String> get drills =>
+      $composableBuilder(column: $table.drills, builder: (column) => column);
+
+  GeneratedColumn<String> get ref =>
+      $composableBuilder(column: $table.ref, builder: (column) => column);
+
+  GeneratedColumn<String> get created =>
+      $composableBuilder(column: $table.created, builder: (column) => column);
+
+  GeneratedColumn<String> get updated =>
+      $composableBuilder(column: $table.updated, builder: (column) => column);
+}
+
+class $$LearnStoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LearnStoriesTable,
+          StoryRow,
+          $$LearnStoriesTableFilterComposer,
+          $$LearnStoriesTableOrderingComposer,
+          $$LearnStoriesTableAnnotationComposer,
+          $$LearnStoriesTableCreateCompanionBuilder,
+          $$LearnStoriesTableUpdateCompanionBuilder,
+          (
+            StoryRow,
+            BaseReferences<_$AppDatabase, $LearnStoriesTable, StoryRow>,
+          ),
+          StoryRow,
+          PrefetchHooks Function()
+        > {
+  $$LearnStoriesTableTableManager(_$AppDatabase db, $LearnStoriesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LearnStoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LearnStoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LearnStoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> situation = const Value.absent(),
+                Value<String> task = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String> result = const Value.absent(),
+                Value<String> criteria = const Value.absent(),
+                Value<String> drills = const Value.absent(),
+                Value<String> ref = const Value.absent(),
+                Value<String> created = const Value.absent(),
+                Value<String> updated = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnStoriesCompanion(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                title: title,
+                situation: situation,
+                task: task,
+                action: action,
+                result: result,
+                criteria: criteria,
+                drills: drills,
+                ref: ref,
+                created: created,
+                updated: updated,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                required String title,
+                Value<String> situation = const Value.absent(),
+                Value<String> task = const Value.absent(),
+                Value<String> action = const Value.absent(),
+                Value<String> result = const Value.absent(),
+                Value<String> criteria = const Value.absent(),
+                Value<String> drills = const Value.absent(),
+                Value<String> ref = const Value.absent(),
+                required String created,
+                required String updated,
+                Value<int> rowid = const Value.absent(),
+              }) => LearnStoriesCompanion.insert(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                title: title,
+                situation: situation,
+                task: task,
+                action: action,
+                result: result,
+                criteria: criteria,
+                drills: drills,
+                ref: ref,
+                created: created,
+                updated: updated,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LearnStoriesTable, StoryRow>(table),
+                  BaseReferences<_$AppDatabase, $LearnStoriesTable, StoryRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LearnStoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LearnStoriesTable,
+      StoryRow,
+      $$LearnStoriesTableFilterComposer,
+      $$LearnStoriesTableOrderingComposer,
+      $$LearnStoriesTableAnnotationComposer,
+      $$LearnStoriesTableCreateCompanionBuilder,
+      $$LearnStoriesTableUpdateCompanionBuilder,
+      (StoryRow, BaseReferences<_$AppDatabase, $LearnStoriesTable, StoryRow>),
+      StoryRow,
       PrefetchHooks Function()
     >;
 typedef $$LearnUnlocksTableCreateCompanionBuilder =
@@ -14853,6 +16090,8 @@ class $AppDatabaseManager {
       $$LearnPortfolioTableTableManager(_db, _db.learnPortfolio);
   $$LearnNotesTableTableManager get learnNotes =>
       $$LearnNotesTableTableManager(_db, _db.learnNotes);
+  $$LearnStoriesTableTableManager get learnStories =>
+      $$LearnStoriesTableTableManager(_db, _db.learnStories);
   $$LearnUnlocksTableTableManager get learnUnlocks =>
       $$LearnUnlocksTableTableManager(_db, _db.learnUnlocks);
   $$LearnCardsTableTableManager get learnCards =>

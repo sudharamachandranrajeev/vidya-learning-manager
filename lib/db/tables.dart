@@ -170,6 +170,43 @@ class LearnAssessments extends Table with SyncedRow {
   TextColumn get day => text()();
   RealColumn get score => real()();
   RealColumn get max => real().withDefault(const Constant(100))();
+
+  /// The study item this result is for (an interview drill practised on
+  /// its topic), null for a quiz or a test recorded by hand.
+  TextColumn get itemId => text().nullable()();
+
+  /// More about the attempt, as JSON, '' for quizzes and tests. A drill
+  /// attempt keeps its four self-rated checks, the seconds used, the
+  /// scenario frame, the story used and a note (see interview.dart). Only
+  /// rows with a detail are drill attempts.
+  TextColumn get detail => text().withDefault(const Constant(''))();
+}
+
+/// An interview story for the story bank: written once in four parts and
+/// shown as STAR (Situation, Task, Action, Result) or CAR (Context, Action,
+/// Result, where Context is the situation and task together). A row with a
+/// [ref] holds only the links for one of Udyoga's story cards, whose text
+/// stays on the card and is read from there.
+@DataClassName('StoryRow')
+class LearnStories extends Table with SyncedRow {
+  TextColumn get title => text()();
+  TextColumn get situation => text().withDefault(const Constant(''))();
+  TextColumn get task => text().withDefault(const Constant(''))();
+  TextColumn get action => text().withDefault(const Constant(''))();
+  TextColumn get result => text().withDefault(const Constant(''))();
+
+  /// Comma-separated row ids of the criteria ([LearnCriteria]) it shows.
+  TextColumn get criteria => text().withDefault(const Constant(''))();
+
+  /// Comma-separated row ids of the interview drills ([LearnItems]) it
+  /// answers.
+  TextColumn get drills => text().withDefault(const Constant(''))();
+
+  /// The Udyoga story card it links (`udyoga.story.<id>`), '' for the
+  /// learner's own story.
+  TextColumn get ref => text().withDefault(const Constant(''))();
+  TextColumn get created => text()();
+  TextColumn get updated => text()();
 }
 
 /// A skill and how far it has come against where it should be.

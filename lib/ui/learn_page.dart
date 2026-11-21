@@ -10,6 +10,7 @@ import 'charts.dart';
 import 'common.dart';
 import 'course_page.dart';
 import 'dialogs.dart';
+import 'interview_pages.dart';
 import 'plan_import.dart';
 import 'resource_search.dart';
 import 'zen.dart';
@@ -237,6 +238,11 @@ class ProgramPage extends ConsumerWidget {
             appBar: AppBar(
               title: Text(p.title),
               actions: [
+                IconButton(
+                  tooltip: 'Interview training',
+                  icon: const Icon(Icons.record_voice_over_outlined),
+                  onPressed: () => openBeforeInterview(context, id),
+                ),
                 IconButton(
                   tooltip: 'Find free resources for this role',
                   icon: const Icon(Icons.travel_explore),

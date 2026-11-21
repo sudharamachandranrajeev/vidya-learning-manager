@@ -208,12 +208,13 @@ class Stats {
   // ---- assessments ----
 
   /// The tests that earn experience: every test recorded by hand, and one
-  /// (the best) per topic quiz, so retaking a quiz cannot buy a level.
+  /// (the best) per topic quiz and per interview drill, so retaking either
+  /// cannot buy a level.
   List<Assessment> get _scored {
     final best = <String, Assessment>{};
     final out = <Assessment>[];
     for (final a in assessments) {
-      final t = a.topicId;
+      final t = a.itemId ?? a.topicId;
       if (t == null) {
         out.add(a);
       } else if (best[t] == null || _pct(a) > _pct(best[t]!)) {
