@@ -186,12 +186,13 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   }
 
   static const _indexes = [
-    'CREATE INDEX learn_courses_program ON learn_courses (program_id)',
-    'CREATE INDEX learn_topics_course ON learn_topics (course_id)',
-    'CREATE INDEX learn_sessions_day ON learn_sessions (day)',
-    // Added in version 2; onUpgrade creates these from the fourth on.
-    'CREATE INDEX learn_cards_due ON learn_cards (due)',
-    'CREATE INDEX learn_reviews_day ON learn_reviews (day)',
+    'CREATE INDEX IF NOT EXISTS learn_courses_program ON learn_courses (program_id)',
+    'CREATE INDEX IF NOT EXISTS learn_topics_course ON learn_topics (course_id)',
+    'CREATE INDEX IF NOT EXISTS learn_sessions_day ON learn_sessions (day)',
+    // Added in version 2; onUpgrade creates these from the fourth on. IF NOT
+    // EXISTS, so a version 1 upgrade that stopped half way can run again.
+    'CREATE INDEX IF NOT EXISTS learn_cards_due ON learn_cards (due)',
+    'CREATE INDEX IF NOT EXISTS learn_reviews_day ON learn_reviews (day)',
   ];
 
   // Added in version 7.
