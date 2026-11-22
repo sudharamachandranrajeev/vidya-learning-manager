@@ -26,6 +26,7 @@ import 'dossier_view.dart';
 import 'quiz_page.dart';
 import 'readiness_page.dart';
 import 'spoken_interview_page.dart';
+import 'stage_tools.dart';
 import 'zen.dart';
 
 Future<void> openJourney(BuildContext context, String programId) =>
@@ -379,7 +380,7 @@ class _StageView extends ConsumerWidget {
               title: 'Learn',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [for (final l in stage.teach) _Line(l, today: day)],
+                children: [for (final l in stage.teach) JourneyLineView(l, today: day)],
               ),
             ),
           ),
@@ -390,6 +391,11 @@ class _StageView extends ConsumerWidget {
               title: 'Dossier',
               child: DossierSection(programId: _pid, journey: view.journey),
             ),
+          ),
+        for (final (title, tool) in stageTools(_pid, view, stage))
+          BlurFadeIn(
+            index: n++,
+            child: SectionCard(title: title, child: tool),
           ),
         if (stage.produce.isNotEmpty)
           BlurFadeIn(
@@ -417,7 +423,7 @@ class _StageView extends ConsumerWidget {
               title: 'Heads-up',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [for (final l in stage.headsUp) _Line(l, today: day)],
+                children: [for (final l in stage.headsUp) JourneyLineView(l, today: day)],
               ),
             ),
           ),
@@ -458,52 +464,6 @@ class _StageView extends ConsumerWidget {
       },
     );
     c.dispose();
-  }
-}
-
-/// A line to learn or a heads-up: its source and the day it was checked,
-/// or a "general advice" label. A line past its date says to check it.
-class _Line extends StatelessWidget {
-  const _Line(this.line, {required this.today});
-  final JourneyLine line;
-  final String today;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final s = line.source;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(line.text),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              if (s == null)
-                const StatusPill('General advice', quiet: true, dot: false)
-              else
-                InkWell(
-                  onTap: () => openLink(context, s.url),
-                  child: Text(
-                    [
-                      'Source: ${s.title.isNotEmpty ? s.title : Uri.tryParse(s.url)?.host ?? s.url}',
-                      if (s.date.isNotEmpty) 'checked ${niceDate(s.date)}',
-                    ].join(' · '),
-                    style: t.bodySmall?.copyWith(decoration: TextDecoration.underline),
-                  ),
-                ),
-              if (line.staleOn(today))
-                const StatusPill('May be out of date: check the source', status: KitStatus.warning),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 }
 
