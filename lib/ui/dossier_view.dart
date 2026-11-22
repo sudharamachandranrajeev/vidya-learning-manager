@@ -12,10 +12,12 @@ library;
 import 'package:brahma_core/brahma_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:interview_engine/interview_engine.dart' as ie;
 
 import '../app/providers.dart';
 import '../app/research_providers.dart';
 import '../db/database.dart';
+import '../domain/answer_checker.dart';
 import '../domain/dossier.dart';
 import '../domain/dossier_book.dart';
 import '../domain/dossier_readers.dart';
@@ -45,6 +47,9 @@ class DossierSection extends ConsumerWidget {
         final facts = [for (final c in cards) _facts(c)];
         final why = whyHerePoints(facts, today: day);
         final ask = questionsToAsk(facts, today: day);
+        final criteria = ref.watch(programCriteriaProvider(programId)).value ?? const <Criterion>[];
+        final likely = likelyQuestions(criteria, cards, today: day);
+        final orgNote = ie.organisationTierNote(evidenceCards(cards, today: day));
         final count = {for (final s in factStatuses.keys) s: cards.where((c) => c.status == s).length};
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -123,6 +128,35 @@ class DossierSection extends ConsumerWidget {
               'Built only from verified facts and facts you checked: never from an inference.',
               style: TextStyle(fontSize: 12),
             ),
+            const SizedBox(height: 8),
+            Text('Likely interview questions', style: t.titleSmall),
+            const Text(
+              'Ranked by evidence: what the person specification assesses at interview, then the employer\'s '
+              'values and plans from your checked facts, then questions candidates reported (anecdotal), then '
+              'common ones. Each says why it is here.',
+              style: TextStyle(fontSize: 12),
+            ),
+            if (likely.isEmpty) const Text('Add the job\'s criteria to see likely questions.'),
+            for (final (i, q) in likely.indexed)
+              ListTile(
+                key: Key('likely-$i'),
+                contentPadding: EdgeInsets.zero,
+                leading: Text('${i + 1}.'),
+                title: Text(q.question),
+                subtitle: Text('${q.tier.label}. ${q.why}'),
+                trailing: q.cardId.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Show the fact it rests on',
+                        icon: const Icon(Icons.link),
+                        onPressed: () {
+                          final c = cards.where((c) => c.id == q.cardId).firstOrNull;
+                          if (c != null) showCardDialog(context, c);
+                        },
+                      ),
+              ),
+            if (orgNote != null)
+              Text(orgNote, key: const Key('likely-org-note'), style: const TextStyle(fontSize: 12)),
             for (final kind in factKinds.keys)
               if (cards.where((c) => c.kind == kind).toList() case final group when group.isNotEmpty) ...[
                 const SizedBox(height: 12),

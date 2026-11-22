@@ -8,6 +8,7 @@ import 'package:brahma_core/brahma_core.dart';
 
 import '../db/database.dart';
 import '../domain/dossier_book.dart';
+import '../domain/interview.dart' show InterviewTraining;
 import '../domain/dossier_readers.dart';
 import 'providers.dart';
 
@@ -34,4 +35,11 @@ final dossierProvider = FutureProvider.family<DossierData, String>((ref, program
   ref.watch(revisionProvider);
   final book = ref.watch(sessionProvider).book;
   return (cards: await book.factCards(programId), sources: await book.factSources(programId));
+});
+
+/// A program's criteria, read again after every write (for the likely
+/// questions on the Research stage).
+final programCriteriaProvider = FutureProvider.family<List<Criterion>, String>((ref, programId) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.programCriteria(programId);
 });
