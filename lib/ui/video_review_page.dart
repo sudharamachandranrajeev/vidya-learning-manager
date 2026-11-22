@@ -18,6 +18,7 @@ import 'package:interview_engine/interview_engine.dart' as ie;
 import '../app/interview_providers.dart';
 import '../domain/spoken_interview.dart';
 import 'interview_debrief_page.dart' show savedRoundProvider;
+import 'mpv_loader.dart';
 import 'video_playback.dart';
 import 'zen.dart';
 
@@ -98,7 +99,9 @@ class _VideoReviewPageState extends ConsumerState<VideoReviewPage> {
       if (mounted) {
         setState(() {
           _take = t;
-          _error = 'This video could not be played here: ${describeError(e)}';
+          _error = e is MpvMissing
+              ? MpvMissing.message
+              : 'This video could not be played here: ${describeError(e)}';
         });
       }
     } finally {
@@ -187,7 +190,7 @@ class _VideoReviewPageState extends ConsumerState<VideoReviewPage> {
       return SectionCard(
         title: 'Playback',
         child: Text(
-          '$e\nOn Linux, playback needs mpv\'s library (libmpv): install mpv from your distribution.',
+          e,
           style: TextStyle(color: KitStatus.warning.color),
         ),
       );

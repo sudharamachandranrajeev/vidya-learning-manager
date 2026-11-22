@@ -16,6 +16,7 @@ import 'package:vidya/app/interview_providers.dart';
 import 'package:vidya/domain/book.dart';
 import 'package:vidya/domain/curriculum.dart';
 import 'package:vidya/ui/interview_debrief_page.dart';
+import 'package:vidya/ui/mpv_loader.dart';
 import 'package:vidya/ui/video_playback.dart';
 import 'package:vidya/ui/video_review_page.dart';
 
@@ -85,6 +86,9 @@ class FakePlayback implements TakePlayback {
   static final seeks = <Duration>[];
   static var plays = 0;
 
+  /// Thrown by [open] when set, e.g. a missing libmpv.
+  static Object? openError;
+
   @override
   final ValueNotifier<Duration> position = ValueNotifier(Duration.zero);
   @override
@@ -93,7 +97,10 @@ class FakePlayback implements TakePlayback {
   Duration duration = const Duration(seconds: 4);
 
   @override
-  Future<void> open(ie.VideoTake take) async => opened.add(take);
+  Future<void> open(ie.VideoTake take) async {
+    if (openError case final e?) throw e;
+    opened.add(take);
+  }
   @override
   Future<void> play() async {
     plays++;
@@ -214,6 +221,16 @@ void main() {
     // "Watch this answer" opens the same screen.
     await app.tap(find.byKey(const Key('watch-0')));
     expect(find.byType(VideoReviewPage), findsOneWidget);
+    await tester.pageBack();
+    await app.settle();
+
+    // Without libmpv only this screen says so, with how to install it.
+    FakePlayback.openError = const MpvMissing();
+    addTearDown(() => FakePlayback.openError = null);
+    await app.tap(find.byKey(const Key('watch-0')));
+    expect(find.textContaining('Install mpv (libmpv) to play takes'), findsOneWidget);
+    expect(find.byKey(const Key('fake-video')), findsNothing);
+    FakePlayback.openError = null;
     await tester.pageBack();
     await app.settle();
     await tester.pageBack();

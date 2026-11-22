@@ -22,6 +22,8 @@ import 'package:media_kit/media_kit.dart' as mk;
 import 'package:media_kit_video/media_kit_video.dart' as mkv;
 import 'package:video_player/video_player.dart' as vp;
 
+import 'mpv_loader.dart';
+
 /// One take's player. [position] is the moment in the video.
 abstract class TakePlayback {
   Future<void> open(VideoTake take);
@@ -46,8 +48,9 @@ final takePlaybackProvider = Provider<TakePlayback Function()>(
       () => Platform.isAndroid || Platform.isIOS ? PhoneTakePlayback() : DesktopTakePlayback(),
 );
 
-/// media_kit on Linux and Windows. libmpv is loaded on first use, so a
-/// missing library is reported on this screen and nowhere else.
+/// media_kit on Linux and Windows. libmpv is loaded on first use
+/// ([ensureMpvLoaded]), so a missing library is reported on this screen and
+/// nowhere else; Vidya itself starts without it.
 class DesktopTakePlayback implements TakePlayback {
   mk.Player? _player;
   mkv.VideoController? _controller;
@@ -61,6 +64,7 @@ class DesktopTakePlayback implements TakePlayback {
 
   @override
   Future<void> open(VideoTake take) async {
+    ensureMpvLoaded();
     mk.MediaKit.ensureInitialized();
     final p = _player = mk.Player();
     _controller = mkv.VideoController(p);

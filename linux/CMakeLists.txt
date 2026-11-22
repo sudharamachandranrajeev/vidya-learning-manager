@@ -74,6 +74,21 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# libmpv is needed only to play a video take, never to start Vidya.
+# media_kit_video's plugin links libmpv, which would make the whole app refuse
+# to start on a system without it ("error while loading shared libraries:
+# libmpv.so.2"). Drop that link: the plugin's mpv_* calls stay unresolved,
+# bind lazily, and lib/ui/mpv_loader.dart loads libmpv into the global
+# symbol scope (dlopen RTLD_GLOBAL) right before the first take is played.
+# If libmpv is missing, only the playback screen says so.
+if(TARGET media_kit_video_plugin)
+  get_target_property(_mkv_libs media_kit_video_plugin LINK_LIBRARIES)
+  list(REMOVE_ITEM _mkv_libs PkgConfig::mpv)
+  set_target_properties(media_kit_video_plugin PROPERTIES LINK_LIBRARIES "${_mkv_libs}")
+  target_link_options(media_kit_video_plugin PRIVATE "LINKER:-z,lazy")
+  target_link_options(${BINARY_NAME} PRIVATE "LINKER:--allow-shlib-undefined" "LINKER:-z,lazy")
+endif()
+
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
