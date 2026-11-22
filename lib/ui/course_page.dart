@@ -36,7 +36,10 @@ class CoursePage extends ConsumerWidget {
         final quiz = lastQuizPercents(s.assessments);
         return Scaffold(
           appBar: AppBar(
-            title: Text(c.title),
+            title: CourseTitleHero(
+              id,
+              child: Text(c.title, style: Theme.of(context).appBarTheme.titleTextStyle),
+            ),
             actions: [
               IconButton(
                 tooltip: 'Find free resources for this course',
@@ -218,9 +221,13 @@ class _TopicTile extends ConsumerWidget {
       contentPadding: EdgeInsets.zero,
       leading: Checkbox(
         value: tp.done != null,
-        onChanged: (v) => tickTopic(context, ref, tp, items, v ?? false, today: today, quizPercent: quizPercent),
+        onChanged: (v) =>
+            tickTopic(context, ref, tp, items, v ?? false, today: today, quizPercent: quizPercent),
       ),
-      title: Text(tp.title, style: tp.done != null ? const TextStyle(decoration: TextDecoration.lineThrough) : null),
+      title: Text(
+        tp.title,
+        style: tp.done != null ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
+      ),
       subtitle: Text(
         [
           tp.done != null ? 'Done ${relativeDay(tp.done!, today)}' : minutesText(tp.minutes),

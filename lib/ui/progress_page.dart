@@ -36,7 +36,8 @@ class _Body extends StatelessWidget {
     final onTime = s.onTimeRate;
     final gaps = s.skills.where((k) => k.level < k.target).toList()
       ..sort((a, b) => (b.target - b.level).compareTo(a.target - a.level));
-    String pct(double v) => '${(v * 100).round()}%';
+    int percent(double v) => (v * 100).round();
+    final focus = s.longestSession;
     return ListView(
       padding: EdgeInsets.fromLTRB(16, 8, 16, 96 + MediaQuery.paddingOf(context).bottom),
       children: [
@@ -46,93 +47,104 @@ class _Body extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TileGrid(
-                  minWidth: 150,
+                // Number tiles in even rows; each number rolls to its new
+                // value when it changes (still under reduced motion).
+                StatGrid(
                   children: [
-                    KpiTile(
+                    StatTile(
                       label: 'Experience',
-                      value: '${s.xp}',
+                      value: s.xp,
                       icon: Icons.auto_awesome_outlined,
                       caption: 'Level ${s.level} · ${s.rank}',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Study time',
-                      value: s.hours.toStringAsFixed(1),
+                      value: s.hours,
+                      fractionDigits: 1,
                       icon: Icons.hourglass_bottom,
                       caption: 'hours in total',
                     ),
                     if (streaks)
-                      KpiTile(
+                      StatTile(
                         label: 'Streak',
-                        value: '${s.streak}',
+                        value: s.streak,
                         icon: Icons.local_fire_department_outlined,
                         caption: 'best ${s.longestStreak} days',
                       ),
-                    KpiTile(
+                    StatTile(
                       label: 'Consistency',
-                      value: pct(s.consistency),
+                      value: percent(s.consistency),
+                      suffix: '%',
                       icon: Icons.self_improvement,
                       caption: '${s.activeDaysIn(30)} of the last 30 days',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Topics done',
-                      value: '${s.topicsDone}',
+                      value: s.topicsDone,
                       icon: Icons.check_circle_outline,
                       caption: 'of ${s.topics.length}',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Courses done',
-                      value: '${s.coursesDone}',
+                      value: s.coursesDone,
                       icon: Icons.menu_book_outlined,
                       caption: '${s.coursesDoing} in progress',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Average score',
-                      value: avg == null ? '–' : '${avg.round()}%',
+                      value: avg?.round(),
+                      suffix: '%',
                       icon: Icons.quiz_outlined,
                       caption: '${s.assessments.length} tests',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'On time',
-                      value: onTime == null ? '–' : pct(onTime),
+                      value: onTime == null ? null : percent(onTime),
+                      suffix: '%',
                       icon: Icons.event_available_outlined,
                       caption: onTime == null
                           ? 'No dated courses finished'
                           : 'courses finished by their date',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Skill mastery',
-                      value: pct(s.mastery),
+                      value: percent(s.mastery),
+                      suffix: '%',
                       icon: Icons.track_changes,
                       caption: '${s.skillsAtTarget} of ${s.skills.length} at target',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Portfolio',
-                      value: '${s.portfolioScore}',
+                      value: s.portfolioScore,
                       icon: Icons.folder_special_outlined,
                       caption: '${s.portfolio.length} items, ${s.portfolioKinds} kinds',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Notes',
-                      value: '${s.notes.length}',
+                      value: s.notes.length,
                       icon: Icons.edit_note,
                       caption: 'in your knowledge base',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Retention',
-                      value: s.retention == null ? '–' : pct(s.retention!),
+                      value: s.retention == null ? null : percent(s.retention!),
+                      suffix: '%',
                       icon: Icons.psychology_outlined,
                       caption: '${s.reviewsTotal} reviews · ${s.matureCards} cards held',
                     ),
-                    KpiTile(
+                    // Minutes under an hour, else hours, as minutesText.
+                    StatTile(
                       label: 'Longest focus',
-                      value: minutesText(s.longestSession),
+                      value: focus < 60 ? focus : focus / 60,
+                      suffix: focus < 60 ? ' min' : ' h',
+                      fractionDigits: focus < 60 || focus % 60 == 0 ? 0 : 1,
                       icon: Icons.self_improvement,
                       caption: 'in one sitting',
                     ),
-                    KpiTile(
+                    StatTile(
                       label: 'Programs',
-                      value: '${s.programsDone}/${s.programs.length}',
+                      value: s.programsDone,
+                      suffix: '/${s.programs.length}',
                       icon: Icons.emoji_events_outlined,
                       caption: 'complete',
                     ),

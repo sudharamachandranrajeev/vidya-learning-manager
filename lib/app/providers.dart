@@ -204,7 +204,10 @@ final statsProvider = FutureProvider<Stats>((ref) {
 final careerFileAutoAddProvider = FutureProvider<List<String>>((ref) async {
   ref.watch(revisionProvider);
   final book = ref.watch(sessionProvider).book;
-  final added = await book.autoAddCareerFilePlans(today: today(), now: DateTime.now().toUtc().toIso8601String());
+  final added = await book.autoAddCareerFilePlans(
+    today: today(),
+    now: DateTime.now().toUtc().toIso8601String(),
+  );
   if (added.isNotEmpty) {
     // Load the screens again and send the "added" report; the rerun finds
     // nothing left to add.
@@ -233,11 +236,7 @@ final freeCataloguesProvider = Provider<List<ResourceCatalogue>>((ref) {
   final client = ref.watch(httpClientProvider);
   final db = ref.watch(sessionProvider).db;
   final cache = KeyValueResourceCache(db.localSetting, db.setLocalSetting);
-  return [
-    MicrosoftLearnCatalogue(client, cache),
-    MitLearnCatalogue(client),
-    OpenLibraryCatalogue(client),
-  ];
+  return [MicrosoftLearnCatalogue(client, cache), MitLearnCatalogue(client), OpenLibraryCatalogue(client)];
 });
 
 /// The learner's own YouTube key from this device's keychain, '' when none.

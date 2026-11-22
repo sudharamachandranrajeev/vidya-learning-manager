@@ -19,8 +19,12 @@ Future<void> openQuiz(BuildContext context, StudyItem quiz) =>
 /// recalled, revealed and self-marked. Each shows its explanation. At the
 /// end the score is saved and missed questions become review cards.
 class QuizPage extends ConsumerStatefulWidget {
-  const QuizPage(this.quiz, {super.key});
+  const QuizPage(this.quiz, {super.key, this.onFinish});
   final StudyItem quiz;
+
+  /// Saves the result in place of the topic quiz's own record (a journey
+  /// stage's check keeps its result on the journey).
+  final Future<({int score, int max, int cards})> Function(List<bool> right)? onFinish;
 
   @override
   ConsumerState<QuizPage> createState() => _QuizPageState();
@@ -81,7 +85,10 @@ class _QuizPageState extends ConsumerState<QuizPage> {
     });
     if (_index < _questions.length) return;
     setState(() => _saving = true);
-    final r = await ref.mutate((s) => s.book.recordQuiz(widget.quiz, List.of(_right), today: today()));
+    final onFinish = widget.onFinish;
+    final r = onFinish != null
+        ? await onFinish(List.of(_right))
+        : await ref.mutate((s) => s.book.recordQuiz(widget.quiz, List.of(_right), today: today()));
     if (mounted) {
       setState(() {
         _result = r;
@@ -108,7 +115,7 @@ class _QuizPageState extends ConsumerState<QuizPage> {
               child: _questions.isEmpty
                   ? const Text('This quiz has no questions yet. Add some on the topic page.')
                   : _result != null
-                  ? _Result(_result!, onAgain: _again)
+                  ? _Result(_result!, onAgain: _again, journey: widget.onFinish != null)
                   : _saving
                   ? const Center(child: CircularProgressIndicator())
                   : _question(context),
@@ -246,9 +253,12 @@ class _Feedback extends StatelessWidget {
 }
 
 class _Result extends StatelessWidget {
-  const _Result(this.r, {required this.onAgain});
+  const _Result(this.r, {required this.onAgain, this.journey = false});
   final ({int score, int max, int cards}) r;
   final VoidCallback onAgain;
+
+  /// A journey stage's check, which makes no review cards.
+  final bool journey;
 
   @override
   Widget build(BuildContext context) {
@@ -261,11 +271,15 @@ class _Result extends StatelessWidget {
         Text('${r.score} of ${r.max} right ($pct%)', style: t.headlineSmall),
         const SizedBox(height: 8),
         Text(
-          pct >= passPercent
+          journey
+              ? (pct >= passPercent
+                    ? 'That is $passPercent% or more: the stage\'s check is done.'
+                    : 'Under $passPercent%. Read the stage again and try once more.')
+              : pct >= passPercent
               ? 'That is $passPercent% or more, enough for this topic.'
               : 'Under $passPercent%. Come back to it after another look at the topic.',
         ),
-        if (missed > 0) ...[
+        if (missed > 0 && !journey) ...[
           const SizedBox(height: 8),
           Text(
             r.cards > 0
@@ -279,7 +293,10 @@ class _Result extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            FilledButton(onPressed: () => Navigator.pop(context), child: const Text('Back to the topic')),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(journey ? 'Back to the journey' : 'Back to the topic'),
+            ),
             OutlinedButton(onPressed: onAgain, child: const Text('Try again')),
           ],
         ),
@@ -522,13 +539,10 @@ class _AiQuestionsState extends ConsumerState<_AiQuestions> {
       ];
       await widget.onAdd(fresh);
       if (mounted) {
-        showMessage(
-          context,
-          '${fresh.length} questions written by AI added. Check them before you rely on them.',
-        );
+        notify(context, '${fresh.length} questions written by AI added. Check them before you rely on them.');
       }
     } catch (e) {
-      if (mounted) showMessage(context, describeError(e));
+      if (mounted) notify(context, describeError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

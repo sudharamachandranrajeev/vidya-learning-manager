@@ -134,7 +134,11 @@ Each release also has `SHA256SUMS.txt`, a list of fingerprints to check the file
 3. Open **Vidya** from your app menu.
 
 It installs for your user only. It needs GTK 3, libsecret and the desktop keyring (the app that
-stores passwords) running. To remove it later: `./install.sh --uninstall`. Your data stays.
+stores passwords) running. It also needs mpv's library, which plays back interview video takes:
+`sudo pacman -S mpv` (Arch), `sudo apt install libmpv2` (Debian 12+, Ubuntu 24.04+) or
+`sudo dnf install mpv-libs` (Fedora). To record video takes, the camera also needs an H.264
+encoder for GStreamer: `gstreamer1.0-plugins-ugly` (Debian, Ubuntu), `gst-plugins-ugly` (Arch) or
+`gstreamer1-plugin-openh264` (Fedora). Most desktops have one already. To remove it later: `./install.sh --uninstall`. Your data stays.
 
 </details>
 
@@ -232,8 +236,9 @@ change are kept when the plan comes again.
 1. **Practise a drill.** On a topic page, under **Check yourself**, tap an interview drill (or
    **Add drill** to write your own and say what it tests). The page shows the question and the
    criterion it tests. Press **Start** on the timer (two minutes; **+** and **−** change it by 30
-   seconds) and answer out loud as you would to the panel. Vidya does not record sound; your
-   phone's own voice recorder works if you want to listen back.
+   seconds) and answer out loud as you would to the panel. This timer records nothing; to be
+   asked aloud and have your answer written down, use the interviewer (see "Mock interview"
+   below).
 2. **Rate yourself** on four checks, each **No**, **Partly** or **Yes** (0, 1 or 2): situation
    clear, your own actions, the result, and linked back to the criterion. **Save this attempt**
    keeps the score (out of 8) on the topic and the drill. Under 5 of 8 flags the drill as weak.
@@ -241,8 +246,9 @@ change are kept when the plan comes again.
 3. **Scenario questions** ("What would you do if…") open the scenario frame: what you would
    check first, how you would stay within your role, when you would escalate, and how you would
    write it down or hand it over. It is saved with the attempt. Switch it on for any drill.
-4. **Practise in Udyoga** hands the drill to Udyoga's voice simulator through your own sync. When
-   Udyoga sends a score back, it shows on the drill (see "Practise in Udyoga" below).
+4. **Practise with the interviewer** asks the drill aloud (see "Mock interview" below).
+   **Practise in Udyoga** is still there if you prefer Udyoga's simulator: it hands the drill over
+   through your own sync, and Udyoga's score shows on the drill (see "Practise in Udyoga" below).
 5. **Story bank** (on a topic page, or the book button on **Before the interview**): your
    Udyoga stories and your own, each shown as **STAR** (Situation, Task, Action, Result) or
    **CAR** (Context, Action, Result) from the same text. Link a story to the criteria it shows
@@ -258,6 +264,48 @@ change are kept when the plan comes again.
 
 Your stories, scores and feedback logs stay on this device, or travel only through your own
 sync. Nothing is sent anywhere else.
+
+#### Mock interview
+
+The interviewer is the same one Udyoga uses. It runs on your device.
+
+1. **Open it.** On a drill, tap **Practise with the interviewer**. Or on **Before the interview**,
+   tap **Start a mock interview**: your weak drills are picked first (up to six).
+2. **Choose the panel.** Pick the panel's manner, the level, the scale it is scored on (NHS
+   values, Civil Service, and others) and how long a silence ends an answer.
+3. **Download the speech models, once.** Speaking needs the interviewer voice (Kokoro), a speech
+   detector and the transcriber (Moonshine). Each one downloads only when you tap it. The screen
+   shows the size and licence first. On a desktop the models are in one folder shared with
+   Udyoga, so deleting one in either app deletes it for both.
+4. **Answer.** Tap **Start speaking**. The interviewer reads each question, listens and writes
+   down what you say. It asks a follow-up when your answer leaves something out, and it may stop
+   an answer that runs long. No microphone, or no models? Tap **Type my answers**.
+5. **Read the debrief.** Each criterion shows what your words covered.
+   - With an AI connected in **Ask AI**: a score on the real scale, quoting your own words, with
+     what this level and the next level need. The round is scored twice, with the criteria in a
+     different order each time. Where the two runs disagree, it says "Uncertain, check yourself".
+   - **Dispute this score** checks the quote and the criterion again. Disagreeing alone never
+     changes a score. To raise it, answer again.
+   - Without an AI: rate yourself on the four drill checks.
+   - There is one strength and one fix per answer. There is never a single readiness percentage.
+6. **Use the results.** Scores and ratings are saved on the drills, so Job readiness counts them.
+   **Add the fix to review** makes a flashcard. **Save as a story** drafts a story bank entry.
+
+Privacy: recordings stay in a temporary folder on this device. They are deleted when you leave
+the round screen. Only the text is kept with the round. With an AI, only the questions, the
+criteria and your words are sent, never audio. **Offline practice** blocks all network use on
+the interview screen; then only an AI server on this computer (Ask AI, **Local**) can score.
+The optional camera setup check looks at your setup only. It saves nothing and scores nothing.
+
+**Video takes (optional).** With the camera on, turn on **Record video for this round** before
+you start. It is off every time. A red "Recording video" sign shows while it records. Each kept
+answer is saved as a short video with your own recording of the answer, on this device only, in
+the app's private folder. Video takes are never synced, never backed up and never sent to an AI:
+only the transcript is. Nothing reads your face, expression or eyes, and nothing is scored from
+the picture. They are deleted after 14 days; change that, see the space used or **Delete all
+video takes** in **Settings → Interview video takes**. On the debrief, **Watch this answer** opens
+the video next to your transcript and the criteria; tap a quoted line or a transcript line to go
+to that moment. On Android the setup tips may pause while recording if the camera cannot do both.
 
 #### Job readiness
 

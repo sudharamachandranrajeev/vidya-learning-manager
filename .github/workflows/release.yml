@@ -44,7 +44,7 @@ jobs:
       - name: Build tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev >/dev/null
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev libmpv-dev >/dev/null
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
@@ -178,7 +178,9 @@ jobs:
       - name: Build tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev liblzma-dev >/dev/null
+          # libmpv-dev: media_kit plays interview video takes; patchelf: see Tarball.
+          sudo apt-get install -y -qq clang cmake ninja-build pkg-config libgtk-3-dev libsecret-1-dev liblzma-dev \
+            libmpv-dev patchelf >/dev/null
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
@@ -194,11 +196,23 @@ jobs:
           dir="vidya-$version-linux-x64"
           mkdir -p dist "$dir"
           cp -r build/linux/x64/release/bundle/. "$dir/"
+          # Built on Ubuntu 22.04, whose libmpv is libmpv.so.1; the distros
+          # people run now have libmpv.so.2 (the same render API), so the
+          # tarball asks for that.
+          for f in "$dir/vidya" "$dir"/lib/*.so; do
+            if readelf -d "$f" | grep -q 'NEEDED.*\[libmpv\.so\.1\]'; then
+              patchelf --replace-needed libmpv.so.1 libmpv.so.2 "$f"
+              echo "$f: libmpv.so.1 -> libmpv.so.2"
+            fi
+          done
+          ! readelf -d "$dir/vidya" "$dir"/lib/*.so | grep 'libmpv\.so\.1'
           cp branding/vidya-512.png "$dir/vidya.png"
           cp scripts/install-linux.sh "$dir/install.sh"
           cat > "$dir/README.txt" <<'EOF'
           Vidya for Linux (x86-64). Needs GTK 3, libsecret and a running keyring
-          (GNOME Keyring or KWallet), which hold the database key.
+          (GNOME Keyring or KWallet), which hold the database key, and mpv's
+          library (libmpv.so.2), which plays interview video takes:
+            Arch: pacman -S mpv   Debian 12+ / Ubuntu 24.04+: apt install libmpv2   Fedora: dnf install mpv-libs
 
             ./install.sh              adds Vidya to your app menu (no root needed)
             ./install.sh --uninstall  removes it; your data stays
@@ -260,17 +274,17 @@ jobs:
         with:
           name: linux
           path: dist
-      - name: GTK, libsecret, a keyring and Xvfb
+      - name: GTK, libsecret, libmpv, a keyring and Xvfb
         run: |
           if command -v apt-get >/dev/null; then
             apt-get update -qq
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libgtk-3-0t64 libsecret-1-0 gnome-keyring dbus \
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq libgtk-3-0t64 libsecret-1-0 libmpv2 gnome-keyring dbus \
               libgl1-mesa-dri libegl1 libgles2 xvfb xauth >/dev/null
           elif command -v dnf >/dev/null; then
-            dnf install -y -q gtk3 libsecret gnome-keyring dbus-daemon dbus-tools mesa-dri-drivers mesa-libEGL libglvnd-gles \
+            dnf install -y -q gtk3 libsecret mpv-libs gnome-keyring dbus-daemon dbus-tools mesa-dri-drivers mesa-libEGL libglvnd-gles \
               xorg-x11-server-Xvfb xorg-x11-xauth util-linux
           else
-            pacman -Syu --noconfirm --needed gtk3 libsecret gnome-keyring dbus mesa xorg-server-xvfb xorg-xauth >/dev/null
+            pacman -Syu --noconfirm --needed gtk3 libsecret mpv gnome-keyring dbus mesa xorg-server-xvfb xorg-xauth >/dev/null
           fi
       - name: Smoke test
         shell: bash

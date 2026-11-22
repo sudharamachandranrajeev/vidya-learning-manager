@@ -15,12 +15,14 @@ import '../db/database.dart';
 import '../domain/interview.dart';
 import '../domain/study_items.dart';
 import 'common.dart';
+import 'interview_debrief_page.dart' show PastRounds;
+import 'spoken_interview_page.dart';
 import 'zen.dart';
 
-/// Said wherever practice happens: there is no recording in Vidya.
+/// Said on the self-rated drill: it records nothing.
 const noRecordingNote =
-    'Vidya does not record sound (there is no recording feature in the app). Say your answer out loud '
-    'anyway; your phone\'s own voice recorder works if you want to listen back.';
+    'This timer records nothing. Say your answer out loud anyway. To be asked aloud and have your answer '
+    'written down, use the interviewer below.';
 
 /// Said on the story bank and the feedback log.
 const interviewPrivacyNote =
@@ -79,6 +81,7 @@ String _score(num s) => s % 1 == 0 ? '${s.toInt()}' : s.toStringAsFixed(1);
 /// and the weak flag.
 String drillEvidenceText(DrillEvidence e) => [
   if (e.own != null) 'Last here ${e.own}/$drillMax (${niceDate(e.ownDay)})',
+  if (e.own != null && e.ownNote.isNotEmpty) e.ownNote,
   if (e.udyoga case final u?) 'Udyoga ${u.text} (${niceDate(u.day)})',
   if (e.asked && e.udyoga == null) 'sent to Udyoga',
   if (!e.practised && !e.asked) 'not practised yet',
@@ -153,7 +156,7 @@ class _DrillPageState extends ConsumerState<DrillPage> {
 
   Future<void> _save(DrillView v) async {
     if (_checks.any((c) => c == null)) {
-      showMessage(context, 'Rate all four checks first.');
+      notify(context, 'Rate all four checks first.');
       return;
     }
     setState(() => _saving = true);
@@ -187,7 +190,7 @@ class _DrillPageState extends ConsumerState<DrillPage> {
       _note.clear();
       _left = _length;
     });
-    showMessage(
+    notify(
       context,
       attempt.weak
           ? 'Saved: ${attempt.score}/$drillMax. Flagged weak, so it comes first before the interview.'
@@ -198,7 +201,7 @@ class _DrillPageState extends ConsumerState<DrillPage> {
   Future<void> _udyoga(StudyItem drill) async {
     await ref.mutate((s) => s.book.askUdyogaToPractise(drill, now: DateTime.now().toUtc().toIso8601String()));
     if (mounted) {
-      showMessage(
+      notify(
         context,
         'Sent to Udyoga. Its interview simulator can pick it up when both apps sync with the same account; '
         'its score shows here when it comes back.',
@@ -385,7 +388,29 @@ class _DrillPageState extends ConsumerState<DrillPage> {
         ),
       ),
       SectionCard(
-        title: 'Practise in Udyoga',
+        title: 'Practise with the interviewer',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'The interviewer asks this drill aloud, follows up on what your answer leaves out and writes it '
+              'down on this device. Type instead if you prefer. With an AI connected it also scores your words '
+              'against the criterion on a real panel scale.',
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonalIcon(
+                icon: const Icon(Icons.record_voice_over_outlined),
+                label: const Text('Practise with the interviewer'),
+                onPressed: () => openSpokenInterview(context, itemId: v.item.id),
+              ),
+            ),
+          ],
+        ),
+      ),
+      SectionCard(
+        title: 'Practise in Udyoga (optional)',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -835,6 +860,28 @@ class BeforeInterviewPage extends ConsumerWidget {
                         Text(interviewCountdown(plan.interviewDate!, day), style: text.titleMedium),
                       const SizedBox(height: 12),
                       SectionCard(
+                        title: 'Mock interview',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Text(
+                              'Your weak drills, asked aloud by the interviewer, with follow-ups and a debrief. '
+                              'Results go back to the drills below.',
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: FilledButton.icon(
+                                icon: const Icon(Icons.record_voice_over_outlined),
+                                label: const Text('Start a mock interview'),
+                                onPressed: () => openSpokenInterview(context, programId: programId),
+                              ),
+                            ),
+                            PastRounds(programId: programId),
+                          ],
+                        ),
+                      ),
+                      SectionCard(
                         title: '1. Weak criteria',
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1019,7 +1066,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
       ),
     );
     if (!mounted) return;
-    showMessage(
+    notify(
       context,
       'Saved in Notes. ${r.items.isEmpty ? 'No follow-ups added.' : '${r.items.length} follow-up ${r.items.length == 1 ? 'drill' : 'drills'} added.'}',
     );

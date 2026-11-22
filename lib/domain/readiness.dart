@@ -510,7 +510,7 @@ Readiness assessReadiness({
               ? (d.asked ? 'Drill sent to Udyoga, no score yet' : 'Drill not practised yet')
               : [
                   'Drill ${_of8(latest)}/$drillMax on ${niceDate(day)}',
-                  if (fromUdyoga) 'scored in Udyoga',
+                  if (fromUdyoga) 'scored in Udyoga' else if (d.ownNote.isNotEmpty) d.ownNote,
                 ].join(' · '),
           weight: latest == null
               ? EvidenceWeight.planned

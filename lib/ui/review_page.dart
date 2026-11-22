@@ -70,13 +70,13 @@ Future<void> _importCards(BuildContext context, WidgetRef ref) async {
     final added = await ref.mutate((s) => s.book.importCards(r.cards, today: today()));
     if (!context.mounted) return;
     final dupes = r.cards.length - added;
-    showMessage(
+    notify(
       context,
       '$added ${added == 1 ? 'card' : 'cards'} imported'
       '${dupes > 0 ? ', $dupes already here' : ''}${r.skipped > 0 ? ', ${r.skipped} skipped (missing a side)' : ''}.',
     );
   } on FormatException catch (e) {
-    if (context.mounted) showMessage(context, e.message);
+    if (context.mounted) notify(context, e.message);
   }
 }
 
@@ -84,7 +84,7 @@ Future<void> _importCards(BuildContext context, WidgetRef ref) async {
 Future<void> _exportCards(BuildContext context, WidgetRef ref) async {
   final cards = (await ref.read(statsProvider.future)).cards;
   if (!context.mounted) return;
-  if (cards.isEmpty) return showMessage(context, 'No cards to export yet.');
+  if (cards.isEmpty) return notify(context, 'No cards to export yet.');
   final saved = await FilePicker.saveFile(
     dialogTitle: 'Export cards',
     fileName: 'vidya-cards-${today()}.json',
@@ -92,7 +92,7 @@ Future<void> _exportCards(BuildContext context, WidgetRef ref) async {
     mimeType: 'application/json',
   );
   if (saved != null && context.mounted) {
-    showMessage(
+    notify(
       context,
       '${cards.length} ${cards.length == 1 ? 'card' : 'cards'} exported. Local images and audio stay on this device.',
     );

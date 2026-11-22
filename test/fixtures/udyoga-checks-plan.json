@@ -1,0 +1,88 @@
+{
+  "format": "vidya-curriculum",
+  "version": 1,
+  "part": "1 of 1",
+  "program": {
+    "title": "Prepare: Clinical Informatics Nurse at Example Health Trust",
+    "goal": "Every stage of Clinical Informatics Nurse at Example Health Trust, from deciding to apply to the first months in the post.",
+    "targetDate": "2026-12-10"
+  },
+  "role": "Clinical Informatics Nurse",
+  "journey": {
+    "role": "Clinical Informatics Nurse",
+    "employer": "Example Health Trust",
+    "sector": "nhs",
+    "advertUrl": "https://example.org/jobs/123",
+    "closes": "2026-12-10",
+    "applicationStage": "checks",
+    "advertText": "Support EPR systems and patient safety training across wards.",
+    "checks": [
+      {
+        "kind": "identity",
+        "title": "Identity and right to work: book the appointment and bring the original documents",
+        "status": "done",
+        "due": "2026-12-28",
+        "done": "2026-12-22"
+      },
+      {
+        "kind": "references",
+        "title": "References: confirm your referees and the period they must cover",
+        "status": "sent",
+        "due": "2026-12-28"
+      },
+      {
+        "kind": "criminal_record",
+        "title": "Criminal record check if the post needs one (DBS in England, AccessNI in Northern Ireland)",
+        "status": "todo",
+        "due": "2026-12-28"
+      },
+      {
+        "kind": "health",
+        "title": "Occupational health questionnaire and evidence of immunisations",
+        "status": "todo",
+        "due": "2026-12-28"
+      },
+      {
+        "kind": "qualifications",
+        "title": "Evidence of the qualifications the advert asks for",
+        "status": "todo",
+        "due": "2026-12-28"
+      },
+      {
+        "kind": "forms",
+        "title": "Personal declaration and payroll forms (HSC: FRMPEC4, FRMPEC6 and FRMPEC7)",
+        "status": "todo",
+        "due": "2026-12-28"
+      },
+      {
+        "kind": "contract",
+        "title": "Unconditional offer and contract received",
+        "status": "not_needed"
+      },
+      {
+        "kind": "notice",
+        "title": "Notice given to your current employer",
+        "status": "todo"
+      },
+      {
+        "kind": "start",
+        "title": "Start date agreed with your new line manager",
+        "status": "todo"
+      }
+    ]
+  },
+  "criteria": [],
+  "courses": [],
+  "skills": [],
+  "cards": [],
+  "notes": [
+    {
+      "title": "From Udyoga: Clinical Informatics Nurse at Example Health Trust",
+      "body": "Sent by Udyoga from your saved job.\nAdvert: https://example.org/jobs/123\nCloses: 10 Dec 2026\nApplication: Checks\n\nNo criteria yet: read them from the advert on Udyoga's interview page, or add them in Vidya.",
+      "tags": [
+        "udyoga",
+        "job"
+      ]
+    }
+  ]
+}

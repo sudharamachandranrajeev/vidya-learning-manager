@@ -1,0 +1,63 @@
+{
+  "format": "vidya-curriculum",
+  "version": 1,
+  "part": "1 of 1",
+  "program": {
+    "title": "Prepare: Clinical Informatics Nurse at Example Health Trust",
+    "goal": "Every stage of Clinical Informatics Nurse at Example Health Trust, from deciding to apply to the first months in the post.",
+    "targetDate": "2026-12-10"
+  },
+  "role": "Clinical Informatics Nurse",
+  "journey": {
+    "role": "Clinical Informatics Nurse",
+    "employer": "Example Health Trust",
+    "sector": "nhs",
+    "advertUrl": "https://example.org/jobs/123",
+    "closes": "2026-12-10",
+    "applicationStage": "applied",
+    "advertText": "Support EPR systems and patient safety training across wards.",
+    "facts": [
+      {
+        "claim": "64% of staff would recommend the trust as a place to work (2025).",
+        "url": "https://example.org/staff-survey",
+        "title": "Example staff survey 2025"
+      }
+    ]
+  },
+  "criteria": [
+    {
+      "id": "c1",
+      "text": "Excellent written communication",
+      "essential": true,
+      "kind": "experience",
+      "source": "Advert"
+    },
+    {
+      "id": "c2",
+      "text": "Experience of managing a diary",
+      "essential": true,
+      "kind": "experience",
+      "source": "Advert"
+    },
+    {
+      "id": "c3",
+      "text": "Working together",
+      "essential": false,
+      "kind": "value",
+      "source": "Advert"
+    }
+  ],
+  "courses": [],
+  "skills": [],
+  "cards": [],
+  "notes": [
+    {
+      "title": "From Udyoga: Clinical Informatics Nurse at Example Health Trust",
+      "body": "Sent by Udyoga from your saved job.\nAdvert: https://example.org/jobs/123\nCloses: 10 Dec 2026\nApplication: Applied",
+      "tags": [
+        "udyoga",
+        "job"
+      ]
+    }
+  ]
+}

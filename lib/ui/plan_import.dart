@@ -67,7 +67,7 @@ Future<void> importPlanDialog(BuildContext context, WidgetRef ref) async {
               label: const Text('Copy AI prompt'),
               onPressed: () async {
                 await Clipboard.setData(const ClipboardData(text: curriculumPrompt));
-                if (context.mounted) showMessage(context, 'Prompt copied. Paste it into an AI chat.');
+                if (context.mounted) notify(context, 'Prompt copied. Paste it into an AI chat.');
               },
             ),
           ],
@@ -195,7 +195,7 @@ Future<void> importPlanDialog(BuildContext context, WidgetRef ref) async {
       return null;
     },
   );
-  if (done != null && context.mounted) showMessage(context, done!);
+  if (done != null && context.mounted) notify(context, done!);
 }
 
 /// Asks the AI chosen for Ask AI to write the plan, part after part, and
@@ -250,7 +250,7 @@ class _MakePlanDialogState extends ConsumerState<_MakePlanDialog> {
     if (setup.via == HelpAi.chat) {
       await Clipboard.setData(ClipboardData(text: _prompt));
       if (!mounted) return;
-      showMessage(
+      notify(
         context,
         'Prompt copied with your answers. Paste it into an AI chat, then paste the reply here.',
       );

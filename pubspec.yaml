@@ -13,7 +13,25 @@ dependencies:
     git:
       url: https://github.com/sudharamachandranrajeev/brahma-life-suite.git
       path: core
+  # Shared motion and components (the kit), painted in moss and clay through
+  # a KitPalette. A local pubspec_overrides.yaml can point it at a checkout.
+  ui_kit:
+    git:
+      url: https://github.com/sudharamachandranrajeev/pariksha-interview-kit.git
+      path: packages/ui_kit
+      ref: v0.4.0
+  # The spoken interviewer shared with Udyoga: Kokoro voice, Moonshine
+  # transcripts, probes, personas, verified-quote scoring and the camera
+  # setup check. Speech models are downloaded only when the learner asks.
+  # A local pubspec_overrides.yaml can point it at a checkout.
+  interview_engine:
+    git:
+      url: https://github.com/sudharamachandranrajeev/pariksha-interview-kit.git
+      path: packages/interview_engine
+      ref: v0.4.0
   drift: ^2.35.2
+  # libmpv is opened with dlopen only when a take is played (lib/ui/mpv_loader.dart).
+  ffi: ^2.2.0
   file_picker: ^13.3.2
   flutter:
     sdk: flutter
@@ -22,6 +40,20 @@ dependencies:
   # Free resource search: the catalogues' JSON APIs.
   http: ^1.6.0
   intl: ^0.20.3
+  # Opt-in video takes (J7): playback of the picture with the round's own
+  # audio. media_kit (MIT) on Linux and Windows, over libmpv: Linux needs
+  # the system's libmpv (libmpv-dev to build, libmpv2 / mpv to run);
+  # Windows gets its own copy from media_kit_libs_windows_video. On Android
+  # video_player (BSD-3-Clause) shows the picture and audioplayers (MIT)
+  # plays the paired audio. Nothing streams: only files on this device.
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  media_kit_libs_linux: ^1.2.1
+  media_kit_libs_windows_video: ^1.0.11
+  video_player: ^2.11.1
+  audioplayers: ^6.8.1
+  # Where the speech models and the round's short-lived recordings live.
+  path_provider: ^2.1.6
   timezone: ^0.11.2
   url_launcher: ^6.3.2
 

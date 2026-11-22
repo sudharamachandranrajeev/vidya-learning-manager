@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ui_kit/ui_kit.dart' show dismissAllToasts;
 import 'package:vidya/app/app.dart';
 import 'package:vidya/app/providers.dart';
 import 'package:vidya/app/session.dart';
@@ -41,6 +42,9 @@ class AppHarness {
   }
 
   Future<void> close() async {
+    // Toasts close on a timer; close them now so none is left pending.
+    dismissAllToasts();
+    await tester.pump(const Duration(seconds: 1));
     // Disposing the scope stops the sync and refresh timers.
     await tester.pumpWidget(const SizedBox());
     await tester.runAsync(() => session.db.close());

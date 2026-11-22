@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -5,14 +6,19 @@ import 'package:brahma_core/brahma_core.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:interview_engine/interview_engine.dart' as ie show VideoTake, VideoTakeStore, formatBytes;
 
+import '../domain/dossier_readers.dart';
 import '../domain/export.dart';
 import '../domain/resources.dart';
 import '../domain/review.dart';
 import '../ui/common.dart';
 import '../ui/dialogs.dart';
+import '../ui/video_review_page.dart' show videoTakePrivacy;
 import '../domain/udyoga_link.dart';
+import 'interview_providers.dart';
 import 'providers.dart';
+import 'research_providers.dart';
 import 'reminders.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -27,15 +33,17 @@ class SettingsPage extends StatelessWidget {
       _PaceCard(),
       _RemindersCard(),
       _CareerFileCard(),
+      _VideoTakesCard(),
       _HistoryCard(),
       _DataSourcesCard(),
+      _ResearchKeysCard(),
       AppLockCard(),
       HintsCard(),
       SyncCard(),
       SecurityCard(
         network:
-            'Vidya goes online only when you search for free resources or read a pasted link\'s title, '
-            'and talks to your sync server only if you sign in.',
+            'Vidya goes online only when you search for free resources, read a pasted link\'s title or look '
+            'an employer up for a job dossier, and talks to your sync server only if you sign in.',
       ),
       AboutCard(
         description:
@@ -124,6 +132,181 @@ Future<void> _youtubeKeyDialog(BuildContext context, WidgetRef ref, bool hasKey)
   );
 }
 
+/// The job dossier's optional readers: CQC and Companies House with the
+/// learner's own keys. Off by default; each key stays in this device's
+/// keychain and is never synced.
+class _ResearchKeysCard extends ConsumerWidget {
+  const _ResearchKeysCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final readers = ref.watch(keyedReadersProvider).value;
+    Widget tile(String name, String what, String keyName, bool on, String help) => ListTile(
+      key: Key('research-key-$keyName'),
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.key_outlined),
+      title: Text(name),
+      subtitle: Text(
+        on
+            ? 'On: $what. Kept in this device\'s keychain, never synced.'
+            : 'Off. Without a key the dossier only links to $name\'s site.',
+      ),
+      trailing: TextButton(
+        onPressed: () => _researchKeyDialog(context, ref, name: name, keyName: keyName, help: help),
+        child: Text(on ? 'Change' : 'Add'),
+      ),
+    );
+    return SectionCard(
+      title: 'Job research keys',
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'Optional. A job\'s dossier reads NHS ODS without a key. These two need keys of your own; Vidya reads '
+            'them only when you ask, and keeps each answer for a week.',
+          ),
+          tile(
+            'CQC',
+            'ratings and report dates are read',
+            ResearchSecrets.cqc,
+            readers?.cqc != null,
+            'A subscription key from CQC\'s API portal (api-portal.service.cqc.org.uk).',
+          ),
+          tile(
+            'Companies House',
+            'officers and filings are read',
+            ResearchSecrets.companiesHouse,
+            readers?.companiesHouse != null,
+            'A free REST API key from the Companies House developer hub (developer.company-information.service.gov.uk).',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _researchKeyDialog(
+  BuildContext context,
+  WidgetRef ref, {
+  required String name,
+  required String keyName,
+  required String help,
+}) async {
+  final key = TextEditingController();
+  final store = ref.read(sessionProvider).keys.store;
+  await showFormDialog(
+    context,
+    title: 'Your $name key',
+    fields: (_) => [
+      Text(
+        '$help The key stays in this device\'s keychain: it is never synced or shared. Leave it empty and save '
+        'to remove it (the reader is then off).',
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        key: const Key('research-key-field'),
+        controller: key,
+        obscureText: true,
+        autocorrect: false,
+        enableSuggestions: false,
+        decoration: InputDecoration(labelText: '$name key'),
+      ),
+    ],
+    onSave: () async {
+      await ResearchSecrets.save(store, keyName, key.text);
+      ref.invalidate(keyedReadersProvider);
+      return null;
+    },
+  );
+}
+
+/// How much space the video takes use on this device.
+final _videoBytesProvider = FutureProvider<int>((ref) async {
+  ref.watch(videoTakesProvider(null));
+  try {
+    return await (await ref.watch(videoTakeStoreProvider.future)).bytesUsed();
+  } on Object {
+    return 0;
+  }
+});
+
+/// Video takes from mock interviews (J7): how long they are kept, the space
+/// they use, and delete all. This device only.
+class _VideoTakesCard extends ConsumerWidget {
+  const _VideoTakesCard();
+
+  static const _choices = [1, 3, 7, 14, 30, 60, 90];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final days = ref.watch(videoKeepDaysProvider).value ?? ie.VideoTakeStore.defaultKeepDays;
+    final takes = ref.watch(videoTakesProvider(null)).value ?? const <ie.VideoTake>[];
+    final bytes = ref.watch(_videoBytesProvider).value ?? 0;
+    final muted = Theme.of(context).textTheme.bodySmall;
+    return SectionCard(
+      title: 'Interview video takes',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Only rounds where you turned on "Record video for this round" have any. ${videoTakePrivacy(days)}',
+            style: muted,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Expanded(child: Text('Delete video takes after')),
+              DropdownButton<int>(
+                key: const Key('video-keep-days'),
+                value: _choices.contains(days) ? days : null,
+                hint: Text('$days days'),
+                items: [
+                  for (final d in _choices)
+                    DropdownMenuItem(value: d, child: Text('$d ${d == 1 ? 'day' : 'days'}')),
+                ],
+                onChanged: (v) {
+                  if (v != null) unawaited(ref.read(videoKeepDaysProvider.notifier).set(v));
+                },
+              ),
+            ],
+          ),
+          Text(
+            takes.isEmpty
+                ? 'No video takes on this device.'
+                : '${takes.length} video ${takes.length == 1 ? 'take' : 'takes'} · ${ie.formatBytes(bytes)} on this device',
+            key: const Key('video-storage'),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const Key('video-delete-all'),
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Delete all video takes'),
+              onPressed: takes.isEmpty
+                  ? null
+                  : () async {
+                      final ok = await askSure(
+                        context,
+                        'Delete all video takes?',
+                        'Every interview video on this device goes, with its audio. Transcripts and scores stay. '
+                            'This cannot be undone.',
+                        action: 'Delete all',
+                      );
+                      if (!ok) return;
+                      await (await ref.read(videoTakeStoreProvider.future)).deleteAll();
+                      ref.invalidate(videoTakesProvider);
+                      if (context.mounted) notify(context, 'All video takes deleted.');
+                    },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Streaks are opt-in: off, no day count is shown anywhere. Achievements
 /// are not affected.
 class _StreaksCard extends ConsumerWidget {
@@ -198,7 +381,7 @@ class _RemindersCard extends ConsumerWidget {
                 ? (v) async {
                     final ok = await notifier.setEnabled(v);
                     if (!ok && context.mounted) {
-                      showMessage(context, 'Allow notifications for Vidya in the device settings.');
+                      notify(context, 'Allow notifications for Vidya in the device settings.');
                     }
                   }
                 : null,
@@ -295,7 +478,7 @@ class _HistoryCard extends ConsumerWidget {
       bytes: Uint8List.fromList(utf8.encode(text)),
       mimeType: json ? 'application/json' : 'text/markdown',
     );
-    if (saved != null && context.mounted) showMessage(context, 'History saved.');
+    if (saved != null && context.mounted) notify(context, 'History saved.');
   }
 
   @override

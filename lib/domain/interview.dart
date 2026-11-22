@@ -4,7 +4,9 @@
 /// scenario questions with a guided frame, review before an interview, and
 /// log how a real interview went so its weak spots become study items.
 ///
-/// Privacy: nothing here records sound. Attempts, stories and feedback logs
+/// Privacy: nothing here records sound (the spoken interviewer in
+/// spoken_interview.dart keeps short-lived recordings on the device and
+/// deletes them when its screen closes). Attempts, stories and feedback logs
 /// are ordinary rows, so they stay on this device or travel only through
 /// the learner's own sync, and each can be deleted. Nothing is sent to any
 /// other service.
@@ -125,6 +127,12 @@ String drillQuestion(StudyItem drill) => switch (itemContent(drill)['question'])
 /// scenario frame (empty when not used), the story used (a [Story.id], ''
 /// when none) and a note. Kept as an assessment's detail (see
 /// `LearnAssessments.detail`).
+///
+/// An answer in a spoken round ([round] set) is either rated on the same
+/// four checks, or scored by an AI against the framework's scale: then
+/// [levels] holds each criterion's verified level, [levelNote] says it in
+/// words and [outOf8] is the lowest of them placed on the 0–8 drill scale,
+/// so one weak criterion is enough to flag the drill.
 class DrillAttempt {
   const DrillAttempt({
     required this.checks,
@@ -132,6 +140,11 @@ class DrillAttempt {
     this.frame = const ScenarioFrame(),
     this.story = '',
     this.note = '',
+    this.round = '',
+    this.levels = const {},
+    this.levelNote = '',
+    this.uncertain = false,
+    this.outOf8,
   });
 
   final List<int> checks;
@@ -140,7 +153,23 @@ class DrillAttempt {
   final String story;
   final String note;
 
-  int get score => drillScore(checks);
+  /// The spoken round it came from (a `learn_rounds` id), '' otherwise.
+  final String round;
+
+  /// Criterion id to scale level code, when an AI scored it.
+  final Map<String, String> levels;
+
+  /// "Level 2 (NHS values scale)": the AI's score in words.
+  final String levelNote;
+
+  /// The two scoring runs disagreed on a level here.
+  final bool uncertain;
+
+  /// The AI's score placed on the drill scale; null for self-rated.
+  final int? outOf8;
+
+  bool get aiScored => outOf8 != null;
+  int get score => outOf8?.clamp(0, drillMax) ?? drillScore(checks);
   bool get weak => drillWeak(score);
 
   /// The detail JSON. `kind` marks it as a drill attempt.
@@ -151,6 +180,11 @@ class DrillAttempt {
     if (!frame.isEmpty) 'frame': frame.toJson(),
     if (story.isNotEmpty) 'story': story,
     if (note.trim().isNotEmpty) 'note': note.trim(),
+    if (round.isNotEmpty) 'round': round,
+    if (levels.isNotEmpty) 'levels': levels,
+    if (levelNote.isNotEmpty) 'levelNote': levelNote,
+    if (uncertain) 'uncertain': true,
+    'outOf8': ?outOf8,
   });
 
   /// Reads a detail, or null when it is not a drill attempt.
@@ -172,6 +206,15 @@ class DrillAttempt {
       frame: ScenarioFrame.fromJson(j['frame']),
       story: j['story'] is String ? j['story'] as String : '',
       note: j['note'] is String ? j['note'] as String : '',
+      round: j['round'] is String ? j['round'] as String : '',
+      levels: {
+        if (j['levels'] case final Map m)
+          for (final e in m.entries)
+            if (e.key is String && e.value is String) e.key as String: e.value as String,
+      },
+      levelNote: j['levelNote'] is String ? j['levelNote'] as String : '',
+      uncertain: j['uncertain'] == true,
+      outOf8: j['outOf8'] is int ? j['outOf8'] as int : null,
     );
   }
 }
@@ -331,11 +374,23 @@ Map<String, UdyogaScore> parsePractiseResults(String text) {
 /// A drill's practice so far: its last self-rated score here, Udyoga's last
 /// score, and whether it was handed to Udyoga.
 class DrillEvidence {
-  const DrillEvidence({this.own, this.ownDay = '', this.attempts = 0, this.udyoga, this.asked = false});
+  const DrillEvidence({
+    this.own,
+    this.ownDay = '',
+    this.ownNote = '',
+    this.attempts = 0,
+    this.udyoga,
+    this.asked = false,
+  });
 
-  /// The last self-rated score (0–8), null when never practised here.
+  /// The last score here (0–8), self-rated or from the interviewer, null
+  /// when never practised here.
   final int? own;
   final String ownDay;
+
+  /// When the last score here came from the interviewer's AI scoring: the
+  /// level in words ("interviewer: level 2, NHS values scale"), else ''.
+  final String ownNote;
   final int attempts;
   final UdyogaScore? udyoga;
 
@@ -735,8 +790,9 @@ extension InterviewTraining on LearningBook {
   /// Saves one practice of [drill]: a result linked to its topic, course
   /// and the drill itself (score out of 8, with the checks, timer, scenario
   /// frame, story and note as its detail), and the drill marked done today.
-  /// Returns the result's id.
-  Future<String> recordDrill(StudyItem drill, DrillAttempt attempt, {required String today}) =>
+  /// Returns the result's id. With [id] (a spoken round's answer), the same
+  /// result is replaced when saved again.
+  Future<String> recordDrill(StudyItem drill, DrillAttempt attempt, {required String today, String? id}) =>
       db.transaction(() async {
         final topic = await (db.select(
           db.learnTopics,
@@ -744,11 +800,11 @@ extension InterviewTraining on LearningBook {
         final course = topic == null
             ? null
             : await (db.select(db.learnCourses)..where((c) => c.id.equals(topic.courseId))).getSingleOrNull();
-        final id = newId();
+        final rowId = id ?? newId();
         await save(
           db.learnAssessments,
           LearnAssessmentsCompanion.insert(
-            id: id,
+            id: rowId,
             courseId: Value(course?.id),
             topicId: Value(topic?.id),
             itemId: Value(drill.id),
@@ -757,14 +813,15 @@ extension InterviewTraining on LearningBook {
             score: attempt.score.toDouble(),
             max: const Value(drillMax * 1.0),
             detail: Value(attempt.encode()),
+            deleted: const Value(false),
           ),
-          id,
+          rowId,
         );
         final fresh = await (db.select(db.learnItems)..where((i) => i.id.equals(drill.id))).getSingleOrNull();
         if (fresh != null && fresh.done != today) {
           await save(db.learnItems, fresh.copyWith(done: Value(today)), drill.id);
         }
-        return id;
+        return rowId;
       });
 
   /// The drill's attempts, newest first.
@@ -816,6 +873,10 @@ extension InterviewTraining on LearningBook {
         id: DrillEvidence(
           own: last[id]?.score.round(),
           ownDay: last[id]?.day ?? '',
+          ownNote: switch (last[id]) {
+            final a? => DrillAttempt.parse(a.detail)?.levelNote ?? '',
+            null => '',
+          },
           attempts: count[id] ?? 0,
           udyoga: udyoga[id],
           asked: asked.contains(id),

@@ -18,7 +18,9 @@ final vidyaSuite = SuiteApp(
   hints: vidyaHints,
   theme: (_, b) => vidyaTheme(b),
   home: (onHome) => VidyaHome(onHome: onHome),
-  builder: (context, child) => Backdrop(child: child ?? const SizedBox.shrink()),
+  builder: (context, child) => Backdrop(
+    child: KitShadBridge(fontFamily: bodyFont, child: child ?? const SizedBox.shrink()),
+  ),
   summary: (_) => const _Summary(),
 );
 

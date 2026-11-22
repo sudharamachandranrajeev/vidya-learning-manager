@@ -92,7 +92,8 @@ void main() {
         .get();
   }
 
-  Future<Topic> topic(String title) => (db.select(db.learnTopics)..where((t) => t.title.equals(title))).getSingle();
+  Future<Topic> topic(String title) =>
+      (db.select(db.learnTopics)..where((t) => t.title.equals(title))).getSingle();
 
   group('format 2 plans', () {
     test('items, quiz, drills and criteria are read, with types tidied', () {
@@ -108,7 +109,10 @@ void main() {
       expect(t.items.map((i) => i.type), ['video', 'practice task', 'article', 'quiz', 'interview drill']);
       expect(t.items.first.required, isTrue);
       expect(t.items[2].required, isFalse);
-      expect(jsonDecode(t.items[1].content), {'instructions': 'Use a timer.', 'doneWhen': 'The clay runs true'});
+      expect(jsonDecode(t.items[1].content), {
+        'instructions': 'Use a timer.',
+        'doneWhen': 'The clay runs true',
+      });
       final quiz = jsonDecode(t.items[3].content)['questions'] as List;
       expect(quiz, hasLength(2), reason: 'a question with no answer is left out');
       expect(quiz.first, {
@@ -130,7 +134,7 @@ void main() {
         throwsA(isA<FormatException>().having((e) => e.message, 'message', contains('Too many items'))),
       );
       expect(
-        () => parseCurriculum(jsonEncode({...v2Plan(), 'version': 3})),
+        () => parseCurriculum(jsonEncode({...v2Plan(), 'version': 4})),
         throwsA(isA<FormatException>().having((e) => e.message, 'message', contains('newer Vidya'))),
       );
     });
@@ -380,7 +384,9 @@ void main() {
       await book.remove(db.learnNotes, firing.noteId);
       await book.save(db.learnTopics, firing.copyWith(noteId: ''), firing.id);
       expect(await book.splitStudyGuides(today: today), 0);
-      final n = await (db.select(db.learnNotes)..where((n) => n.id.equals(topicNoteId(firing.id)))).getSingle();
+      final n = await (db.select(
+        db.learnNotes,
+      )..where((n) => n.id.equals(topicNoteId(firing.id)))).getSingle();
       expect(n.deleted, isTrue);
     });
 

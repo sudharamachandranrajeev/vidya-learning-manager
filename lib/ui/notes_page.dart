@@ -153,7 +153,7 @@ class _NoteEditorState extends ConsumerState<_NoteEditor> {
   }
 
   Future<void> _save() async {
-    if (_title.text.trim().isEmpty) return showMessage(context, 'Give the note a title.');
+    if (_title.text.trim().isEmpty) return notify(context, 'Give the note a title.');
     await ref.mutate(
       (s) => s.book.saveNote(
         _title.text.trim(),

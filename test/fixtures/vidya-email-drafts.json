@@ -1,0 +1,26 @@
+{
+  "format": "vidya-email-drafts",
+  "version": 1,
+  "drafts": [
+    {
+      "id": "fixture-feedback",
+      "template": "feedback",
+      "title": "Ask for feedback by criterion",
+      "subject": "Feedback on my interview for Example Officer",
+      "body": "Dear Hiring Manager,\n\nThank you for interviewing me.",
+      "employer": "Example Health Trust",
+      "role": "Example Officer",
+      "at": "2026-12-06T09:00:00Z"
+    },
+    {
+      "id": "fixture-chase",
+      "template": "chase",
+      "title": "Polite chase after the closing date",
+      "subject": "Feedback on my interview for Example Officer",
+      "body": "Chase",
+      "employer": "Example Health Trust",
+      "role": "Example Officer",
+      "at": "2026-12-05T09:00:00Z"
+    }
+  ]
+}

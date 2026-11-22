@@ -11,6 +11,7 @@ import 'common.dart';
 import 'course_page.dart';
 import 'dialogs.dart';
 import 'interview_pages.dart';
+import 'journey_page.dart';
 import 'plan_import.dart';
 import 'readiness_page.dart';
 import 'resource_search.dart';
@@ -77,7 +78,7 @@ class LearnPage extends ConsumerWidget {
                           ),
                         ],
                       ),
-                    for (final p in s.programs) _ProgramCard(s, p),
+                    for (final (i, p) in s.programs.indexed) BlurFadeIn(index: i, child: _ProgramCard(s, p)),
                     if (loose.isNotEmpty)
                       SectionCard(
                         title: 'Self-study',
@@ -118,51 +119,58 @@ class _ProgramCard extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     final courses = s.courses.where((c) => c.programId == p.id).toList();
     final progress = s.programProgress(p);
+    // Sinks a touch when pressed; a soft glow follows the mouse.
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProgramPage(p.id))),
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                Ring(
-                  value: progress,
-                  size: 64,
-                  stroke: 7,
-                  child: Text('${(progress * 100).round()}%', style: t.labelMedium?.merge(tabular)),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(p.title, style: t.titleMedium),
-                      if (p.goal.isNotEmpty)
-                        Text(
-                          p.goal,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.bodyMedium?.copyWith(color: muted(context)),
-                        ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${courses.where((c) => c.status == 'done').length} of ${courses.length} courses'
-                        '${p.target == null ? '' : ' · target ${niceDate(p.target!)}'}'
-                        '${p.status == 'done'
-                            ? ' · complete'
-                            : p.status == 'paused'
-                            ? ' · paused'
-                            : ''}',
-                        style: t.bodySmall?.copyWith(color: muted(context)),
+      child: Tilt(
+        child: SpotlightCard(
+          padding: EdgeInsets.zero,
+          radius: 24,
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ProgramPage(p.id))),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Row(
+                  children: [
+                    Ring(
+                      value: progress,
+                      size: 64,
+                      stroke: 7,
+                      child: Text('${(progress * 100).round()}%', style: t.labelMedium?.merge(tabular)),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.title, style: t.titleMedium),
+                          if (p.goal.isNotEmpty)
+                            Text(
+                              p.goal,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: t.bodyMedium?.copyWith(color: muted(context)),
+                            ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '${courses.where((c) => c.status == 'done').length} of ${courses.length} courses'
+                            '${p.target == null ? '' : ' · target ${niceDate(p.target!)}'}'
+                            '${p.status == 'done'
+                                ? ' · complete'
+                                : p.status == 'paused'
+                                ? ' · paused'
+                                : ''}',
+                            style: t.bodySmall?.copyWith(color: muted(context)),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const Icon(Icons.chevron_right),
+                  ],
                 ),
-                const Icon(Icons.chevron_right),
-              ],
+              ),
             ),
           ),
         ),
@@ -187,28 +195,40 @@ class CourseTile extends StatelessWidget {
       'dropped' => Icons.remove_circle_outline,
       _ => Icons.radio_button_unchecked,
     };
+    final title = Theme.of(context).textTheme.bodyLarge;
     return Column(
       children: [
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            icon,
-            color: c.status == 'done' ? Theme.of(context).colorScheme.primary : muted(context),
+        Tilt(
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              icon,
+              color: c.status == 'done' ? Theme.of(context).colorScheme.primary : muted(context),
+            ),
+            // The title grows into the course page's header as it opens.
+            title: Align(
+              alignment: Alignment.centerLeft,
+              child: CourseTitleHero(
+                c.id,
+                child: Text(
+                  c.title,
+                  style: c.status == 'dropped'
+                      ? title?.copyWith(decoration: TextDecoration.lineThrough)
+                      : title,
+                ),
+              ),
+            ),
+            subtitle: Text(
+              [
+                courseKinds[c.kind] ?? c.kind,
+                if (topics.isNotEmpty) '$done of ${topics.length} topics',
+                if (c.hours > 0) '${c.hours} h',
+                if (c.due != null && c.status != 'done') 'due ${relativeDay(c.due!, s.today)}',
+              ].join(' · '),
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CoursePage(c.id))),
           ),
-          title: Text(
-            c.title,
-            style: c.status == 'dropped' ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
-          ),
-          subtitle: Text(
-            [
-              courseKinds[c.kind] ?? c.kind,
-              if (topics.isNotEmpty) '$done of ${topics.length} topics',
-              if (c.hours > 0) '${c.hours} h',
-              if (c.due != null && c.status != 'done') 'due ${relativeDay(c.due!, s.today)}',
-            ].join(' · '),
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CoursePage(c.id))),
         ),
         if (topics.isNotEmpty && c.status != 'dropped')
           Padding(
@@ -305,6 +325,7 @@ class ProgramPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 12),
                         _ReadinessTile(id),
+                        JourneyTile(id),
                         SectionCard(
                           title: 'Courses',
                           child: courses.isEmpty

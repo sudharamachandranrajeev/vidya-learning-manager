@@ -1,4 +1,3 @@
-import 'package:brahma_core/brahma_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +5,7 @@ import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/resources.dart';
 import 'common.dart';
+import 'zen.dart';
 
 /// Opens the free resource search with [query] filled in. With [topicId]
 /// a tap on Add puts the result in that topic; otherwise the learner picks
@@ -79,7 +79,7 @@ class _ResourceSearchSheetState extends ConsumerState<ResourceSearchSheet> {
     if (widget.topicId != null) return null;
     final topics = widget.topics;
     if (topics.isEmpty) {
-      showMessage(context, 'Add a topic first, then add resources to it.');
+      notify(context, 'Add a topic first, then add resources to it.');
       return null;
     }
     if (topics.length == 1) return topics.single;
@@ -114,7 +114,7 @@ class _ResourceSearchSheetState extends ConsumerState<ResourceSearchSheet> {
     );
     if (!mounted) return;
     setState(() => _added.add(r.url));
-    showMessage(context, topic == null ? 'Added to this topic.' : 'Added to ${topic.title}.');
+    notify(context, topic == null ? 'Added to this topic.' : 'Added to ${topic.title}.');
   }
 
   @override
@@ -165,6 +165,9 @@ class _ResourceSearchSheetState extends ConsumerState<ResourceSearchSheet> {
                       'Nothing found for "$_searched". Try fewer or broader words.',
                       style: text.bodyMedium,
                     )
+                  // Placeholder cards until the first catalogue answers.
+                  : _results.isEmpty
+                  ? const SingleChildScrollView(child: SkeletonCards())
                   : ListView.builder(
                       padding: EdgeInsets.only(bottom: 16 + MediaQuery.paddingOf(context).bottom),
                       itemCount: _results.length,

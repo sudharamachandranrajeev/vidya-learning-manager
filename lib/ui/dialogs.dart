@@ -8,6 +8,7 @@ import '../db/database.dart';
 import '../domain/book.dart';
 import '../domain/templates.dart';
 import 'common.dart';
+import 'zen.dart';
 
 Future<void> addProgramDialog(BuildContext context, WidgetRef ref) async {
   final title = TextEditingController(), goal = TextEditingController();
@@ -31,14 +32,18 @@ Future<void> addProgramDialog(BuildContext context, WidgetRef ref) async {
 }
 
 Future<void> templateDialog(BuildContext context, WidgetRef ref) async {
-  final picked = await showModalBottomSheet<ProgramTemplate>(
-    context: context,
-    builder: (context) => SafeArea(
+  // The kit's sheet: follows the finger, swipes down to close.
+  final picked = await showSheet<ProgramTemplate>(
+    context,
+    // Transparent material, for the list tiles' ink.
+    builder: (context) => Material(
+      type: MaterialType.transparency,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           for (final t in programTemplates)
             ListTile(
+              contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.auto_stories_outlined),
               title: Text(t.title),
               subtitle: Text(
@@ -52,7 +57,7 @@ Future<void> templateDialog(BuildContext context, WidgetRef ref) async {
   );
   if (picked == null) return;
   await ref.mutate((s) => s.book.importTemplate(picked, today: today()));
-  if (context.mounted) showMessage(context, '${picked.title} added. Edit anything to make it yours.');
+  if (context.mounted) notify(context, '${picked.title} added. Edit anything to make it yours.');
 }
 
 Future<void> addCourseDialog(BuildContext context, WidgetRef ref, {String? programId}) async {

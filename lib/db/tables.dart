@@ -209,6 +209,126 @@ class LearnStories extends Table with SyncedRow {
   TextColumn get updated => text()();
 }
 
+/// A spoken practice round with the interviewer (J3): the drills asked,
+/// the text of each answer and, when an AI scored it, both scoring runs.
+/// Only text is kept: the round's recordings stay in a temporary folder on
+/// the device and are deleted when the round screen closes.
+@DataClassName('RoundRow')
+class LearnRounds extends Table with SyncedRow {
+  TextColumn get programId => text().nullable()();
+  TextColumn get title => text()();
+  TextColumn get day => text()();
+
+  /// A framework id from the interview engine (`nhs_values`, `private` …).
+  TextColumn get framework => text().withDefault(const Constant('private'))();
+
+  /// The panel, level and silence settings it ran with, as JSON.
+  TextColumn get settings => text().withDefault(const Constant(''))();
+
+  /// The questions, as JSON: each drill's question, its item id and the
+  /// criterion row ids it tests.
+  TextColumn get questions => text()();
+
+  /// The saved text of each answer by question number, follow-ups
+  /// included and labelled, as JSON.
+  TextColumn get answers => text().withDefault(const Constant('{}'))();
+
+  /// The AI's two scoring runs and the engine version that checked them,
+  /// as JSON; '' when it was not scored by an AI.
+  TextColumn get scoring => text().withDefault(const Constant(''))();
+
+  /// When the round finished (an ISO time), null while it runs.
+  TextColumn get finished => text().nullable()();
+}
+
+/// A job journey (plan format 3): one per program. [journey] is the plan's
+/// `journey` as last sent (the job's data and any stages of its own); the
+/// app fills in the rest from the dated templates when it shows it, so a
+/// template update reaches every journey. [stage] and [progress] are the
+/// learner's and stay when the plan comes again.
+@DataClassName('JourneyRow')
+class LearnJourneys extends Table with SyncedRow {
+  TextColumn get programId => text()();
+
+  /// The journey as sent, as JSON.
+  TextColumn get journey => text()();
+
+  /// The stage the learner is on (a `journeyStages` id), '' before they
+  /// pick one.
+  TextColumn get stage => text().withDefault(const Constant(''))();
+
+  /// What the learner did, as JSON: per stage, the artefacts ticked or
+  /// noted, the checklist items ticked, the last check result and a pasted
+  /// draft (see journey_book.dart).
+  TextColumn get progress => text().withDefault(const Constant('{}'))();
+  TextColumn get updated => text()();
+}
+
+/// A source the job dossier read (journey plan J5): text the learner
+/// pasted (board papers, a staff survey page, reviews they read), the
+/// advert Udyoga sent, or a record an official reader fetched (NHS ODS,
+/// CQC, Companies House). A fact card is verified only when its quote is
+/// in [body]. Kept so a card can be checked again.
+@DataClassName('FactSource')
+class LearnFactSources extends Table with SyncedRow {
+  TextColumn get programId => text()();
+  TextColumn get employer => text().withDefault(const Constant(''))();
+
+  /// One of `sourceKinds` in dossier.dart.
+  TextColumn get kind => text()();
+  TextColumn get url => text().withDefault(const Constant(''))();
+  TextColumn get title => text().withDefault(const Constant(''))();
+
+  /// The source's own date (yyyy-MM-dd): a board meeting, a survey year's
+  /// publication, a report; '' when not known.
+  TextColumn get sourceDate => text().withDefault(const Constant(''))();
+
+  /// When it was pasted or fetched (an ISO time).
+  TextColumn get fetchedAt => text()();
+
+  /// The text itself, clipped (see `maxSourceText`).
+  TextColumn get body => text()();
+}
+
+/// A fact card in a job's dossier: a claim, the exact sentence that
+/// supports it and where that sentence is from. [status] is `verified`
+/// (the quote was found in the source's text), `user-confirmed` (the
+/// learner checked it themselves) or `inference` (not checked: always
+/// labelled so).
+@DataClassName('FactCard')
+class LearnFacts extends Table with SyncedRow {
+  TextColumn get programId => text()();
+  TextColumn get employer => text().withDefault(const Constant(''))();
+  TextColumn get claim => text()();
+
+  /// The [LearnFactSources] row the quote was checked against, '' when none.
+  TextColumn get sourceId => text().withDefault(const Constant(''))();
+  TextColumn get sourceUrl => text().withDefault(const Constant(''))();
+  TextColumn get sourceTitle => text().withDefault(const Constant(''))();
+
+  /// The source's own date (yyyy-MM-dd), '' when not known.
+  TextColumn get sourceDate => text().withDefault(const Constant(''))();
+
+  /// When the source was read (an ISO time), '' when it never was.
+  TextColumn get fetchedAt => text().withDefault(const Constant(''))();
+
+  /// The exact supporting sentence, '' when there is none yet.
+  TextColumn get quote => text().withDefault(const Constant(''))();
+  TextColumn get status => text().withDefault(const Constant('inference'))();
+
+  /// One of `factKinds` in dossier.dart.
+  TextColumn get kind => text().withDefault(const Constant('other'))();
+
+  /// yyyy-MM-dd from which the card is flagged as maybe out of date, set
+  /// by its kind's source cycle (see `staleAfterFor`).
+  TextColumn get staleAfter => text().withDefault(const Constant(''))();
+
+  /// Who proposed it: `you`, `ai`, `udyoga` or `reader`.
+  TextColumn get origin => text().withDefault(const Constant('you'))();
+  TextColumn get created => text()();
+  TextColumn get updated => text()();
+}
+
 /// A skill and how far it has come against where it should be.
 @DataClassName('Skill')
 class LearnSkills extends Table with SyncedRow {

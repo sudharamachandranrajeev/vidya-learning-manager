@@ -35,7 +35,7 @@ class PortfolioPage extends ConsumerWidget {
         onPressed: () async {
           final s = await ref.read(statsProvider.future);
           await Clipboard.setData(ClipboardData(text: portfolioMarkdown(s)));
-          if (context.mounted) showMessage(context, 'Portfolio copied as Markdown.');
+          if (context.mounted) notify(context, 'Portfolio copied as Markdown.');
         },
       ),
     ],
