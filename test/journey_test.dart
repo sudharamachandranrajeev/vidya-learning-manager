@@ -13,6 +13,7 @@ import 'package:vidya/domain/book.dart';
 import 'package:vidya/domain/curriculum.dart';
 import 'package:vidya/domain/interview.dart';
 import 'package:vidya/domain/journey.dart';
+import 'package:vidya/domain/dossier_book.dart';
 import 'package:vidya/domain/journey_book.dart';
 import 'package:vidya/domain/journey_templates.dart';
 import 'package:vidya/domain/study_items.dart';
@@ -518,6 +519,13 @@ void main() {
         expect(v.journey.stage('decide')!.teach.first.text, contains('2 essential criteria'));
         final program = await (db.select(db.learnPrograms)..where((x) => x.id.equals(pid))).getSingle();
         expect(program.title, 'Prepare: Clinical Informatics Nurse at Example Health Trust');
+        // The employer research's sourced point arrives as an unverified card.
+        final cards = await book.factCards(pid);
+        expect(cards.map((c) => (c.status, c.origin, c.sourceUrl, c.sourceTitle)), [
+          ('inference', 'udyoga', 'https://example.org/staff-survey', 'Example staff survey 2025'),
+        ]);
+        expect(cards.single.claim, startsWith('64% of staff would recommend'));
+        expect(j.advertText, contains('EPR systems'));
       },
     );
   });

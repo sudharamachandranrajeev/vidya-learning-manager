@@ -14,7 +14,15 @@
     "sector": "nhs",
     "advertUrl": "https://example.org/jobs/123",
     "closes": "2026-12-10",
-    "applicationStage": "applied"
+    "applicationStage": "applied",
+    "advertText": "Support EPR systems and patient safety training across wards.",
+    "facts": [
+      {
+        "claim": "64% of staff would recommend the trust as a place to work (2025).",
+        "url": "https://example.org/staff-survey",
+        "title": "Example staff survey 2025"
+      }
+    ]
   },
   "criteria": [
     {
