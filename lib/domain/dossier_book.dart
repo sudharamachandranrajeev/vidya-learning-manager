@@ -226,7 +226,13 @@ extension DossierBook on LearningBook {
         quote: Value(quote.length > 1000 ? quote.substring(0, 1000) : quote),
         status: Value(status),
         kind: Value(k),
-        staleAfter: Value(staleAfterFor(k, sourceDate: date, fetchedAt: fetched.isEmpty ? now : fetched)),
+        staleAfter: Value(
+          staleAfterFor(
+            k,
+            sourceDate: isRegister(source?.kind ?? '') ? '' : date,
+            fetchedAt: fetched.isEmpty ? now : fetched,
+          ),
+        ),
         origin: Value(origin),
         created: now,
         updated: now,
@@ -264,20 +270,25 @@ extension DossierBook on LearningBook {
     sourceTitle: src.title.isNotEmpty ? src.title : c.sourceTitle,
     sourceDate: src.sourceDate,
     fetchedAt: src.fetchedAt,
-    staleAfter: staleAfterFor(c.kind, sourceDate: src.sourceDate, fetchedAt: src.fetchedAt),
+    staleAfter: staleAfterFor(
+      c.kind,
+      sourceDate: isRegister(src.kind) ? '' : src.sourceDate,
+      fetchedAt: src.fetchedAt,
+    ),
     updated: now,
   );
 
   Future<void> setFactKind(String id, String kind, {required String now}) async {
     final c = await factCard(id);
     if (c == null || !factKinds.containsKey(kind) || c.kind == kind) return;
+    final register = c.sourceId.isNotEmpty && isRegister((await factSource(c.sourceId))?.kind ?? '');
     await save(
       db.learnFacts,
       c.copyWith(
         kind: kind,
         staleAfter: staleAfterFor(
           kind,
-          sourceDate: c.sourceDate,
+          sourceDate: register ? '' : c.sourceDate,
           fetchedAt: c.fetchedAt.isEmpty ? c.created : c.fetchedAt,
         ),
         updated: now,

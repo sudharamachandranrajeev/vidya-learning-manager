@@ -159,6 +159,11 @@ String staleAfterFor(String kind, {String sourceDate = '', String fetchedAt = ''
   return isoDate(out);
 }
 
+/// True for a register read live (NHS ODS, Companies House): its own date
+/// is when the record last changed, so its cards age from when it was
+/// read, not from that date.
+bool isRegister(String sourceKind) => sourceKind == 'ods' || sourceKind == 'companies-house';
+
 /// Whether a card with [staleAfter] should be checked again on [today].
 bool isStale(String staleAfter, String today) => staleAfter.isNotEmpty && today.compareTo(staleAfter) >= 0;
 

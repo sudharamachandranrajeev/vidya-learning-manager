@@ -43,6 +43,8 @@ void main() {
       final cards = await book.factCards(pid);
       expect(cards.every((c) => c.status == 'verified' && c.origin == 'reader'), isTrue);
       expect(cards.length, r.facts.length);
+      // A register's cards age from when it was read, not from its last change.
+      expect(cards.map((c) => (c.sourceDate, c.staleAfter)).toSet(), {('2024-04-02', '2027-11-22')});
     });
   });
 
