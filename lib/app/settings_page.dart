@@ -198,7 +198,7 @@ class _RemindersCard extends ConsumerWidget {
                 ? (v) async {
                     final ok = await notifier.setEnabled(v);
                     if (!ok && context.mounted) {
-                      showMessage(context, 'Allow notifications for Vidya in the device settings.');
+                      notify(context, 'Allow notifications for Vidya in the device settings.');
                     }
                   }
                 : null,
@@ -295,7 +295,7 @@ class _HistoryCard extends ConsumerWidget {
       bytes: Uint8List.fromList(utf8.encode(text)),
       mimeType: json ? 'application/json' : 'text/markdown',
     );
-    if (saved != null && context.mounted) showMessage(context, 'History saved.');
+    if (saved != null && context.mounted) notify(context, 'History saved.');
   }
 
   @override

@@ -153,7 +153,7 @@ class _DrillPageState extends ConsumerState<DrillPage> {
 
   Future<void> _save(DrillView v) async {
     if (_checks.any((c) => c == null)) {
-      showMessage(context, 'Rate all four checks first.');
+      notify(context, 'Rate all four checks first.');
       return;
     }
     setState(() => _saving = true);
@@ -187,7 +187,7 @@ class _DrillPageState extends ConsumerState<DrillPage> {
       _note.clear();
       _left = _length;
     });
-    showMessage(
+    notify(
       context,
       attempt.weak
           ? 'Saved: ${attempt.score}/$drillMax. Flagged weak, so it comes first before the interview.'
@@ -198,7 +198,7 @@ class _DrillPageState extends ConsumerState<DrillPage> {
   Future<void> _udyoga(StudyItem drill) async {
     await ref.mutate((s) => s.book.askUdyogaToPractise(drill, now: DateTime.now().toUtc().toIso8601String()));
     if (mounted) {
-      showMessage(
+      notify(
         context,
         'Sent to Udyoga. Its interview simulator can pick it up when both apps sync with the same account; '
         'its score shows here when it comes back.',
@@ -1019,7 +1019,7 @@ class _FeedbackPageState extends ConsumerState<FeedbackPage> {
       ),
     );
     if (!mounted) return;
-    showMessage(
+    notify(
       context,
       'Saved in Notes. ${r.items.isEmpty ? 'No follow-ups added.' : '${r.items.length} follow-up ${r.items.length == 1 ? 'drill' : 'drills'} added.'}',
     );

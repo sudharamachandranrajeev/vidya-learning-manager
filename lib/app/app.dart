@@ -4,6 +4,7 @@ import 'package:brahma_core/brahma_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../ui/common.dart';
 import '../ui/zen.dart';
 import 'modules.dart';
 import 'providers.dart';
@@ -19,7 +20,11 @@ class VidyaApp extends StatelessWidget {
     debugShowCheckedModeBanner: false,
     theme: vidyaTheme(Brightness.light),
     darkTheme: vidyaTheme(Brightness.dark),
-    builder: (context, child) => AppLockGate(child: Backdrop(child: child ?? const SizedBox.shrink())),
+    builder: (context, child) => AppLockGate(
+      child: Backdrop(
+        child: KitShadBridge(fontFamily: bodyFont, child: child ?? const SizedBox.shrink()),
+      ),
+    ),
     home: home,
   );
 }
@@ -70,9 +75,7 @@ class _VidyaHomeState extends ConsumerState<VidyaHome> {
     ref.listen(careerFileAutoAddProvider, (_, next) {
       final titles = next.value ?? const <String>[];
       if (titles.isEmpty) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('Added from your career file: ${titles.join(', ')}')));
+      notify(context, 'Added from your career file: ${titles.join(', ')}', status: KitStatus.good);
     });
     ref.listen(celebrationsProvider, (_, list) {
       if (list.isEmpty) return;
@@ -80,9 +83,7 @@ class _VidyaHomeState extends ConsumerState<VidyaHome> {
           ? 'Achievement earned: ${list.first.title}'
           : 'Achievements earned: ${list.map((a) => a.title).join(', ')}';
       ref.read(celebrationsProvider.notifier).clear();
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('🏅 $text')));
+      notify(context, '🏅 $text', status: KitStatus.good);
     });
     return AppShell(destinations: allDestinations, floating: true, onHome: widget.onHome);
   }

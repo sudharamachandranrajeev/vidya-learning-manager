@@ -52,7 +52,7 @@ Future<void> templateDialog(BuildContext context, WidgetRef ref) async {
   );
   if (picked == null) return;
   await ref.mutate((s) => s.book.importTemplate(picked, today: today()));
-  if (context.mounted) showMessage(context, '${picked.title} added. Edit anything to make it yours.');
+  if (context.mounted) notify(context, '${picked.title} added. Edit anything to make it yours.');
 }
 
 Future<void> addCourseDialog(BuildContext context, WidgetRef ref, {String? programId}) async {

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show StringExpressionOperators, Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ui_kit/ui_kit.dart' show dismissAllToasts;
 import 'package:vidya/db/database.dart';
 import 'package:vidya/domain/book.dart';
 import 'package:vidya/domain/curriculum.dart';
@@ -137,7 +138,10 @@ void main() {
     expect(requests.single.question, startsWith('Tell me about a time you taught'));
     expect(find.text('Send to Udyoga again'), findsOneWidget);
 
-    // Delete the attempt: the score goes.
+    // Delete the attempt: the score goes. The toasts float over the foot of
+    // the page, where the button is; swipe them away first.
+    dismissAllToasts();
+    await tester.pump(const Duration(seconds: 1));
     await app.tap(find.byTooltip('Delete attempt'));
     await app.tapText('Delete');
     expect(find.text('Past attempts'), findsNothing);

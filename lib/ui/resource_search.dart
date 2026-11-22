@@ -1,4 +1,3 @@
-import 'package:brahma_core/brahma_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -79,7 +78,7 @@ class _ResourceSearchSheetState extends ConsumerState<ResourceSearchSheet> {
     if (widget.topicId != null) return null;
     final topics = widget.topics;
     if (topics.isEmpty) {
-      showMessage(context, 'Add a topic first, then add resources to it.');
+      notify(context, 'Add a topic first, then add resources to it.');
       return null;
     }
     if (topics.length == 1) return topics.single;
@@ -114,7 +113,7 @@ class _ResourceSearchSheetState extends ConsumerState<ResourceSearchSheet> {
     );
     if (!mounted) return;
     setState(() => _added.add(r.url));
-    showMessage(context, topic == null ? 'Added to this topic.' : 'Added to ${topic.title}.');
+    notify(context, topic == null ? 'Added to this topic.' : 'Added to ${topic.title}.');
   }
 
   @override

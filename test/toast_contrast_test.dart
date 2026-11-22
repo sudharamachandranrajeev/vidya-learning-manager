@@ -23,5 +23,13 @@ void main() {
       // WCAG AA for normal text.
       expect(_contrast(bg, fg), greaterThanOrEqualTo(4.5));
     });
+
+    test('kit toast text is readable on the moss palette in ${b.name} mode', () {
+      final palette = vidyaTheme(b).extension<KitPalette>()!;
+      for (final s in KitStatus.values) {
+        final c = toastColors(palette, s);
+        expect(_contrast(c.background, c.foreground), greaterThanOrEqualTo(4.5));
+      }
+    });
   }
 }

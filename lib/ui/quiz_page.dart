@@ -522,13 +522,10 @@ class _AiQuestionsState extends ConsumerState<_AiQuestions> {
       ];
       await widget.onAdd(fresh);
       if (mounted) {
-        showMessage(
-          context,
-          '${fresh.length} questions written by AI added. Check them before you rely on them.',
-        );
+        notify(context, '${fresh.length} questions written by AI added. Check them before you rely on them.');
       }
     } catch (e) {
-      if (mounted) showMessage(context, describeError(e));
+      if (mounted) notify(context, describeError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

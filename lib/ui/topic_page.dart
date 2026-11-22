@@ -460,7 +460,7 @@ class _ItemTile extends ConsumerWidget {
                   ? null
                   : () async {
                       await ref.mutate((s) => s.book.taskToPortfolio(i, today: today));
-                      if (context.mounted) showMessage(context, 'Added to your portfolio.');
+                      if (context.mounted) notify(context, 'Added to your portfolio.');
                     },
             ),
           ),

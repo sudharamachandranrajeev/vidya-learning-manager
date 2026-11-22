@@ -259,7 +259,7 @@ class _OfferedPlansState extends ConsumerState<_OfferedPlans> {
                             ),
                           );
                           if (context.mounted) {
-                            showMessage(
+                            notify(
                               context,
                               '${o.plan.title}: ${r.courses} courses, ${r.topics} topics, ${r.cards} cards, '
                               '${r.skills} skills and ${r.notes} notes added.'
