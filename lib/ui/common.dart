@@ -1,6 +1,6 @@
 import 'package:brahma_core/brahma_core.dart';
 import 'package:flutter/material.dart';
-import 'package:ui_kit/ui_kit.dart' show KitStatus, showToast;
+import 'package:ui_kit/ui_kit.dart' show KitStatus, reducedMotion, showToast;
 import 'package:url_launcher/url_launcher.dart';
 
 /// "in 3 days", "today", "2 days ago".
@@ -32,6 +32,41 @@ void notify(BuildContext context, String message, {KitStatus status = KitStatus.
       stay: const Duration(seconds: 6),
     );
   }
+}
+
+/// A course's title that flies from its row to the course page's header as
+/// the page opens (a Hero), so the row seems to grow into its page. Each
+/// end gives its Text an explicit style. Under reduced motion it stays put.
+class CourseTitleHero extends StatelessWidget {
+  const CourseTitleHero(this.courseId, {super.key, required this.child});
+  final String courseId;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (reducedMotion(context)) return child;
+    return Hero(
+      tag: 'course-title-$courseId',
+      flightShuttleBuilder: _shuttle,
+      // A Material, so the text has no debug underline in flight.
+      child: Material(type: MaterialType.transparency, child: child),
+    );
+  }
+
+  /// The page's title in flight, scaled down to fit the box as it grows.
+  static Widget _shuttle(
+    BuildContext flight,
+    Animation<double> animation,
+    HeroFlightDirection direction,
+    BuildContext from,
+    BuildContext to,
+  ) => FittedBox(
+    fit: BoxFit.scaleDown,
+    alignment: Alignment.centerLeft,
+    child: (direction == HeroFlightDirection.push ? to : from).widget is Hero
+        ? ((direction == HeroFlightDirection.push ? to : from).widget as Hero).child
+        : const SizedBox.shrink(),
+  );
 }
 
 String minutesText(int m) => m < 60 ? '$m min' : '${(m / 60).toStringAsFixed(m % 60 == 0 ? 0 : 1)} h';

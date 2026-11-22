@@ -86,7 +86,7 @@ class _Body extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                FadeIn(
+                BlurFadeIn(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
                     child: Column(
@@ -105,14 +105,11 @@ class _Body extends ConsumerWidget {
                   ),
                 ),
                 const _OfferedPlans(),
-                const FadeIn(delay: Duration(milliseconds: 30), child: NextUpCard()),
-                const FadeIn(delay: Duration(milliseconds: 45), child: ReadinessCard()),
-                FadeIn(
-                  delay: const Duration(milliseconds: 60),
-                  child: _LevelCard(s, streaks: streaks),
-                ),
+                const BlurFadeIn(index: 1, child: NextUpCard()),
+                const BlurFadeIn(index: 2, child: ReadinessCard()),
+                BlurFadeIn(index: 3, child: _LevelCard(s, streaks: streaks)),
                 const SizedBox(height: 16),
-                FadeIn(delay: const Duration(milliseconds: 100), child: _Quests(s)),
+                BlurFadeIn(index: 4, child: _Quests(s)),
                 const SizedBox(height: 16),
                 SectionCard(
                   title: 'This week',
@@ -296,10 +293,12 @@ class _LevelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final stats = [
-      if (streaks) (Icons.local_fire_department_outlined, '${s.streak}', 'day streak'),
-      (Icons.hourglass_bottom, s.hours.toStringAsFixed(s.hours < 10 ? 1 : 0), 'hours'),
-      (Icons.check_circle_outline, '${s.topicsDone}', 'topics'),
+    // Each number rolls to its new value when it changes (still under
+    // reduced motion).
+    final stats = <(IconData, num, int, String)>[
+      if (streaks) (Icons.local_fire_department_outlined, s.streak, 0, 'day streak'),
+      (Icons.hourglass_bottom, s.hours, s.hours < 10 ? 1 : 0, 'hours'),
+      (Icons.check_circle_outline, s.topicsDone, 0, 'topics'),
     ];
     return Card(
       child: Padding(
@@ -338,14 +337,14 @@ class _LevelCard extends StatelessWidget {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      for (final (icon, value, label) in stats)
+                      for (final (icon, value, digits, label) in stats)
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Icon(icon, size: 18, color: muted(context)),
                               const SizedBox(height: 4),
-                              Text(value, style: t.titleLarge?.merge(tabular)),
+                              RollingNumber(value, fractionDigits: digits, style: t.titleLarge),
                               Text(label, style: t.bodySmall?.copyWith(color: muted(context))),
                             ],
                           ),
