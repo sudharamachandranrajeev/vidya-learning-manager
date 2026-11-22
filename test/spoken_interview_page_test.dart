@@ -64,19 +64,27 @@ Future<void> _seed(LearningBook b, {bool ai = false}) async {
 }
 
 /// Scores every criterion the request lists at level 3, quoting [quote].
-Map<String, Object?> _judge(ie.BrainRequest r) => {
-  'answers': [
-    {
-      'question': 1,
-      'scores': [
-        for (final m in RegExp(r'<criterion id="([^"]+)"').allMatches(r.texts.first))
-          {'criterion': m[1], 'level': '3', 'quote': quote},
-      ],
-      'strength': 'You said what you did yourself.',
-      'fix': 'Say how you checked it worked.',
-    },
-  ],
-};
+/// Asked for a rewrite, first adds a number and a name the learner never
+/// said, then keeps to their words.
+var _rewrites = 0;
+Map<String, Object?> _judge(ie.BrainRequest r) =>
+    r.schema['properties'] is Map && (r.schema['properties'] as Map).containsKey('answer')
+    ? {
+        'answer': _rewrites++ == 0 ? 'I trained 40 starters on the Lorenzo system.' : 'Last spring I trained twelve new starters. I wrote a one-page guide and ran short practice sessions.',
+      }
+    : {
+        'answers': [
+          {
+            'question': 1,
+            'scores': [
+              for (final m in RegExp(r'<criterion id="([^"]+)"').allMatches(r.texts.first))
+                {'criterion': m[1], 'level': '3', 'quote': quote},
+            ],
+            'strength': 'You said what you did yourself.',
+            'fix': 'Say how you checked it worked.',
+          },
+        ],
+      };
 
 Future<void> _openInterviewer(AppHarness app) async {
   await app.go('Learn');
@@ -159,6 +167,21 @@ void main() {
       await app.tapText('Add the fix to review');
       final cards = (await tester.runAsync(() => app.book.db.select(app.book.db.learnCards).get()))!;
       expect(cards.single.back, contains('Say how you checked it worked.'));
+
+      // J6: the strength quotes its line; expectations by who holds them.
+      expect(find.byKey(const Key('strength-quote-0')), findsOneWidget);
+      await app.tapText('What they expected');
+      expect(find.text(ie.noSourcesNote), findsNWidgets(2), reason: 'organisation and manager: no cards yet');
+      expect(find.textContaining('Covered: Explain a new system to beginners'), findsOneWidget);
+
+      // Improve my answer: an invented rewrite is refused, a faithful one shown.
+      await app.tap(find.byKey(const Key('improve-0')));
+      expect(find.text('No rewrite shown'), findsOneWidget);
+      expect(find.textContaining('lorenzo'), findsOneWidget);
+      await app.tapText('OK');
+      await app.tap(find.byKey(const Key('improve-0')));
+      expect(find.text('Your answer, tightened'), findsOneWidget);
+      await app.tapText('OK');
       expect(tester.takeException(), isNull);
       await app.close();
     },

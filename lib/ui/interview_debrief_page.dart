@@ -6,9 +6,13 @@
 /// moves it on pushback. Without an AI: what each criterion's words covered,
 /// read on this device, and your own rating on the four drill checks.
 ///
-/// One strength and one fix per answer; never a single readiness
-/// percentage. Results go to the drills (and so Job readiness); a fix can
-/// go to spaced review and an answer to the story bank.
+/// One strength (quoting the line that earned it) and one fix per answer;
+/// never a single readiness percentage. Each answer shows what the panel,
+/// the organisation and the manager expected, tied to a criterion or a
+/// fact card, and what it did not cover. "Improve my answer" rewrites only
+/// from your own words and story bank, and is refused when the rewrite adds
+/// anything (J6). Results go to the drills (and so Job readiness); a fix
+/// can go to spaced review and an answer to the story bank.
 library;
 
 import 'package:brahma_core/brahma_core.dart';
@@ -18,6 +22,9 @@ import 'package:interview_engine/interview_engine.dart' as ie;
 
 import '../app/interview_providers.dart';
 import '../app/providers.dart';
+import '../app/research_providers.dart';
+import '../db/database.dart' show FactCard;
+import '../domain/answer_checker.dart';
 import '../domain/interview.dart';
 import '../domain/spoken_interview.dart';
 import 'common.dart';
@@ -26,6 +33,11 @@ import 'zen.dart';
 final savedRoundProvider = FutureProvider.family<SavedRound?, String>((ref, id) {
   ref.watch(revisionProvider);
   return ref.watch(sessionProvider).book.savedRound(id);
+});
+
+final _storyBankProvider = FutureProvider<List<Story>>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.storyBank();
 });
 
 final savedRoundsProvider = FutureProvider.family<List<SavedRound>, String?>((ref, programId) {
@@ -74,6 +86,7 @@ class InterviewDebriefPage extends ConsumerStatefulWidget {
 
 class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
   var _scoring = false;
+  int? _improving;
   String? _scoreError;
   final _checks = <int, List<int?>>{};
   // Kept for the page's life: a dialog still animating out may read it.
@@ -171,6 +184,71 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
     );
   }
 
+  Future<void> _improve(SavedRound r, int i) async {
+    final answer = r.answers[i] ?? '';
+    final note = r.debrief.notes.where((n) => n.question == i).firstOrNull;
+    final ids = r.debriefRound.asked[i] ?? const [];
+    final criterion = [
+      for (final c in r.debriefRound.criteria)
+        if (ids.contains(c.id)) c.text,
+    ].join('; ');
+    setState(() => _improving = i);
+    final offline = _offline;
+    var held = false;
+    ie.RewriteCheck? result;
+    String? error;
+    try {
+      if (offline) {
+        ie.OfflineGuard.instance.hold();
+        held = true;
+      }
+      final brain = await ref.read(interviewBrainProvider)(offline: offline);
+      if (brain == null) throw const FormatException('No AI may rewrite here.');
+      final stories = await ref.read(_storyBankProvider.future);
+      result = await ie.improveAnswer(
+        brain: brain,
+        question: r.questions[i].question,
+        answer: answer,
+        criterion: criterion,
+        fix: note?.fix ?? '',
+        storyBank: storyTexts(stories),
+      );
+    } on Object catch (e) {
+      error = describeError(e);
+    } finally {
+      if (held) ie.OfflineGuard.instance.release();
+      if (mounted) setState(() => _improving = null);
+    }
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(result?.ok == true ? 'Your answer, tightened' : 'No rewrite shown'),
+        scrollable: true,
+        content: SizedBox(
+          width: 520,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (result?.ok == true) ...[
+                SelectableText(result!.text),
+                const SizedBox(height: 8),
+                const Text(
+                  'Built only from your own words and your story bank: checked to add no number, name or '
+                  'achievement you did not give. Say it in your own way; do not learn it by heart.',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ] else
+                Text(error ?? result?.message ?? ''),
+            ],
+          ),
+        ),
+        actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+      ),
+    );
+  }
+
   Future<void> _saveRatings(SavedRound r) async {
     final ready = {
       for (final e in _checks.entries)
@@ -236,6 +314,19 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
       for (var i = 0; i < r.questions.length; i++)
         if ((r.answers[i] ?? '').trim().isNotEmpty) i,
     ];
+    final pid = r.row.programId;
+    final factCards = pid == null
+        ? const <FactCard>[]
+        : ref.watch(dossierProvider(pid)).value?.cards ?? const [];
+    final expectations = {
+      for (final e in ie.answerExpectations(
+        round: r.debriefRound,
+        framework: r.framework,
+        verified: r.verified,
+        cards: evidenceCards(factCards, today: today()),
+      ))
+        e.question: e,
+    };
     return [
       Text(r.row.title, style: t.titleLarge),
       Text(
@@ -290,7 +381,7 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
           ],
         ),
       ),
-      for (final i in answered) _answer(r, i),
+      for (final i in answered) _answer(r, i, expectations[i], aiUsable: aiUsable),
       if (!d.aiScored && answered.isNotEmpty)
         Align(
           alignment: Alignment.centerLeft,
@@ -363,13 +454,14 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
     );
   }
 
-  Widget _answer(SavedRound r, int i) {
+  Widget _answer(SavedRound r, int i, ie.AnswerExpectations? expected, {required bool aiUsable}) {
     final t = Theme.of(context).textTheme;
     final q = r.questions[i];
-    final ai = r.verified?.answers[i];
+    // One strength, quoting its line, and one fix: the engine's (rule 9).
     final note = r.debrief.notes.where((n) => n.question == i).firstOrNull;
-    final strength = ai?.strength ?? note?.strength ?? '';
-    final fix = ai?.fix ?? note?.fix ?? '';
+    final strength = note?.strength ?? '';
+    final strengthQuote = note?.strengthQuote ?? '';
+    final fix = note?.fix ?? '';
     final checks = _checks.putIfAbsent(i, () => List<int?>.filled(drillChecks.length, null));
     final scale = r.framework.scale;
     final low = spokenAttempt(r, i);
@@ -396,7 +488,17 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
             children: [SelectableText(r.answers[i] ?? '')],
           ),
           if (strength.isNotEmpty) Text('Strength: ${ie.taskLevelText(strength)}'),
-          if (fix.isNotEmpty) Text('Fix: ${ie.taskLevelText(fix)}'),
+          if (strengthQuote.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 12, bottom: 4),
+              child: Text(
+                '"$strengthQuote"',
+                key: Key('strength-quote-$i'),
+                style: t.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+              ),
+            ),
+          if (fix.isNotEmpty) Text('Fix: ${ie.oneFix(fix)}'),
+          if (expected != null) _Expectations(expected, key: Key('expectations-$i')),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -417,6 +519,19 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
                     );
                     if (mounted) notify(context, 'Added to review in the $interviewDeck deck.');
                   },
+                ),
+              if (aiUsable && ie.hasOwnAttempt(r.answers[i] ?? ''))
+                OutlinedButton.icon(
+                  key: Key('improve-$i'),
+                  icon: _improving == i
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.edit_note),
+                  label: const Text('Improve my answer'),
+                  onPressed: _improving != null ? null : () => _improve(r, i),
                 ),
               OutlinedButton.icon(
                 icon: const Icon(Icons.auto_stories_outlined),
@@ -453,6 +568,46 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// What the panel, the organisation and the manager expected of one
+/// answer: each covered one with the line that covered it, the rest as
+/// not covered, and "no sources yet" where there are no cards.
+class _Expectations extends StatelessWidget {
+  const _Expectations(this.e, {super.key});
+  final ie.AnswerExpectations e;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      title: const Text('What they expected'),
+      childrenPadding: const EdgeInsets.only(bottom: 8),
+      expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final g in e.groups) ...[
+          Text(g.source.label, style: t.titleSmall),
+          Text(g.source.about, style: t.bodySmall),
+          if (g.note.isNotEmpty) Text(g.note),
+          for (final h in g.covered)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('Covered: ${h.expectation.text}\n"${h.quote}"'),
+            ),
+          for (final h in g.notCovered)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Not covered: ${h.expectation.text}',
+                style: TextStyle(color: KitStatus.warning.color),
+              ),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ],
     );
   }
 }
