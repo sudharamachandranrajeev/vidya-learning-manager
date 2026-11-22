@@ -8260,6 +8260,1635 @@ class LearnJourneysCompanion extends UpdateCompanion<JourneyRow> {
   }
 }
 
+class $LearnFactSourcesTable extends LearnFactSources
+    with TableInfo<$LearnFactSourcesTable, FactSource> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LearnFactSourcesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _programIdMeta = const VerificationMeta(
+    'programId',
+  );
+  @override
+  late final GeneratedColumn<String> programId = GeneratedColumn<String>(
+    'program_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _employerMeta = const VerificationMeta(
+    'employer',
+  );
+  @override
+  late final GeneratedColumn<String> employer = GeneratedColumn<String>(
+    'employer',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sourceDateMeta = const VerificationMeta(
+    'sourceDate',
+  );
+  @override
+  late final GeneratedColumn<String> sourceDate = GeneratedColumn<String>(
+    'source_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _fetchedAtMeta = const VerificationMeta(
+    'fetchedAt',
+  );
+  @override
+  late final GeneratedColumn<String> fetchedAt = GeneratedColumn<String>(
+    'fetched_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hlc,
+    deleted,
+    programId,
+    employer,
+    kind,
+    url,
+    title,
+    sourceDate,
+    fetchedAt,
+    body,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'learn_fact_sources';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FactSource> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('program_id')) {
+      context.handle(
+        _programIdMeta,
+        programId.isAcceptableOrUnknown(data['program_id']!, _programIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_programIdMeta);
+    }
+    if (data.containsKey('employer')) {
+      context.handle(
+        _employerMeta,
+        employer.isAcceptableOrUnknown(data['employer']!, _employerMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('source_date')) {
+      context.handle(
+        _sourceDateMeta,
+        sourceDate.isAcceptableOrUnknown(data['source_date']!, _sourceDateMeta),
+      );
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(
+        _fetchedAtMeta,
+        fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fetchedAtMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FactSource map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FactSource(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      programId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}program_id'],
+      )!,
+      employer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}employer'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      sourceDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_date'],
+      )!,
+      fetchedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fetched_at'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+    );
+  }
+
+  @override
+  $LearnFactSourcesTable createAlias(String alias) {
+    return $LearnFactSourcesTable(attachedDatabase, alias);
+  }
+}
+
+class FactSource extends DataClass implements Insertable<FactSource> {
+  final String id;
+  final String hlc;
+  final bool deleted;
+  final String programId;
+  final String employer;
+
+  /// One of `sourceKinds` in dossier.dart.
+  final String kind;
+  final String url;
+  final String title;
+
+  /// The source's own date (yyyy-MM-dd): a board meeting, a survey year's
+  /// publication, a report; '' when not known.
+  final String sourceDate;
+
+  /// When it was pasted or fetched (an ISO time).
+  final String fetchedAt;
+
+  /// The text itself, clipped (see `maxSourceText`).
+  final String body;
+  const FactSource({
+    required this.id,
+    required this.hlc,
+    required this.deleted,
+    required this.programId,
+    required this.employer,
+    required this.kind,
+    required this.url,
+    required this.title,
+    required this.sourceDate,
+    required this.fetchedAt,
+    required this.body,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['program_id'] = Variable<String>(programId);
+    map['employer'] = Variable<String>(employer);
+    map['kind'] = Variable<String>(kind);
+    map['url'] = Variable<String>(url);
+    map['title'] = Variable<String>(title);
+    map['source_date'] = Variable<String>(sourceDate);
+    map['fetched_at'] = Variable<String>(fetchedAt);
+    map['body'] = Variable<String>(body);
+    return map;
+  }
+
+  LearnFactSourcesCompanion toCompanion(bool nullToAbsent) {
+    return LearnFactSourcesCompanion(
+      id: Value(id),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      programId: Value(programId),
+      employer: Value(employer),
+      kind: Value(kind),
+      url: Value(url),
+      title: Value(title),
+      sourceDate: Value(sourceDate),
+      fetchedAt: Value(fetchedAt),
+      body: Value(body),
+    );
+  }
+
+  factory FactSource.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FactSource(
+      id: serializer.fromJson<String>(json['id']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      programId: serializer.fromJson<String>(json['programId']),
+      employer: serializer.fromJson<String>(json['employer']),
+      kind: serializer.fromJson<String>(json['kind']),
+      url: serializer.fromJson<String>(json['url']),
+      title: serializer.fromJson<String>(json['title']),
+      sourceDate: serializer.fromJson<String>(json['sourceDate']),
+      fetchedAt: serializer.fromJson<String>(json['fetchedAt']),
+      body: serializer.fromJson<String>(json['body']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'programId': serializer.toJson<String>(programId),
+      'employer': serializer.toJson<String>(employer),
+      'kind': serializer.toJson<String>(kind),
+      'url': serializer.toJson<String>(url),
+      'title': serializer.toJson<String>(title),
+      'sourceDate': serializer.toJson<String>(sourceDate),
+      'fetchedAt': serializer.toJson<String>(fetchedAt),
+      'body': serializer.toJson<String>(body),
+    };
+  }
+
+  FactSource copyWith({
+    String? id,
+    String? hlc,
+    bool? deleted,
+    String? programId,
+    String? employer,
+    String? kind,
+    String? url,
+    String? title,
+    String? sourceDate,
+    String? fetchedAt,
+    String? body,
+  }) => FactSource(
+    id: id ?? this.id,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    programId: programId ?? this.programId,
+    employer: employer ?? this.employer,
+    kind: kind ?? this.kind,
+    url: url ?? this.url,
+    title: title ?? this.title,
+    sourceDate: sourceDate ?? this.sourceDate,
+    fetchedAt: fetchedAt ?? this.fetchedAt,
+    body: body ?? this.body,
+  );
+  FactSource copyWithCompanion(LearnFactSourcesCompanion data) {
+    return FactSource(
+      id: data.id.present ? data.id.value : this.id,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      programId: data.programId.present ? data.programId.value : this.programId,
+      employer: data.employer.present ? data.employer.value : this.employer,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      url: data.url.present ? data.url.value : this.url,
+      title: data.title.present ? data.title.value : this.title,
+      sourceDate: data.sourceDate.present
+          ? data.sourceDate.value
+          : this.sourceDate,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+      body: data.body.present ? data.body.value : this.body,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FactSource(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('employer: $employer, ')
+          ..write('kind: $kind, ')
+          ..write('url: $url, ')
+          ..write('title: $title, ')
+          ..write('sourceDate: $sourceDate, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('body: $body')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    programId,
+    employer,
+    kind,
+    url,
+    title,
+    sourceDate,
+    fetchedAt,
+    body,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FactSource &&
+          other.id == this.id &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.programId == this.programId &&
+          other.employer == this.employer &&
+          other.kind == this.kind &&
+          other.url == this.url &&
+          other.title == this.title &&
+          other.sourceDate == this.sourceDate &&
+          other.fetchedAt == this.fetchedAt &&
+          other.body == this.body);
+}
+
+class LearnFactSourcesCompanion extends UpdateCompanion<FactSource> {
+  final Value<String> id;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> programId;
+  final Value<String> employer;
+  final Value<String> kind;
+  final Value<String> url;
+  final Value<String> title;
+  final Value<String> sourceDate;
+  final Value<String> fetchedAt;
+  final Value<String> body;
+  final Value<int> rowid;
+  const LearnFactSourcesCompanion({
+    this.id = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.programId = const Value.absent(),
+    this.employer = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.url = const Value.absent(),
+    this.title = const Value.absent(),
+    this.sourceDate = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.body = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LearnFactSourcesCompanion.insert({
+    required String id,
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    required String programId,
+    this.employer = const Value.absent(),
+    required String kind,
+    this.url = const Value.absent(),
+    this.title = const Value.absent(),
+    this.sourceDate = const Value.absent(),
+    required String fetchedAt,
+    required String body,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       programId = Value(programId),
+       kind = Value(kind),
+       fetchedAt = Value(fetchedAt),
+       body = Value(body);
+  static Insertable<FactSource> custom({
+    Expression<String>? id,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? programId,
+    Expression<String>? employer,
+    Expression<String>? kind,
+    Expression<String>? url,
+    Expression<String>? title,
+    Expression<String>? sourceDate,
+    Expression<String>? fetchedAt,
+    Expression<String>? body,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (programId != null) 'program_id': programId,
+      if (employer != null) 'employer': employer,
+      if (kind != null) 'kind': kind,
+      if (url != null) 'url': url,
+      if (title != null) 'title': title,
+      if (sourceDate != null) 'source_date': sourceDate,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (body != null) 'body': body,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LearnFactSourcesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? programId,
+    Value<String>? employer,
+    Value<String>? kind,
+    Value<String>? url,
+    Value<String>? title,
+    Value<String>? sourceDate,
+    Value<String>? fetchedAt,
+    Value<String>? body,
+    Value<int>? rowid,
+  }) {
+    return LearnFactSourcesCompanion(
+      id: id ?? this.id,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      programId: programId ?? this.programId,
+      employer: employer ?? this.employer,
+      kind: kind ?? this.kind,
+      url: url ?? this.url,
+      title: title ?? this.title,
+      sourceDate: sourceDate ?? this.sourceDate,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      body: body ?? this.body,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (programId.present) {
+      map['program_id'] = Variable<String>(programId.value);
+    }
+    if (employer.present) {
+      map['employer'] = Variable<String>(employer.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (sourceDate.present) {
+      map['source_date'] = Variable<String>(sourceDate.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<String>(fetchedAt.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LearnFactSourcesCompanion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('employer: $employer, ')
+          ..write('kind: $kind, ')
+          ..write('url: $url, ')
+          ..write('title: $title, ')
+          ..write('sourceDate: $sourceDate, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('body: $body, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LearnFactsTable extends LearnFacts
+    with TableInfo<$LearnFactsTable, FactCard> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LearnFactsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _programIdMeta = const VerificationMeta(
+    'programId',
+  );
+  @override
+  late final GeneratedColumn<String> programId = GeneratedColumn<String>(
+    'program_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _employerMeta = const VerificationMeta(
+    'employer',
+  );
+  @override
+  late final GeneratedColumn<String> employer = GeneratedColumn<String>(
+    'employer',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _claimMeta = const VerificationMeta('claim');
+  @override
+  late final GeneratedColumn<String> claim = GeneratedColumn<String>(
+    'claim',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceIdMeta = const VerificationMeta(
+    'sourceId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceId = GeneratedColumn<String>(
+    'source_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sourceUrlMeta = const VerificationMeta(
+    'sourceUrl',
+  );
+  @override
+  late final GeneratedColumn<String> sourceUrl = GeneratedColumn<String>(
+    'source_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sourceTitleMeta = const VerificationMeta(
+    'sourceTitle',
+  );
+  @override
+  late final GeneratedColumn<String> sourceTitle = GeneratedColumn<String>(
+    'source_title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sourceDateMeta = const VerificationMeta(
+    'sourceDate',
+  );
+  @override
+  late final GeneratedColumn<String> sourceDate = GeneratedColumn<String>(
+    'source_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _fetchedAtMeta = const VerificationMeta(
+    'fetchedAt',
+  );
+  @override
+  late final GeneratedColumn<String> fetchedAt = GeneratedColumn<String>(
+    'fetched_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _quoteMeta = const VerificationMeta('quote');
+  @override
+  late final GeneratedColumn<String> quote = GeneratedColumn<String>(
+    'quote',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('inference'),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('other'),
+  );
+  static const VerificationMeta _staleAfterMeta = const VerificationMeta(
+    'staleAfter',
+  );
+  @override
+  late final GeneratedColumn<String> staleAfter = GeneratedColumn<String>(
+    'stale_after',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _originMeta = const VerificationMeta('origin');
+  @override
+  late final GeneratedColumn<String> origin = GeneratedColumn<String>(
+    'origin',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('you'),
+  );
+  static const VerificationMeta _createdMeta = const VerificationMeta(
+    'created',
+  );
+  @override
+  late final GeneratedColumn<String> created = GeneratedColumn<String>(
+    'created',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedMeta = const VerificationMeta(
+    'updated',
+  );
+  @override
+  late final GeneratedColumn<String> updated = GeneratedColumn<String>(
+    'updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hlc,
+    deleted,
+    programId,
+    employer,
+    claim,
+    sourceId,
+    sourceUrl,
+    sourceTitle,
+    sourceDate,
+    fetchedAt,
+    quote,
+    status,
+    kind,
+    staleAfter,
+    origin,
+    created,
+    updated,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'learn_facts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FactCard> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('program_id')) {
+      context.handle(
+        _programIdMeta,
+        programId.isAcceptableOrUnknown(data['program_id']!, _programIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_programIdMeta);
+    }
+    if (data.containsKey('employer')) {
+      context.handle(
+        _employerMeta,
+        employer.isAcceptableOrUnknown(data['employer']!, _employerMeta),
+      );
+    }
+    if (data.containsKey('claim')) {
+      context.handle(
+        _claimMeta,
+        claim.isAcceptableOrUnknown(data['claim']!, _claimMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_claimMeta);
+    }
+    if (data.containsKey('source_id')) {
+      context.handle(
+        _sourceIdMeta,
+        sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
+      );
+    }
+    if (data.containsKey('source_url')) {
+      context.handle(
+        _sourceUrlMeta,
+        sourceUrl.isAcceptableOrUnknown(data['source_url']!, _sourceUrlMeta),
+      );
+    }
+    if (data.containsKey('source_title')) {
+      context.handle(
+        _sourceTitleMeta,
+        sourceTitle.isAcceptableOrUnknown(
+          data['source_title']!,
+          _sourceTitleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_date')) {
+      context.handle(
+        _sourceDateMeta,
+        sourceDate.isAcceptableOrUnknown(data['source_date']!, _sourceDateMeta),
+      );
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(
+        _fetchedAtMeta,
+        fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta),
+      );
+    }
+    if (data.containsKey('quote')) {
+      context.handle(
+        _quoteMeta,
+        quote.isAcceptableOrUnknown(data['quote']!, _quoteMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    }
+    if (data.containsKey('stale_after')) {
+      context.handle(
+        _staleAfterMeta,
+        staleAfter.isAcceptableOrUnknown(data['stale_after']!, _staleAfterMeta),
+      );
+    }
+    if (data.containsKey('origin')) {
+      context.handle(
+        _originMeta,
+        origin.isAcceptableOrUnknown(data['origin']!, _originMeta),
+      );
+    }
+    if (data.containsKey('created')) {
+      context.handle(
+        _createdMeta,
+        created.isAcceptableOrUnknown(data['created']!, _createdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdMeta);
+    }
+    if (data.containsKey('updated')) {
+      context.handle(
+        _updatedMeta,
+        updated.isAcceptableOrUnknown(data['updated']!, _updatedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FactCard map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FactCard(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      programId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}program_id'],
+      )!,
+      employer: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}employer'],
+      )!,
+      claim: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}claim'],
+      )!,
+      sourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_id'],
+      )!,
+      sourceUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_url'],
+      )!,
+      sourceTitle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_title'],
+      )!,
+      sourceDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_date'],
+      )!,
+      fetchedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fetched_at'],
+      )!,
+      quote: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}quote'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      staleAfter: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stale_after'],
+      )!,
+      origin: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origin'],
+      )!,
+      created: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created'],
+      )!,
+      updated: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated'],
+      )!,
+    );
+  }
+
+  @override
+  $LearnFactsTable createAlias(String alias) {
+    return $LearnFactsTable(attachedDatabase, alias);
+  }
+}
+
+class FactCard extends DataClass implements Insertable<FactCard> {
+  final String id;
+  final String hlc;
+  final bool deleted;
+  final String programId;
+  final String employer;
+  final String claim;
+
+  /// The [LearnFactSources] row the quote was checked against, '' when none.
+  final String sourceId;
+  final String sourceUrl;
+  final String sourceTitle;
+
+  /// The source's own date (yyyy-MM-dd), '' when not known.
+  final String sourceDate;
+
+  /// When the source was read (an ISO time), '' when it never was.
+  final String fetchedAt;
+
+  /// The exact supporting sentence, '' when there is none yet.
+  final String quote;
+  final String status;
+
+  /// One of `factKinds` in dossier.dart.
+  final String kind;
+
+  /// yyyy-MM-dd from which the card is flagged as maybe out of date, set
+  /// by its kind's source cycle (see `staleAfterFor`).
+  final String staleAfter;
+
+  /// Who proposed it: `you`, `ai`, `udyoga` or `reader`.
+  final String origin;
+  final String created;
+  final String updated;
+  const FactCard({
+    required this.id,
+    required this.hlc,
+    required this.deleted,
+    required this.programId,
+    required this.employer,
+    required this.claim,
+    required this.sourceId,
+    required this.sourceUrl,
+    required this.sourceTitle,
+    required this.sourceDate,
+    required this.fetchedAt,
+    required this.quote,
+    required this.status,
+    required this.kind,
+    required this.staleAfter,
+    required this.origin,
+    required this.created,
+    required this.updated,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['program_id'] = Variable<String>(programId);
+    map['employer'] = Variable<String>(employer);
+    map['claim'] = Variable<String>(claim);
+    map['source_id'] = Variable<String>(sourceId);
+    map['source_url'] = Variable<String>(sourceUrl);
+    map['source_title'] = Variable<String>(sourceTitle);
+    map['source_date'] = Variable<String>(sourceDate);
+    map['fetched_at'] = Variable<String>(fetchedAt);
+    map['quote'] = Variable<String>(quote);
+    map['status'] = Variable<String>(status);
+    map['kind'] = Variable<String>(kind);
+    map['stale_after'] = Variable<String>(staleAfter);
+    map['origin'] = Variable<String>(origin);
+    map['created'] = Variable<String>(created);
+    map['updated'] = Variable<String>(updated);
+    return map;
+  }
+
+  LearnFactsCompanion toCompanion(bool nullToAbsent) {
+    return LearnFactsCompanion(
+      id: Value(id),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      programId: Value(programId),
+      employer: Value(employer),
+      claim: Value(claim),
+      sourceId: Value(sourceId),
+      sourceUrl: Value(sourceUrl),
+      sourceTitle: Value(sourceTitle),
+      sourceDate: Value(sourceDate),
+      fetchedAt: Value(fetchedAt),
+      quote: Value(quote),
+      status: Value(status),
+      kind: Value(kind),
+      staleAfter: Value(staleAfter),
+      origin: Value(origin),
+      created: Value(created),
+      updated: Value(updated),
+    );
+  }
+
+  factory FactCard.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FactCard(
+      id: serializer.fromJson<String>(json['id']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      programId: serializer.fromJson<String>(json['programId']),
+      employer: serializer.fromJson<String>(json['employer']),
+      claim: serializer.fromJson<String>(json['claim']),
+      sourceId: serializer.fromJson<String>(json['sourceId']),
+      sourceUrl: serializer.fromJson<String>(json['sourceUrl']),
+      sourceTitle: serializer.fromJson<String>(json['sourceTitle']),
+      sourceDate: serializer.fromJson<String>(json['sourceDate']),
+      fetchedAt: serializer.fromJson<String>(json['fetchedAt']),
+      quote: serializer.fromJson<String>(json['quote']),
+      status: serializer.fromJson<String>(json['status']),
+      kind: serializer.fromJson<String>(json['kind']),
+      staleAfter: serializer.fromJson<String>(json['staleAfter']),
+      origin: serializer.fromJson<String>(json['origin']),
+      created: serializer.fromJson<String>(json['created']),
+      updated: serializer.fromJson<String>(json['updated']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'programId': serializer.toJson<String>(programId),
+      'employer': serializer.toJson<String>(employer),
+      'claim': serializer.toJson<String>(claim),
+      'sourceId': serializer.toJson<String>(sourceId),
+      'sourceUrl': serializer.toJson<String>(sourceUrl),
+      'sourceTitle': serializer.toJson<String>(sourceTitle),
+      'sourceDate': serializer.toJson<String>(sourceDate),
+      'fetchedAt': serializer.toJson<String>(fetchedAt),
+      'quote': serializer.toJson<String>(quote),
+      'status': serializer.toJson<String>(status),
+      'kind': serializer.toJson<String>(kind),
+      'staleAfter': serializer.toJson<String>(staleAfter),
+      'origin': serializer.toJson<String>(origin),
+      'created': serializer.toJson<String>(created),
+      'updated': serializer.toJson<String>(updated),
+    };
+  }
+
+  FactCard copyWith({
+    String? id,
+    String? hlc,
+    bool? deleted,
+    String? programId,
+    String? employer,
+    String? claim,
+    String? sourceId,
+    String? sourceUrl,
+    String? sourceTitle,
+    String? sourceDate,
+    String? fetchedAt,
+    String? quote,
+    String? status,
+    String? kind,
+    String? staleAfter,
+    String? origin,
+    String? created,
+    String? updated,
+  }) => FactCard(
+    id: id ?? this.id,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    programId: programId ?? this.programId,
+    employer: employer ?? this.employer,
+    claim: claim ?? this.claim,
+    sourceId: sourceId ?? this.sourceId,
+    sourceUrl: sourceUrl ?? this.sourceUrl,
+    sourceTitle: sourceTitle ?? this.sourceTitle,
+    sourceDate: sourceDate ?? this.sourceDate,
+    fetchedAt: fetchedAt ?? this.fetchedAt,
+    quote: quote ?? this.quote,
+    status: status ?? this.status,
+    kind: kind ?? this.kind,
+    staleAfter: staleAfter ?? this.staleAfter,
+    origin: origin ?? this.origin,
+    created: created ?? this.created,
+    updated: updated ?? this.updated,
+  );
+  FactCard copyWithCompanion(LearnFactsCompanion data) {
+    return FactCard(
+      id: data.id.present ? data.id.value : this.id,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      programId: data.programId.present ? data.programId.value : this.programId,
+      employer: data.employer.present ? data.employer.value : this.employer,
+      claim: data.claim.present ? data.claim.value : this.claim,
+      sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
+      sourceUrl: data.sourceUrl.present ? data.sourceUrl.value : this.sourceUrl,
+      sourceTitle: data.sourceTitle.present
+          ? data.sourceTitle.value
+          : this.sourceTitle,
+      sourceDate: data.sourceDate.present
+          ? data.sourceDate.value
+          : this.sourceDate,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+      quote: data.quote.present ? data.quote.value : this.quote,
+      status: data.status.present ? data.status.value : this.status,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      staleAfter: data.staleAfter.present
+          ? data.staleAfter.value
+          : this.staleAfter,
+      origin: data.origin.present ? data.origin.value : this.origin,
+      created: data.created.present ? data.created.value : this.created,
+      updated: data.updated.present ? data.updated.value : this.updated,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FactCard(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('employer: $employer, ')
+          ..write('claim: $claim, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('sourceTitle: $sourceTitle, ')
+          ..write('sourceDate: $sourceDate, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('quote: $quote, ')
+          ..write('status: $status, ')
+          ..write('kind: $kind, ')
+          ..write('staleAfter: $staleAfter, ')
+          ..write('origin: $origin, ')
+          ..write('created: $created, ')
+          ..write('updated: $updated')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    programId,
+    employer,
+    claim,
+    sourceId,
+    sourceUrl,
+    sourceTitle,
+    sourceDate,
+    fetchedAt,
+    quote,
+    status,
+    kind,
+    staleAfter,
+    origin,
+    created,
+    updated,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FactCard &&
+          other.id == this.id &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.programId == this.programId &&
+          other.employer == this.employer &&
+          other.claim == this.claim &&
+          other.sourceId == this.sourceId &&
+          other.sourceUrl == this.sourceUrl &&
+          other.sourceTitle == this.sourceTitle &&
+          other.sourceDate == this.sourceDate &&
+          other.fetchedAt == this.fetchedAt &&
+          other.quote == this.quote &&
+          other.status == this.status &&
+          other.kind == this.kind &&
+          other.staleAfter == this.staleAfter &&
+          other.origin == this.origin &&
+          other.created == this.created &&
+          other.updated == this.updated);
+}
+
+class LearnFactsCompanion extends UpdateCompanion<FactCard> {
+  final Value<String> id;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> programId;
+  final Value<String> employer;
+  final Value<String> claim;
+  final Value<String> sourceId;
+  final Value<String> sourceUrl;
+  final Value<String> sourceTitle;
+  final Value<String> sourceDate;
+  final Value<String> fetchedAt;
+  final Value<String> quote;
+  final Value<String> status;
+  final Value<String> kind;
+  final Value<String> staleAfter;
+  final Value<String> origin;
+  final Value<String> created;
+  final Value<String> updated;
+  final Value<int> rowid;
+  const LearnFactsCompanion({
+    this.id = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.programId = const Value.absent(),
+    this.employer = const Value.absent(),
+    this.claim = const Value.absent(),
+    this.sourceId = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
+    this.sourceTitle = const Value.absent(),
+    this.sourceDate = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.quote = const Value.absent(),
+    this.status = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.staleAfter = const Value.absent(),
+    this.origin = const Value.absent(),
+    this.created = const Value.absent(),
+    this.updated = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LearnFactsCompanion.insert({
+    required String id,
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    required String programId,
+    this.employer = const Value.absent(),
+    required String claim,
+    this.sourceId = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
+    this.sourceTitle = const Value.absent(),
+    this.sourceDate = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.quote = const Value.absent(),
+    this.status = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.staleAfter = const Value.absent(),
+    this.origin = const Value.absent(),
+    required String created,
+    required String updated,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       programId = Value(programId),
+       claim = Value(claim),
+       created = Value(created),
+       updated = Value(updated);
+  static Insertable<FactCard> custom({
+    Expression<String>? id,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? programId,
+    Expression<String>? employer,
+    Expression<String>? claim,
+    Expression<String>? sourceId,
+    Expression<String>? sourceUrl,
+    Expression<String>? sourceTitle,
+    Expression<String>? sourceDate,
+    Expression<String>? fetchedAt,
+    Expression<String>? quote,
+    Expression<String>? status,
+    Expression<String>? kind,
+    Expression<String>? staleAfter,
+    Expression<String>? origin,
+    Expression<String>? created,
+    Expression<String>? updated,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (programId != null) 'program_id': programId,
+      if (employer != null) 'employer': employer,
+      if (claim != null) 'claim': claim,
+      if (sourceId != null) 'source_id': sourceId,
+      if (sourceUrl != null) 'source_url': sourceUrl,
+      if (sourceTitle != null) 'source_title': sourceTitle,
+      if (sourceDate != null) 'source_date': sourceDate,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (quote != null) 'quote': quote,
+      if (status != null) 'status': status,
+      if (kind != null) 'kind': kind,
+      if (staleAfter != null) 'stale_after': staleAfter,
+      if (origin != null) 'origin': origin,
+      if (created != null) 'created': created,
+      if (updated != null) 'updated': updated,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LearnFactsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? programId,
+    Value<String>? employer,
+    Value<String>? claim,
+    Value<String>? sourceId,
+    Value<String>? sourceUrl,
+    Value<String>? sourceTitle,
+    Value<String>? sourceDate,
+    Value<String>? fetchedAt,
+    Value<String>? quote,
+    Value<String>? status,
+    Value<String>? kind,
+    Value<String>? staleAfter,
+    Value<String>? origin,
+    Value<String>? created,
+    Value<String>? updated,
+    Value<int>? rowid,
+  }) {
+    return LearnFactsCompanion(
+      id: id ?? this.id,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      programId: programId ?? this.programId,
+      employer: employer ?? this.employer,
+      claim: claim ?? this.claim,
+      sourceId: sourceId ?? this.sourceId,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
+      sourceTitle: sourceTitle ?? this.sourceTitle,
+      sourceDate: sourceDate ?? this.sourceDate,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      quote: quote ?? this.quote,
+      status: status ?? this.status,
+      kind: kind ?? this.kind,
+      staleAfter: staleAfter ?? this.staleAfter,
+      origin: origin ?? this.origin,
+      created: created ?? this.created,
+      updated: updated ?? this.updated,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (programId.present) {
+      map['program_id'] = Variable<String>(programId.value);
+    }
+    if (employer.present) {
+      map['employer'] = Variable<String>(employer.value);
+    }
+    if (claim.present) {
+      map['claim'] = Variable<String>(claim.value);
+    }
+    if (sourceId.present) {
+      map['source_id'] = Variable<String>(sourceId.value);
+    }
+    if (sourceUrl.present) {
+      map['source_url'] = Variable<String>(sourceUrl.value);
+    }
+    if (sourceTitle.present) {
+      map['source_title'] = Variable<String>(sourceTitle.value);
+    }
+    if (sourceDate.present) {
+      map['source_date'] = Variable<String>(sourceDate.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<String>(fetchedAt.value);
+    }
+    if (quote.present) {
+      map['quote'] = Variable<String>(quote.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (staleAfter.present) {
+      map['stale_after'] = Variable<String>(staleAfter.value);
+    }
+    if (origin.present) {
+      map['origin'] = Variable<String>(origin.value);
+    }
+    if (created.present) {
+      map['created'] = Variable<String>(created.value);
+    }
+    if (updated.present) {
+      map['updated'] = Variable<String>(updated.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LearnFactsCompanion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('employer: $employer, ')
+          ..write('claim: $claim, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('sourceTitle: $sourceTitle, ')
+          ..write('sourceDate: $sourceDate, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('quote: $quote, ')
+          ..write('status: $status, ')
+          ..write('kind: $kind, ')
+          ..write('staleAfter: $staleAfter, ')
+          ..write('origin: $origin, ')
+          ..write('created: $created, ')
+          ..write('updated: $updated, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $LearnUnlocksTable extends LearnUnlocks
     with TableInfo<$LearnUnlocksTable, Unlock> {
   @override
@@ -11742,6 +13371,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LearnStoriesTable learnStories = $LearnStoriesTable(this);
   late final $LearnRoundsTable learnRounds = $LearnRoundsTable(this);
   late final $LearnJourneysTable learnJourneys = $LearnJourneysTable(this);
+  late final $LearnFactSourcesTable learnFactSources = $LearnFactSourcesTable(
+    this,
+  );
+  late final $LearnFactsTable learnFacts = $LearnFactsTable(this);
   late final $LearnUnlocksTable learnUnlocks = $LearnUnlocksTable(this);
   late final $LearnCardsTable learnCards = $LearnCardsTable(this);
   late final $LearnReviewsTable learnReviews = $LearnReviewsTable(this);
@@ -11772,6 +13405,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     learnStories,
     learnRounds,
     learnJourneys,
+    learnFactSources,
+    learnFacts,
     learnUnlocks,
     learnCards,
     learnReviews,
@@ -15909,6 +17544,787 @@ typedef $$LearnJourneysTableProcessedTableManager =
       JourneyRow,
       PrefetchHooks Function()
     >;
+typedef $$LearnFactSourcesTableCreateCompanionBuilder =
+    LearnFactSourcesCompanion Function({
+      required String id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      required String programId,
+      Value<String> employer,
+      required String kind,
+      Value<String> url,
+      Value<String> title,
+      Value<String> sourceDate,
+      required String fetchedAt,
+      required String body,
+      Value<int> rowid,
+    });
+typedef $$LearnFactSourcesTableUpdateCompanionBuilder =
+    LearnFactSourcesCompanion Function({
+      Value<String> id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> programId,
+      Value<String> employer,
+      Value<String> kind,
+      Value<String> url,
+      Value<String> title,
+      Value<String> sourceDate,
+      Value<String> fetchedAt,
+      Value<String> body,
+      Value<int> rowid,
+    });
+
+class $$LearnFactSourcesTableFilterComposer
+    extends Composer<_$AppDatabase, $LearnFactSourcesTable> {
+  $$LearnFactSourcesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get employer => $composableBuilder(
+    column: $table.employer,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceDate => $composableBuilder(
+    column: $table.sourceDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LearnFactSourcesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LearnFactSourcesTable> {
+  $$LearnFactSourcesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get employer => $composableBuilder(
+    column: $table.employer,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceDate => $composableBuilder(
+    column: $table.sourceDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LearnFactSourcesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LearnFactSourcesTable> {
+  $$LearnFactSourcesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get programId =>
+      $composableBuilder(column: $table.programId, builder: (column) => column);
+
+  GeneratedColumn<String> get employer =>
+      $composableBuilder(column: $table.employer, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceDate => $composableBuilder(
+    column: $table.sourceDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fetchedAt =>
+      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+}
+
+class $$LearnFactSourcesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LearnFactSourcesTable,
+          FactSource,
+          $$LearnFactSourcesTableFilterComposer,
+          $$LearnFactSourcesTableOrderingComposer,
+          $$LearnFactSourcesTableAnnotationComposer,
+          $$LearnFactSourcesTableCreateCompanionBuilder,
+          $$LearnFactSourcesTableUpdateCompanionBuilder,
+          (
+            FactSource,
+            BaseReferences<_$AppDatabase, $LearnFactSourcesTable, FactSource>,
+          ),
+          FactSource,
+          PrefetchHooks Function()
+        > {
+  $$LearnFactSourcesTableTableManager(
+    _$AppDatabase db,
+    $LearnFactSourcesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LearnFactSourcesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LearnFactSourcesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LearnFactSourcesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> programId = const Value.absent(),
+                Value<String> employer = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> url = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> sourceDate = const Value.absent(),
+                Value<String> fetchedAt = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnFactSourcesCompanion(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                employer: employer,
+                kind: kind,
+                url: url,
+                title: title,
+                sourceDate: sourceDate,
+                fetchedAt: fetchedAt,
+                body: body,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                required String programId,
+                Value<String> employer = const Value.absent(),
+                required String kind,
+                Value<String> url = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> sourceDate = const Value.absent(),
+                required String fetchedAt,
+                required String body,
+                Value<int> rowid = const Value.absent(),
+              }) => LearnFactSourcesCompanion.insert(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                employer: employer,
+                kind: kind,
+                url: url,
+                title: title,
+                sourceDate: sourceDate,
+                fetchedAt: fetchedAt,
+                body: body,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LearnFactSourcesTable, FactSource>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LearnFactSourcesTable,
+                    FactSource
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LearnFactSourcesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LearnFactSourcesTable,
+      FactSource,
+      $$LearnFactSourcesTableFilterComposer,
+      $$LearnFactSourcesTableOrderingComposer,
+      $$LearnFactSourcesTableAnnotationComposer,
+      $$LearnFactSourcesTableCreateCompanionBuilder,
+      $$LearnFactSourcesTableUpdateCompanionBuilder,
+      (
+        FactSource,
+        BaseReferences<_$AppDatabase, $LearnFactSourcesTable, FactSource>,
+      ),
+      FactSource,
+      PrefetchHooks Function()
+    >;
+typedef $$LearnFactsTableCreateCompanionBuilder = LearnFactsCompanion Function({
+  required String id,
+  Value<String> hlc,
+  Value<bool> deleted,
+  required String programId,
+  Value<String> employer,
+  required String claim,
+  Value<String> sourceId,
+  Value<String> sourceUrl,
+  Value<String> sourceTitle,
+  Value<String> sourceDate,
+  Value<String> fetchedAt,
+  Value<String> quote,
+  Value<String> status,
+  Value<String> kind,
+  Value<String> staleAfter,
+  Value<String> origin,
+  required String created,
+  required String updated,
+  Value<int> rowid,
+});
+typedef $$LearnFactsTableUpdateCompanionBuilder = LearnFactsCompanion Function({
+  Value<String> id,
+  Value<String> hlc,
+  Value<bool> deleted,
+  Value<String> programId,
+  Value<String> employer,
+  Value<String> claim,
+  Value<String> sourceId,
+  Value<String> sourceUrl,
+  Value<String> sourceTitle,
+  Value<String> sourceDate,
+  Value<String> fetchedAt,
+  Value<String> quote,
+  Value<String> status,
+  Value<String> kind,
+  Value<String> staleAfter,
+  Value<String> origin,
+  Value<String> created,
+  Value<String> updated,
+  Value<int> rowid,
+});
+
+class $$LearnFactsTableFilterComposer
+    extends Composer<_$AppDatabase, $LearnFactsTable> {
+  $$LearnFactsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get employer => $composableBuilder(
+    column: $table.employer,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get claim => $composableBuilder(
+    column: $table.claim,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceTitle => $composableBuilder(
+    column: $table.sourceTitle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceDate => $composableBuilder(
+    column: $table.sourceDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get quote => $composableBuilder(
+    column: $table.quote,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get staleAfter => $composableBuilder(
+    column: $table.staleAfter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get origin => $composableBuilder(
+    column: $table.origin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get created => $composableBuilder(
+    column: $table.created,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LearnFactsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LearnFactsTable> {
+  $$LearnFactsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get employer => $composableBuilder(
+    column: $table.employer,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get claim => $composableBuilder(
+    column: $table.claim,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceTitle => $composableBuilder(
+    column: $table.sourceTitle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceDate => $composableBuilder(
+    column: $table.sourceDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fetchedAt => $composableBuilder(
+    column: $table.fetchedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get quote => $composableBuilder(
+    column: $table.quote,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get staleAfter => $composableBuilder(
+    column: $table.staleAfter,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get origin => $composableBuilder(
+    column: $table.origin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get created => $composableBuilder(
+    column: $table.created,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LearnFactsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LearnFactsTable> {
+  $$LearnFactsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get programId =>
+      $composableBuilder(column: $table.programId, builder: (column) => column);
+
+  GeneratedColumn<String> get employer =>
+      $composableBuilder(column: $table.employer, builder: (column) => column);
+
+  GeneratedColumn<String> get claim =>
+      $composableBuilder(column: $table.claim, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceId =>
+      $composableBuilder(column: $table.sourceId, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceUrl =>
+      $composableBuilder(column: $table.sourceUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceTitle => $composableBuilder(
+    column: $table.sourceTitle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceDate => $composableBuilder(
+    column: $table.sourceDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fetchedAt =>
+      $composableBuilder(column: $table.fetchedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get quote =>
+      $composableBuilder(column: $table.quote, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get staleAfter => $composableBuilder(
+    column: $table.staleAfter,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get origin =>
+      $composableBuilder(column: $table.origin, builder: (column) => column);
+
+  GeneratedColumn<String> get created =>
+      $composableBuilder(column: $table.created, builder: (column) => column);
+
+  GeneratedColumn<String> get updated =>
+      $composableBuilder(column: $table.updated, builder: (column) => column);
+}
+
+class $$LearnFactsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LearnFactsTable,
+          FactCard,
+          $$LearnFactsTableFilterComposer,
+          $$LearnFactsTableOrderingComposer,
+          $$LearnFactsTableAnnotationComposer,
+          $$LearnFactsTableCreateCompanionBuilder,
+          $$LearnFactsTableUpdateCompanionBuilder,
+          (FactCard, BaseReferences<_$AppDatabase, $LearnFactsTable, FactCard>),
+          FactCard,
+          PrefetchHooks Function()
+        > {
+  $$LearnFactsTableTableManager(_$AppDatabase db, $LearnFactsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LearnFactsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LearnFactsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LearnFactsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> programId = const Value.absent(),
+                Value<String> employer = const Value.absent(),
+                Value<String> claim = const Value.absent(),
+                Value<String> sourceId = const Value.absent(),
+                Value<String> sourceUrl = const Value.absent(),
+                Value<String> sourceTitle = const Value.absent(),
+                Value<String> sourceDate = const Value.absent(),
+                Value<String> fetchedAt = const Value.absent(),
+                Value<String> quote = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> staleAfter = const Value.absent(),
+                Value<String> origin = const Value.absent(),
+                Value<String> created = const Value.absent(),
+                Value<String> updated = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnFactsCompanion(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                employer: employer,
+                claim: claim,
+                sourceId: sourceId,
+                sourceUrl: sourceUrl,
+                sourceTitle: sourceTitle,
+                sourceDate: sourceDate,
+                fetchedAt: fetchedAt,
+                quote: quote,
+                status: status,
+                kind: kind,
+                staleAfter: staleAfter,
+                origin: origin,
+                created: created,
+                updated: updated,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                required String programId,
+                Value<String> employer = const Value.absent(),
+                required String claim,
+                Value<String> sourceId = const Value.absent(),
+                Value<String> sourceUrl = const Value.absent(),
+                Value<String> sourceTitle = const Value.absent(),
+                Value<String> sourceDate = const Value.absent(),
+                Value<String> fetchedAt = const Value.absent(),
+                Value<String> quote = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> staleAfter = const Value.absent(),
+                Value<String> origin = const Value.absent(),
+                required String created,
+                required String updated,
+                Value<int> rowid = const Value.absent(),
+              }) => LearnFactsCompanion.insert(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                employer: employer,
+                claim: claim,
+                sourceId: sourceId,
+                sourceUrl: sourceUrl,
+                sourceTitle: sourceTitle,
+                sourceDate: sourceDate,
+                fetchedAt: fetchedAt,
+                quote: quote,
+                status: status,
+                kind: kind,
+                staleAfter: staleAfter,
+                origin: origin,
+                created: created,
+                updated: updated,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LearnFactsTable, FactCard>(table),
+                  BaseReferences<_$AppDatabase, $LearnFactsTable, FactCard>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LearnFactsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LearnFactsTable,
+      FactCard,
+      $$LearnFactsTableFilterComposer,
+      $$LearnFactsTableOrderingComposer,
+      $$LearnFactsTableAnnotationComposer,
+      $$LearnFactsTableCreateCompanionBuilder,
+      $$LearnFactsTableUpdateCompanionBuilder,
+      (FactCard, BaseReferences<_$AppDatabase, $LearnFactsTable, FactCard>),
+      FactCard,
+      PrefetchHooks Function()
+    >;
 typedef $$LearnUnlocksTableCreateCompanionBuilder =
     LearnUnlocksCompanion Function({
       required String id,
@@ -17923,6 +20339,10 @@ class $AppDatabaseManager {
       $$LearnRoundsTableTableManager(_db, _db.learnRounds);
   $$LearnJourneysTableTableManager get learnJourneys =>
       $$LearnJourneysTableTableManager(_db, _db.learnJourneys);
+  $$LearnFactSourcesTableTableManager get learnFactSources =>
+      $$LearnFactSourcesTableTableManager(_db, _db.learnFactSources);
+  $$LearnFactsTableTableManager get learnFacts =>
+      $$LearnFactsTableTableManager(_db, _db.learnFacts);
   $$LearnUnlocksTableTableManager get learnUnlocks =>
       $$LearnUnlocksTableTableManager(_db, _db.learnUnlocks);
   $$LearnCardsTableTableManager get learnCards =>

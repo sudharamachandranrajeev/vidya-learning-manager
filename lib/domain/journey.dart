@@ -52,7 +52,7 @@ const journeyCheckKinds = {
 
 // Limits keep a runaway or hostile file from flooding the database.
 const _maxStages = 20, _maxLines = 30, _maxProduce = 60, _maxChecklist = 40;
-const _maxTitle = 200, _maxText = 2000, _maxUrl = 500;
+const _maxTitle = 200, _maxText = 2000, _maxUrl = 500, _maxAdvert = 20000, _maxFacts = 30;
 
 /// Where a line comes from, and the day it was last checked against it.
 class JourneySource {
@@ -181,6 +181,16 @@ class JourneyStage {
   };
 }
 
+/// An employer fact Udyoga proposes for the dossier (from its employer
+/// brief): a claim and the page it says it comes from. Vidya keeps it as
+/// an inference card until a quote check against that page's text passes.
+class JourneyFact {
+  const JourneyFact({required this.claim, required this.url, this.title = ''});
+  final String claim, url, title;
+
+  Map<String, Object> toJson() => {'claim': claim, 'url': url, if (title.isNotEmpty) 'title': title};
+}
+
 /// A job's journey: the job's own data and any stages it brings.
 class Journey {
   const Journey({
@@ -193,8 +203,17 @@ class Journey {
     this.stages = const [],
     this.template = '',
     this.checked = '',
+    this.advertText = '',
+    this.facts = const [],
   });
   final String employer, role, sector, advertUrl;
+
+  /// The advert's text as Udyoga keeps it, '' when not sent: the dossier
+  /// can read it as a source.
+  final String advertText;
+
+  /// Employer facts Udyoga proposes (unverified).
+  final List<JourneyFact> facts;
 
   /// The advert's closing date (yyyy-MM-dd), or null.
   final String? closes;
@@ -220,6 +239,8 @@ class Journey {
     'closes': ?closes,
     if (applicationStage.isNotEmpty) 'applicationStage': applicationStage,
     if (stages.isNotEmpty) 'stages': [for (final s in stages) s.toJson()],
+    if (advertText.isNotEmpty) 'advertText': advertText,
+    if (facts.isNotEmpty) 'facts': [for (final f in facts) f.toJson()],
   };
 }
 
@@ -264,7 +285,16 @@ Journey parseJourney(Object? j) {
     closes: isValidIsoDate(closes) ? closes : null,
     applicationStage: _str(j['applicationStage'], 30),
     stages: stages,
+    advertText: _str(j['advertText'], _maxAdvert),
+    facts: [for (final f in _list(j['facts'], _maxFacts, 'employer facts')) ?_fact(f)],
   );
+}
+
+JourneyFact? _fact(Object? f) {
+  if (f is! Map) return null;
+  final claim = _str(f['claim'], _maxText), url = _url(f['url']);
+  if (claim.isEmpty || url.isEmpty) return null;
+  return JourneyFact(claim: claim, url: url, title: _str(f['title'], _maxTitle));
 }
 
 JourneyCheck? _check(Map c, String stage) {
@@ -408,6 +438,8 @@ Journey mergeJourney(Journey job, Journey template, {List<PlanCriterion> criteri
     stages: out,
     template: template.template,
     checked: template.checked,
+    advertText: job.advertText,
+    facts: job.facts,
   );
 }
 

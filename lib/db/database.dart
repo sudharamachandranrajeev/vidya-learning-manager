@@ -24,6 +24,8 @@ part 'database.g.dart';
     LearnStories,
     LearnRounds,
     LearnJourneys,
+    LearnFactSources,
+    LearnFacts,
     LearnUnlocks,
     LearnCards,
     LearnReviews,
@@ -56,6 +58,8 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
     'learn_stories',
     'learn_rounds',
     'learn_journeys',
+    'learn_fact_sources',
+    'learn_facts',
     'learn_unlocks',
     'learn_cards',
     'learn_reviews',
@@ -65,13 +69,13 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   ];
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
-      for (final sql in [..._indexes, ..._v7Indexes, ..._v8Indexes, ..._v9Indexes, ..._v10Indexes, ..._v11Indexes]) {
+      for (final sql in [..._indexes, ..._v7Indexes, ..._v8Indexes, ..._v9Indexes, ..._v10Indexes, ..._v11Indexes, ..._v12Indexes]) {
         await customStatement(sql);
       }
     },
@@ -174,6 +178,18 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
           await customStatement(sql);
         }
       }
+      if (from < 12) {
+        // The job dossier: its sources and fact cards. New tables only: no
+        // row is touched.
+        final tables = await customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table'",
+        ).map((r) => r.read<String>('name')).get();
+        if (!tables.contains(learnFactSources.actualTableName)) await m.createTable(learnFactSources);
+        if (!tables.contains(learnFacts.actualTableName)) await m.createTable(learnFacts);
+        for (final sql in _v12Indexes) {
+          await customStatement(sql);
+        }
+      }
     },
   );
 
@@ -244,5 +260,11 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   // Added in version 11.
   static const _v11Indexes = [
     'CREATE INDEX IF NOT EXISTS learn_journeys_program ON learn_journeys (program_id)',
+  ];
+
+  // Added in version 12.
+  static const _v12Indexes = [
+    'CREATE INDEX IF NOT EXISTS learn_fact_sources_program ON learn_fact_sources (program_id)',
+    'CREATE INDEX IF NOT EXISTS learn_facts_program ON learn_facts (program_id)',
   ];
 }

@@ -11,6 +11,7 @@ import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 import 'book.dart';
+import 'dossier_book.dart';
 import 'interview.dart';
 import 'journey.dart';
 import 'journey_templates.dart';
@@ -121,8 +122,10 @@ extension JourneyBook on LearningBook {
   )..where((j) => j.programId.equals(programId) & j.deleted.not())).get()).firstOrNull;
 
   /// Saves the journey a plan sent for [programId]: the job's data is
-  /// replaced, the learner's stage and progress stay.
+  /// replaced, the learner's stage and progress stay. Employer facts it
+  /// brings go to the dossier as inference cards.
   Future<void> saveJourney(String programId, Journey journey, {required String now}) async {
+    await importJourneyFacts(programId, journey, now: now);
     final old = await journeyRow(programId);
     final json = jsonEncode(journey.toJson());
     if (old != null) {

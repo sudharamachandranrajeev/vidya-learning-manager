@@ -264,6 +264,71 @@ class LearnJourneys extends Table with SyncedRow {
   TextColumn get updated => text()();
 }
 
+/// A source the job dossier read (journey plan J5): text the learner
+/// pasted (board papers, a staff survey page, reviews they read), the
+/// advert Udyoga sent, or a record an official reader fetched (NHS ODS,
+/// CQC, Companies House). A fact card is verified only when its quote is
+/// in [body]. Kept so a card can be checked again.
+@DataClassName('FactSource')
+class LearnFactSources extends Table with SyncedRow {
+  TextColumn get programId => text()();
+  TextColumn get employer => text().withDefault(const Constant(''))();
+
+  /// One of `sourceKinds` in dossier.dart.
+  TextColumn get kind => text()();
+  TextColumn get url => text().withDefault(const Constant(''))();
+  TextColumn get title => text().withDefault(const Constant(''))();
+
+  /// The source's own date (yyyy-MM-dd): a board meeting, a survey year's
+  /// publication, a report; '' when not known.
+  TextColumn get sourceDate => text().withDefault(const Constant(''))();
+
+  /// When it was pasted or fetched (an ISO time).
+  TextColumn get fetchedAt => text()();
+
+  /// The text itself, clipped (see `maxSourceText`).
+  TextColumn get body => text()();
+}
+
+/// A fact card in a job's dossier: a claim, the exact sentence that
+/// supports it and where that sentence is from. [status] is `verified`
+/// (the quote was found in the source's text), `user-confirmed` (the
+/// learner checked it themselves) or `inference` (not checked: always
+/// labelled so).
+@DataClassName('FactCard')
+class LearnFacts extends Table with SyncedRow {
+  TextColumn get programId => text()();
+  TextColumn get employer => text().withDefault(const Constant(''))();
+  TextColumn get claim => text()();
+
+  /// The [LearnFactSources] row the quote was checked against, '' when none.
+  TextColumn get sourceId => text().withDefault(const Constant(''))();
+  TextColumn get sourceUrl => text().withDefault(const Constant(''))();
+  TextColumn get sourceTitle => text().withDefault(const Constant(''))();
+
+  /// The source's own date (yyyy-MM-dd), '' when not known.
+  TextColumn get sourceDate => text().withDefault(const Constant(''))();
+
+  /// When the source was read (an ISO time), '' when it never was.
+  TextColumn get fetchedAt => text().withDefault(const Constant(''))();
+
+  /// The exact supporting sentence, '' when there is none yet.
+  TextColumn get quote => text().withDefault(const Constant(''))();
+  TextColumn get status => text().withDefault(const Constant('inference'))();
+
+  /// One of `factKinds` in dossier.dart.
+  TextColumn get kind => text().withDefault(const Constant('other'))();
+
+  /// yyyy-MM-dd from which the card is flagged as maybe out of date, set
+  /// by its kind's source cycle (see `staleAfterFor`).
+  TextColumn get staleAfter => text().withDefault(const Constant(''))();
+
+  /// Who proposed it: `you`, `ai`, `udyoga` or `reader`.
+  TextColumn get origin => text().withDefault(const Constant('you'))();
+  TextColumn get created => text()();
+  TextColumn get updated => text()();
+}
+
 /// A skill and how far it has come against where it should be.
 @DataClassName('Skill')
 class LearnSkills extends Table with SyncedRow {
