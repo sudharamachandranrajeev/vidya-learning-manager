@@ -130,7 +130,7 @@ void main() {
         throwsA(isA<FormatException>().having((e) => e.message, 'message', contains('Too many items'))),
       );
       expect(
-        () => parseCurriculum(jsonEncode({...v2Plan(), 'version': 3})),
+        () => parseCurriculum(jsonEncode({...v2Plan(), 'version': 4})),
         throwsA(isA<FormatException>().having((e) => e.message, 'message', contains('newer Vidya'))),
       );
     });

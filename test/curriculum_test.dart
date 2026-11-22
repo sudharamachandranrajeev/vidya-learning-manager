@@ -88,7 +88,7 @@ Good luck!''');
         says('not valid JSON'),
       );
       expect(() => parseCurriculum('{"format": "vidya-decks", "cards": []}'), says('card file'));
-      expect(() => parseCurriculum(plan({'version': 3})), says('newer Vidya'));
+      expect(() => parseCurriculum(plan({'version': curriculumVersion + 1})), says('newer Vidya'));
       expect(() => parseCurriculum('{"program": {"goal": "x"}, "courses": [{"title": "c"}]}'), says('title'));
       expect(() => parseCurriculum(plan({'courses': []})), says('no courses'));
       expect(

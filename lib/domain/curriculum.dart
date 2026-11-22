@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:brahma_core/brahma_core.dart';
 
 import 'cloze.dart';
+import 'journey.dart';
 import 'study_items.dart';
 
 /// A whole study plan in one file: a program, its roadmap of courses with
@@ -99,8 +100,12 @@ class CurriculumPlan {
     this.notes = const [],
     this.role = '',
     this.criteria = const [],
+    this.journey,
   });
   final String title, goal, part;
+
+  /// The job journey (format 3), null when the plan has none.
+  final Journey? journey;
 
   /// The job role the plan is for (from Udyoga), '' otherwise.
   final String role;
@@ -125,8 +130,10 @@ const _maxTitle = 200, _maxText = 4000, _maxBody = 40000;
 const _maxItems = 50, _maxQuiz = 20, _maxDrills = 30, _maxCriteria = 200, _maxAllItems = 5000;
 
 /// The newest plan format this Vidya reads. Format 1 plans (no items,
-/// quiz, drills or criteria) still import.
-const curriculumVersion = 2;
+/// quiz, drills or criteria) and format 2 plans (no journey) still import.
+/// A `journey` is read whatever the version says: Udyoga adds it to the
+/// plans it sends as version 1, which older Vidyas import without it.
+const curriculumVersion = 3;
 
 const _kinds = {'course', 'book', 'certification', 'degree', 'project', 'practice'};
 
@@ -330,7 +337,9 @@ CurriculumPlan parseCurriculum(String text) {
         ),
   ];
 
-  if (courses.isEmpty && cards.isEmpty && notes.isEmpty) {
+  final journey = j['journey'] == null ? null : parseJourney(j['journey']);
+
+  if (courses.isEmpty && cards.isEmpty && notes.isEmpty && journey == null) {
     throw const FormatException('The plan has no courses, cards or notes.');
   }
   return CurriculumPlan(
@@ -344,6 +353,7 @@ CurriculumPlan parseCurriculum(String text) {
     notes: notes,
     role: _str(j['role'] ?? program['role'], _maxTitle),
     criteria: criteria,
+    journey: journey,
   );
 }
 
@@ -386,32 +396,7 @@ List<PlanItem> _items(Map topic, String topicTitle) {
     );
   }
 
-  final questions = <Map<String, Object>>[];
-  for (final q in _list(topic['quiz'], _maxQuiz, 'quiz questions in “$topicTitle”')) {
-    if (q is! Map) continue;
-    final question = _str(q['question'] ?? q['q'] ?? q['front'], _maxText);
-    final options = [
-      for (final o
-          in q['options'] is List ? q['options'] as List : (q['choices'] is List ? q['choices'] as List : const []))
-        if (_str(o, _maxTitle) case final s when s.isNotEmpty) s,
-    ].take(8).toList();
-    final rawAnswer = q['answer'] ?? q['a'] ?? q['back'];
-    // A choice answer may be the option's index.
-    final answer = rawAnswer is int && rawAnswer >= 0 && rawAnswer < options.length
-        ? options[rawAnswer]
-        : _str(rawAnswer, _maxText);
-    if (question.isEmpty || answer.isEmpty) continue;
-    var kind = _str(q['kind'] ?? q['type'], 20).toLowerCase();
-    if (!{'choice', 'short', 'card'}.contains(kind)) kind = options.length > 1 ? 'choice' : 'short';
-    if (kind == 'choice' && options.length < 2) kind = 'short';
-    questions.add({
-      'question': question,
-      'kind': kind,
-      if (kind == 'choice') 'options': options,
-      'answer': answer,
-      if (_str(q['explain'], _maxText) case final e when e.isNotEmpty) 'explain': e,
-    });
-  }
+  final questions = parseQuizQuestions(topic['quiz'], 'quiz questions in “$topicTitle”');
   if (questions.isNotEmpty) {
     add(
       PlanItem(
@@ -445,6 +430,41 @@ List<PlanItem> _items(Map topic, String topicTitle) {
     );
   }
   return out;
+}
+
+/// Quiz questions from a plan, checked as a topic's quiz is: a question
+/// and an answer each, a choice with two or more options (an index answer
+/// becomes the option), at most [_maxQuiz]. Also used by journey checks.
+List<Map<String, Object>> parseQuizQuestions(Object? list, String what) {
+  final questions = <Map<String, Object>>[];
+  for (final q in _list(list, _maxQuiz, what)) {
+    if (q is! Map) continue;
+    final question = _str(q['question'] ?? q['q'] ?? q['front'], _maxText);
+    final options = [
+      for (final o
+          in q['options'] is List
+              ? q['options'] as List
+              : (q['choices'] is List ? q['choices'] as List : const []))
+        if (_str(o, _maxTitle) case final s when s.isNotEmpty) s,
+    ].take(8).toList();
+    final rawAnswer = q['answer'] ?? q['a'] ?? q['back'];
+    // A choice answer may be the option's index.
+    final answer = rawAnswer is int && rawAnswer >= 0 && rawAnswer < options.length
+        ? options[rawAnswer]
+        : _str(rawAnswer, _maxText);
+    if (question.isEmpty || answer.isEmpty) continue;
+    var kind = _str(q['kind'] ?? q['type'], 20).toLowerCase();
+    if (!{'choice', 'short', 'card'}.contains(kind)) kind = options.length > 1 ? 'choice' : 'short';
+    if (kind == 'choice' && options.length < 2) kind = 'short';
+    questions.add({
+      'question': question,
+      'kind': kind,
+      if (kind == 'choice') 'options': options,
+      'answer': answer,
+      if (_str(q['explain'], _maxText) case final e when e.isNotEmpty) 'explain': e,
+    });
+  }
+  return questions;
 }
 
 /// A plan topic's details and resources as the Markdown of its own note,
@@ -528,7 +548,7 @@ WHAT TO MAKE:
 FORMAT (follow it exactly; leave out any optional field you have nothing for):
 {
   "format": "vidya-curriculum",
-  "version": 2,
+  "version": 3,
   "part": "1 of 1",
   "program": {
     "title": "Short name of the goal",
