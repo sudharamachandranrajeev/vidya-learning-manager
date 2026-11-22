@@ -6,6 +6,7 @@ import 'achievements.dart';
 import 'curriculum.dart';
 import 'export.dart';
 import 'import.dart';
+import 'journey_book.dart';
 import 'quiz.dart';
 import 'review.dart';
 import 'stats.dart';
@@ -174,6 +175,7 @@ class LearningBook {
     for (final c in courses) {
       await removeCourse(c.id);
     }
+    await removeJourney(id);
     await remove(db.learnPrograms, id);
   });
 
@@ -933,6 +935,7 @@ class LearningBook {
       }
     }
     final criteria = await _savePlanCriteria(pid, plan.criteria);
+    if (plan.journey case final j?) await saveJourney(pid, j, now: today);
 
     final noteTitles = {
       for (final n in await (db.select(db.learnNotes)..where((n) => n.deleted.not())).get()) n.title.toLowerCase(),

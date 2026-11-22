@@ -7748,6 +7748,518 @@ class LearnRoundsCompanion extends UpdateCompanion<RoundRow> {
   }
 }
 
+class $LearnJourneysTable extends LearnJourneys
+    with TableInfo<$LearnJourneysTable, JourneyRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LearnJourneysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _programIdMeta = const VerificationMeta(
+    'programId',
+  );
+  @override
+  late final GeneratedColumn<String> programId = GeneratedColumn<String>(
+    'program_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _journeyMeta = const VerificationMeta(
+    'journey',
+  );
+  @override
+  late final GeneratedColumn<String> journey = GeneratedColumn<String>(
+    'journey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stageMeta = const VerificationMeta('stage');
+  @override
+  late final GeneratedColumn<String> stage = GeneratedColumn<String>(
+    'stage',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _progressMeta = const VerificationMeta(
+    'progress',
+  );
+  @override
+  late final GeneratedColumn<String> progress = GeneratedColumn<String>(
+    'progress',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _updatedMeta = const VerificationMeta(
+    'updated',
+  );
+  @override
+  late final GeneratedColumn<String> updated = GeneratedColumn<String>(
+    'updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hlc,
+    deleted,
+    programId,
+    journey,
+    stage,
+    progress,
+    updated,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'learn_journeys';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<JourneyRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('program_id')) {
+      context.handle(
+        _programIdMeta,
+        programId.isAcceptableOrUnknown(data['program_id']!, _programIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_programIdMeta);
+    }
+    if (data.containsKey('journey')) {
+      context.handle(
+        _journeyMeta,
+        journey.isAcceptableOrUnknown(data['journey']!, _journeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_journeyMeta);
+    }
+    if (data.containsKey('stage')) {
+      context.handle(
+        _stageMeta,
+        stage.isAcceptableOrUnknown(data['stage']!, _stageMeta),
+      );
+    }
+    if (data.containsKey('progress')) {
+      context.handle(
+        _progressMeta,
+        progress.isAcceptableOrUnknown(data['progress']!, _progressMeta),
+      );
+    }
+    if (data.containsKey('updated')) {
+      context.handle(
+        _updatedMeta,
+        updated.isAcceptableOrUnknown(data['updated']!, _updatedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  JourneyRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JourneyRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      programId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}program_id'],
+      )!,
+      journey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}journey'],
+      )!,
+      stage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}stage'],
+      )!,
+      progress: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}progress'],
+      )!,
+      updated: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated'],
+      )!,
+    );
+  }
+
+  @override
+  $LearnJourneysTable createAlias(String alias) {
+    return $LearnJourneysTable(attachedDatabase, alias);
+  }
+}
+
+class JourneyRow extends DataClass implements Insertable<JourneyRow> {
+  final String id;
+  final String hlc;
+  final bool deleted;
+  final String programId;
+
+  /// The journey as sent, as JSON.
+  final String journey;
+
+  /// The stage the learner is on (a `journeyStages` id), '' before they
+  /// pick one.
+  final String stage;
+
+  /// What the learner did, as JSON: per stage, the artefacts ticked or
+  /// noted, the checklist items ticked, the last check result and a pasted
+  /// draft (see journey_book.dart).
+  final String progress;
+  final String updated;
+  const JourneyRow({
+    required this.id,
+    required this.hlc,
+    required this.deleted,
+    required this.programId,
+    required this.journey,
+    required this.stage,
+    required this.progress,
+    required this.updated,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    map['program_id'] = Variable<String>(programId);
+    map['journey'] = Variable<String>(journey);
+    map['stage'] = Variable<String>(stage);
+    map['progress'] = Variable<String>(progress);
+    map['updated'] = Variable<String>(updated);
+    return map;
+  }
+
+  LearnJourneysCompanion toCompanion(bool nullToAbsent) {
+    return LearnJourneysCompanion(
+      id: Value(id),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      programId: Value(programId),
+      journey: Value(journey),
+      stage: Value(stage),
+      progress: Value(progress),
+      updated: Value(updated),
+    );
+  }
+
+  factory JourneyRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JourneyRow(
+      id: serializer.fromJson<String>(json['id']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      programId: serializer.fromJson<String>(json['programId']),
+      journey: serializer.fromJson<String>(json['journey']),
+      stage: serializer.fromJson<String>(json['stage']),
+      progress: serializer.fromJson<String>(json['progress']),
+      updated: serializer.fromJson<String>(json['updated']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'programId': serializer.toJson<String>(programId),
+      'journey': serializer.toJson<String>(journey),
+      'stage': serializer.toJson<String>(stage),
+      'progress': serializer.toJson<String>(progress),
+      'updated': serializer.toJson<String>(updated),
+    };
+  }
+
+  JourneyRow copyWith({
+    String? id,
+    String? hlc,
+    bool? deleted,
+    String? programId,
+    String? journey,
+    String? stage,
+    String? progress,
+    String? updated,
+  }) => JourneyRow(
+    id: id ?? this.id,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    programId: programId ?? this.programId,
+    journey: journey ?? this.journey,
+    stage: stage ?? this.stage,
+    progress: progress ?? this.progress,
+    updated: updated ?? this.updated,
+  );
+  JourneyRow copyWithCompanion(LearnJourneysCompanion data) {
+    return JourneyRow(
+      id: data.id.present ? data.id.value : this.id,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      programId: data.programId.present ? data.programId.value : this.programId,
+      journey: data.journey.present ? data.journey.value : this.journey,
+      stage: data.stage.present ? data.stage.value : this.stage,
+      progress: data.progress.present ? data.progress.value : this.progress,
+      updated: data.updated.present ? data.updated.value : this.updated,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JourneyRow(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('journey: $journey, ')
+          ..write('stage: $stage, ')
+          ..write('progress: $progress, ')
+          ..write('updated: $updated')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    programId,
+    journey,
+    stage,
+    progress,
+    updated,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JourneyRow &&
+          other.id == this.id &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.programId == this.programId &&
+          other.journey == this.journey &&
+          other.stage == this.stage &&
+          other.progress == this.progress &&
+          other.updated == this.updated);
+}
+
+class LearnJourneysCompanion extends UpdateCompanion<JourneyRow> {
+  final Value<String> id;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String> programId;
+  final Value<String> journey;
+  final Value<String> stage;
+  final Value<String> progress;
+  final Value<String> updated;
+  final Value<int> rowid;
+  const LearnJourneysCompanion({
+    this.id = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.programId = const Value.absent(),
+    this.journey = const Value.absent(),
+    this.stage = const Value.absent(),
+    this.progress = const Value.absent(),
+    this.updated = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LearnJourneysCompanion.insert({
+    required String id,
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    required String programId,
+    required String journey,
+    this.stage = const Value.absent(),
+    this.progress = const Value.absent(),
+    required String updated,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       programId = Value(programId),
+       journey = Value(journey),
+       updated = Value(updated);
+  static Insertable<JourneyRow> custom({
+    Expression<String>? id,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? programId,
+    Expression<String>? journey,
+    Expression<String>? stage,
+    Expression<String>? progress,
+    Expression<String>? updated,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (programId != null) 'program_id': programId,
+      if (journey != null) 'journey': journey,
+      if (stage != null) 'stage': stage,
+      if (progress != null) 'progress': progress,
+      if (updated != null) 'updated': updated,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LearnJourneysCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String>? programId,
+    Value<String>? journey,
+    Value<String>? stage,
+    Value<String>? progress,
+    Value<String>? updated,
+    Value<int>? rowid,
+  }) {
+    return LearnJourneysCompanion(
+      id: id ?? this.id,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      programId: programId ?? this.programId,
+      journey: journey ?? this.journey,
+      stage: stage ?? this.stage,
+      progress: progress ?? this.progress,
+      updated: updated ?? this.updated,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (programId.present) {
+      map['program_id'] = Variable<String>(programId.value);
+    }
+    if (journey.present) {
+      map['journey'] = Variable<String>(journey.value);
+    }
+    if (stage.present) {
+      map['stage'] = Variable<String>(stage.value);
+    }
+    if (progress.present) {
+      map['progress'] = Variable<String>(progress.value);
+    }
+    if (updated.present) {
+      map['updated'] = Variable<String>(updated.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LearnJourneysCompanion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('journey: $journey, ')
+          ..write('stage: $stage, ')
+          ..write('progress: $progress, ')
+          ..write('updated: $updated, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $LearnUnlocksTable extends LearnUnlocks
     with TableInfo<$LearnUnlocksTable, Unlock> {
   @override
@@ -11229,6 +11741,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LearnNotesTable learnNotes = $LearnNotesTable(this);
   late final $LearnStoriesTable learnStories = $LearnStoriesTable(this);
   late final $LearnRoundsTable learnRounds = $LearnRoundsTable(this);
+  late final $LearnJourneysTable learnJourneys = $LearnJourneysTable(this);
   late final $LearnUnlocksTable learnUnlocks = $LearnUnlocksTable(this);
   late final $LearnCardsTable learnCards = $LearnCardsTable(this);
   late final $LearnReviewsTable learnReviews = $LearnReviewsTable(this);
@@ -11258,6 +11771,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     learnNotes,
     learnStories,
     learnRounds,
+    learnJourneys,
     learnUnlocks,
     learnCards,
     learnReviews,
@@ -15129,6 +15643,272 @@ typedef $$LearnRoundsTableProcessedTableManager =
       RoundRow,
       PrefetchHooks Function()
     >;
+typedef $$LearnJourneysTableCreateCompanionBuilder =
+    LearnJourneysCompanion Function({
+      required String id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      required String programId,
+      required String journey,
+      Value<String> stage,
+      Value<String> progress,
+      required String updated,
+      Value<int> rowid,
+    });
+typedef $$LearnJourneysTableUpdateCompanionBuilder =
+    LearnJourneysCompanion Function({
+      Value<String> id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String> programId,
+      Value<String> journey,
+      Value<String> stage,
+      Value<String> progress,
+      Value<String> updated,
+      Value<int> rowid,
+    });
+
+class $$LearnJourneysTableFilterComposer
+    extends Composer<_$AppDatabase, $LearnJourneysTable> {
+  $$LearnJourneysTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get journey => $composableBuilder(
+    column: $table.journey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stage => $composableBuilder(
+    column: $table.stage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LearnJourneysTableOrderingComposer
+    extends Composer<_$AppDatabase, $LearnJourneysTable> {
+  $$LearnJourneysTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get journey => $composableBuilder(
+    column: $table.journey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stage => $composableBuilder(
+    column: $table.stage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updated => $composableBuilder(
+    column: $table.updated,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LearnJourneysTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LearnJourneysTable> {
+  $$LearnJourneysTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get programId =>
+      $composableBuilder(column: $table.programId, builder: (column) => column);
+
+  GeneratedColumn<String> get journey =>
+      $composableBuilder(column: $table.journey, builder: (column) => column);
+
+  GeneratedColumn<String> get stage =>
+      $composableBuilder(column: $table.stage, builder: (column) => column);
+
+  GeneratedColumn<String> get progress =>
+      $composableBuilder(column: $table.progress, builder: (column) => column);
+
+  GeneratedColumn<String> get updated =>
+      $composableBuilder(column: $table.updated, builder: (column) => column);
+}
+
+class $$LearnJourneysTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LearnJourneysTable,
+          JourneyRow,
+          $$LearnJourneysTableFilterComposer,
+          $$LearnJourneysTableOrderingComposer,
+          $$LearnJourneysTableAnnotationComposer,
+          $$LearnJourneysTableCreateCompanionBuilder,
+          $$LearnJourneysTableUpdateCompanionBuilder,
+          (
+            JourneyRow,
+            BaseReferences<_$AppDatabase, $LearnJourneysTable, JourneyRow>,
+          ),
+          JourneyRow,
+          PrefetchHooks Function()
+        > {
+  $$LearnJourneysTableTableManager(_$AppDatabase db, $LearnJourneysTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LearnJourneysTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LearnJourneysTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LearnJourneysTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String> programId = const Value.absent(),
+                Value<String> journey = const Value.absent(),
+                Value<String> stage = const Value.absent(),
+                Value<String> progress = const Value.absent(),
+                Value<String> updated = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnJourneysCompanion(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                journey: journey,
+                stage: stage,
+                progress: progress,
+                updated: updated,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                required String programId,
+                required String journey,
+                Value<String> stage = const Value.absent(),
+                Value<String> progress = const Value.absent(),
+                required String updated,
+                Value<int> rowid = const Value.absent(),
+              }) => LearnJourneysCompanion.insert(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                journey: journey,
+                stage: stage,
+                progress: progress,
+                updated: updated,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LearnJourneysTable, JourneyRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LearnJourneysTable,
+                    JourneyRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LearnJourneysTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LearnJourneysTable,
+      JourneyRow,
+      $$LearnJourneysTableFilterComposer,
+      $$LearnJourneysTableOrderingComposer,
+      $$LearnJourneysTableAnnotationComposer,
+      $$LearnJourneysTableCreateCompanionBuilder,
+      $$LearnJourneysTableUpdateCompanionBuilder,
+      (
+        JourneyRow,
+        BaseReferences<_$AppDatabase, $LearnJourneysTable, JourneyRow>,
+      ),
+      JourneyRow,
+      PrefetchHooks Function()
+    >;
 typedef $$LearnUnlocksTableCreateCompanionBuilder =
     LearnUnlocksCompanion Function({
       required String id,
@@ -17141,6 +17921,8 @@ class $AppDatabaseManager {
       $$LearnStoriesTableTableManager(_db, _db.learnStories);
   $$LearnRoundsTableTableManager get learnRounds =>
       $$LearnRoundsTableTableManager(_db, _db.learnRounds);
+  $$LearnJourneysTableTableManager get learnJourneys =>
+      $$LearnJourneysTableTableManager(_db, _db.learnJourneys);
   $$LearnUnlocksTableTableManager get learnUnlocks =>
       $$LearnUnlocksTableTableManager(_db, _db.learnUnlocks);
   $$LearnCardsTableTableManager get learnCards =>

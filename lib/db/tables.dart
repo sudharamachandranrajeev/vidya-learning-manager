@@ -241,6 +241,29 @@ class LearnRounds extends Table with SyncedRow {
   TextColumn get finished => text().nullable()();
 }
 
+/// A job journey (plan format 3): one per program. [journey] is the plan's
+/// `journey` as last sent (the job's data and any stages of its own); the
+/// app fills in the rest from the dated templates when it shows it, so a
+/// template update reaches every journey. [stage] and [progress] are the
+/// learner's and stay when the plan comes again.
+@DataClassName('JourneyRow')
+class LearnJourneys extends Table with SyncedRow {
+  TextColumn get programId => text()();
+
+  /// The journey as sent, as JSON.
+  TextColumn get journey => text()();
+
+  /// The stage the learner is on (a `journeyStages` id), '' before they
+  /// pick one.
+  TextColumn get stage => text().withDefault(const Constant(''))();
+
+  /// What the learner did, as JSON: per stage, the artefacts ticked or
+  /// noted, the checklist items ticked, the last check result and a pasted
+  /// draft (see journey_book.dart).
+  TextColumn get progress => text().withDefault(const Constant('{}'))();
+  TextColumn get updated => text()();
+}
+
 /// A skill and how far it has come against where it should be.
 @DataClassName('Skill')
 class LearnSkills extends Table with SyncedRow {
