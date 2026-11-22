@@ -1,5 +1,12 @@
 import 'package:brahma_core/brahma_core.dart';
 import 'package:flutter/material.dart';
+import 'package:ui_kit/ui_kit.dart' hide Backdrop;
+
+// The shared motion and components come from the ui_kit package
+// (pariksha-interview-kit), painted in moss and clay through Vidya's
+// KitPalette. Pages import them from here; Vidya keeps its own ensō
+// Backdrop.
+export 'package:ui_kit/ui_kit.dart' hide Backdrop, Glow, kitBackdrop;
 
 // Vidya's look: washi paper and stone, with moss and clay for accent. Soft
 // edges, hairline borders, almost no shadow, slow short motion, and a faint
@@ -19,6 +26,41 @@ bool isDark(BuildContext c) => Theme.of(c).brightness == Brightness.dark;
 Color hairline(BuildContext c) => isDark(c) ? Colors.white12 : const Color(0xFFE2DDD0);
 Color softFill(BuildContext c) => isDark(c) ? const Color(0xFF1B231F) : const Color(0xFFEDE9DE);
 Color muted(BuildContext c) => Theme.of(c).colorScheme.onSurfaceVariant;
+
+/// Vidya's colours for the shared kit: paper and stone, moss and clay.
+const vidyaLight = KitPalette(
+  top: paper,
+  bottom: Color(0xFFEFEBDF),
+  glow: Color(0x174F7C68),
+  glow2: Color(0x17B5835A),
+  surface: Color(0xFFFBF9F4),
+  card: Color(0xFFFBF9F4),
+  subtle: Color(0xFFEDE9DE),
+  raised: Color(0xFFEDE9DE),
+  hairline: Color(0xFFE2DDD0),
+  text: stone,
+  heading: stone,
+  muted: Color(0xFF68716B),
+  primary: moss,
+);
+
+const vidyaDark = KitPalette(
+  top: Color(0xFF111713),
+  bottom: Color(0xFF0C110E),
+  glow: Color(0x1F4F7C68),
+  glow2: Color(0x1FB5835A),
+  surface: Color(0xFF151C18),
+  card: Color(0xFF18211C),
+  subtle: Color(0xFF1B231F),
+  raised: Color(0xFF222C26),
+  hairline: Color(0x1FFFFFFF),
+  text: Color(0xFFE7EAE4),
+  heading: Color(0xFFE7EAE4),
+  muted: Color(0xFFA3ADA6),
+  primary: Color(0xFF8DB9A2),
+);
+
+KitPalette vidyaKit(Brightness b) => b == Brightness.dark ? vidyaDark : vidyaLight;
 
 ThemeData vidyaTheme(Brightness b) {
   final dark = b == Brightness.dark;
@@ -164,6 +206,12 @@ ThemeData vidyaTheme(Brightness b) {
       borderRadius: BorderRadius.circular(8),
     ),
     sliderTheme: base.sliderTheme.copyWith(trackHeight: 4),
+    extensions: [vidyaKit(b)],
+    // Pushed pages rise into place. Each of Vidya's pages already brings
+    // its own ensō Backdrop, so the transition adds none.
+    pageTransitionsTheme: PageTransitionsTheme(
+      builders: RisePageTransitionsBuilder.everywhere(const RisePageTransitionsBuilder(backdrop: null)),
+    ),
   );
 }
 

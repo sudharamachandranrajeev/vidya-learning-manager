@@ -13,6 +13,13 @@ dependencies:
     git:
       url: https://github.com/sudharamachandranrajeev/brahma-life-suite.git
       path: core
+  # Shared motion and components (the kit), painted in moss and clay through
+  # a KitPalette. A local pubspec_overrides.yaml can point it at a checkout.
+  ui_kit:
+    git:
+      url: https://github.com/sudharamachandranrajeev/pariksha-interview-kit.git
+      path: packages/ui_kit
+      ref: main
   drift: ^2.35.2
   file_picker: ^13.3.2
   flutter:
