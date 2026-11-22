@@ -35,37 +35,26 @@ import 'study_items.dart';
 /// The engine's instructions with the reply format spelled out: Vidya's
 /// AI connection returns text, so the schema goes in the prompt and the
 /// JSON is read back out of the reply ([parseBrainReply]). Every quote in a
-/// score is still checked against the transcript before it counts.
-String brainInstructions(ie.BrainRequest r) =>
-    '${r.system}\n\nReply with one JSON object only, with no other text before or after it. It must match '
-    'this JSON schema exactly (every property present):\n${jsonEncode(r.schema)}';
+/// score is still checked against the transcript before it counts. The
+/// same words as for any text-only model ([ie.textInstructions]).
+String brainInstructions(ie.BrainRequest r) => ie.textInstructions(r);
 
 /// The JSON object in an AI's reply, even with text or a code fence around
-/// it. Throws a [FormatException] in plain words when there is none.
-Map<String, Object?> parseBrainReply(String reply) {
-  final start = reply.indexOf('{'), end = reply.lastIndexOf('}');
-  if (start >= 0 && end > start) {
-    try {
-      if (jsonDecode(reply.substring(start, end + 1)) case final Map m) return m.cast<String, Object?>();
-    } on FormatException {
-      // Said below.
-    }
-  }
-  throw const FormatException(
-    'The AI did not reply in the form asked for, so nothing was scored. Try again, or try another AI.',
-  );
-}
+/// it ([ie.replyJson]). Throws a [FormatException] in plain words when there
+/// is none.
+Map<String, Object?> parseBrainReply(String reply) => ie.replyJson(reply);
 
 /// The interview engine's AI steps over Vidya's AI connection (brahma_core's
 /// Ask AI, which includes a local Ollama server). [send] takes the system
-/// prompt and the user's text and returns the reply.
-class VidyaInterviewBrain extends ie.PromptedInterviewBrain {
-  const VidyaInterviewBrain(this.send);
-  final Future<String> Function(String system, String text) send;
+/// prompt and the user's text and returns the reply. It is the engine's
+/// text-only brain, so a local and a cloud model go through the same
+/// parsing and the same checks (honesty rule 12).
+class VidyaInterviewBrain extends ie.TextPromptedInterviewBrain {
+  const VidyaInterviewBrain(this._send);
+  final Future<String> Function(String system, String text) _send;
 
   @override
-  Future<Map<String, Object?>> ask(ie.BrainRequest request) async =>
-      parseBrainReply(await send(brainInstructions(request), request.texts.join('\n\n')));
+  Future<String> send(String system, String text) => _send(system, text);
 }
 
 /// True when [setup] names an AI that can score: any connected AI, or with
