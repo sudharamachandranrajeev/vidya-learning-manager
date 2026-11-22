@@ -134,7 +134,11 @@ Each release also has `SHA256SUMS.txt`, a list of fingerprints to check the file
 3. Open **Vidya** from your app menu.
 
 It installs for your user only. It needs GTK 3, libsecret and the desktop keyring (the app that
-stores passwords) running. To remove it later: `./install.sh --uninstall`. Your data stays.
+stores passwords) running. It also needs mpv's library, which plays back interview video takes:
+`sudo pacman -S mpv` (Arch), `sudo apt install libmpv2` (Debian 12+, Ubuntu 24.04+) or
+`sudo dnf install mpv-libs` (Fedora). To record video takes, the camera also needs an H.264
+encoder for GStreamer: `gstreamer1.0-plugins-ugly` (Debian, Ubuntu), `gst-plugins-ugly` (Arch) or
+`gstreamer1-plugin-openh264` (Fedora). Most desktops have one already. To remove it later: `./install.sh --uninstall`. Your data stays.
 
 </details>
 
@@ -292,6 +296,16 @@ the round screen. Only the text is kept with the round. With an AI, only the que
 criteria and your words are sent, never audio. **Offline practice** blocks all network use on
 the interview screen; then only an AI server on this computer (Ask AI, **Local**) can score.
 The optional camera setup check looks at your setup only. It saves nothing and scores nothing.
+
+**Video takes (optional).** With the camera on, turn on **Record video for this round** before
+you start. It is off every time. A red "Recording video" sign shows while it records. Each kept
+answer is saved as a short video with your own recording of the answer, on this device only, in
+the app's private folder. Video takes are never synced, never backed up and never sent to an AI:
+only the transcript is. Nothing reads your face, expression or eyes, and nothing is scored from
+the picture. They are deleted after 14 days; change that, see the space used or **Delete all
+video takes** in **Settings → Interview video takes**. On the debrief, **Watch this answer** opens
+the video next to your transcript and the criteria; tap a quoted line or a transcript line to go
+to that moment. On Android the setup tips may pause while recording if the camera cannot do both.
 
 #### Job readiness
 
