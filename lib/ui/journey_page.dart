@@ -2,7 +2,8 @@
 /// growing in the post. A timeline across the top highlights the stage the
 /// learner is on; the stage below shows what to learn (each line with its
 /// source and date, or labelled general advice), what to produce, how it is
-/// checked, and heads-ups. The learner moves stages by hand; Udyoga's
+/// checked, and heads-ups; the Research stage also holds the job's dossier
+/// (dossier_view.dart). The learner moves stages by hand; Udyoga's
 /// application status only suggests one. The rules live in
 /// domain/journey.dart and domain/journey_book.dart.
 library;
@@ -21,6 +22,7 @@ import '../domain/journey.dart';
 import '../domain/journey_book.dart';
 import '../domain/spoken_interview.dart';
 import 'common.dart';
+import 'dossier_view.dart';
 import 'quiz_page.dart';
 import 'readiness_page.dart';
 import 'spoken_interview_page.dart';
@@ -379,6 +381,14 @@ class _StageView extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [for (final l in stage.teach) _Line(l, today: day)],
               ),
+            ),
+          ),
+        if (stage.id == 'research')
+          BlurFadeIn(
+            index: n++,
+            child: SectionCard(
+              title: 'Dossier',
+              child: DossierSection(programId: _pid, journey: view.journey),
             ),
           ),
         if (stage.produce.isNotEmpty)

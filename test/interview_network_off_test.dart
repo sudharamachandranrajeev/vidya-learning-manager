@@ -1,6 +1,6 @@
 // Network-off test: a whole interview round in Vidya, run with the engine
 // and offline practice on, must never open a connection to another
-// machine. Every HTTP client and socket made in the zone is trapped and
+// machine; nor may the job dossier's paste flow and quote check. Every HTTP client and socket made in the zone is trapped and
 // recorded; connections to this machine (a local AI server) are allowed.
 // Same approach as the engine's own network-off test. Made-up plan and
 // answers.
@@ -15,6 +15,8 @@ import 'package:interview_engine/interview_engine.dart' as ie;
 import 'package:interview_engine/testing.dart';
 import 'package:vidya/domain/book.dart';
 import 'package:vidya/domain/curriculum.dart';
+import 'package:vidya/domain/dossier.dart';
+import 'package:vidya/domain/dossier_book.dart';
 import 'package:vidya/domain/interview.dart';
 import 'package:vidya/domain/readiness.dart';
 import 'package:vidya/domain/spoken_interview.dart';
@@ -218,6 +220,61 @@ void main() {
     });
     expect(trap.attempts, isEmpty, reason: 'nothing tried to reach another machine');
   });
+
+  test(
+    'the job dossier offline: Udyoga\'s facts, a pasted source, the quote check and the artefacts',
+    () async {
+      final trap = _Trap();
+      final db = memoryDatabase();
+      addTearDown(db.close);
+      await _offline(trap, () async {
+        final book = LearningBook(await Store.open(db));
+        const day = '2026-11-22', now = '2026-11-22T10:00:00Z';
+        final pid = (await book.importCurriculum(
+          parseCurriculum(
+            jsonEncode({
+              'format': 'vidya-curriculum',
+              'version': 3,
+              'program': {'title': 'Prepare: Example Officer'},
+              'journey': {
+                'employer': 'Example Health Trust',
+                'sector': 'nhs',
+                'facts': [
+                  {'claim': 'A new day surgery unit opens in 2027.', 'url': 'https://example.org/strategy'},
+                ],
+              },
+            }),
+          ),
+          today: day,
+        )).programId;
+        await book.addFactSource(
+          pid,
+          kind: 'strategy',
+          url: 'https://example.org/strategy',
+          sourceDate: '2026-04-01',
+          body: 'The trust will open a new day surgery unit in 2027.',
+          now: now,
+        );
+        final cards = await book.factCards(pid);
+        expect(cards.single.status, 'verified');
+        final facts = [
+          for (final c in cards)
+            (
+              id: c.id,
+              claim: c.claim,
+              kind: c.kind,
+              status: c.status,
+              sourceTitle: c.sourceTitle,
+              sourceDate: c.sourceDate,
+              staleAfter: c.staleAfter,
+            ),
+        ];
+        expect(whyHerePoints(facts, today: day), hasLength(1));
+        expect(questionsToAsk(facts, today: day), hasLength(1));
+      });
+      expect(trap.attempts, isEmpty, reason: 'the dossier reads nothing by itself');
+    },
+  );
 }
 
 class _BookSink implements ie.AnswerSink {
