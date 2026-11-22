@@ -13,6 +13,10 @@
 /// from your own words and story bank, and is refused when the rewrite adds
 /// anything (J6). Results go to the drills (and so Job readiness); a fix
 /// can go to spaced review and an answer to the story bank.
+///
+/// With video takes kept for the round (J7, opt-in), "Watch this answer"
+/// opens the review screen, and tapping a quoted line plays the moment it
+/// was said.
 library;
 
 import 'package:brahma_core/brahma_core.dart';
@@ -28,6 +32,7 @@ import '../domain/answer_checker.dart';
 import '../domain/interview.dart';
 import '../domain/spoken_interview.dart';
 import 'common.dart';
+import 'video_review_page.dart';
 import 'zen.dart';
 
 final savedRoundProvider = FutureProvider.family<SavedRound?, String>((ref, id) {
@@ -99,6 +104,9 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
   }
 
   bool get _offline => ref.watch(interviewDeviceProvider).value?.offline ?? false;
+
+  /// The round's video takes on this device; empty without video.
+  List<ie.VideoTake> _takes(SavedRound r) => ref.watch(videoTakesProvider(r.id)).value ?? const [];
 
   Future<void> _score(SavedRound r) async {
     setState(() {
@@ -434,7 +442,7 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
           if (scored && best != null && best.quote.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('"${best.quote}"', style: t.bodyMedium?.copyWith(fontStyle: FontStyle.italic)),
+              child: QuotedLine(best.quote, takes: _takes(r)),
             ),
           if (scored) ...[
             const SizedBox(height: 4),
@@ -482,6 +490,16 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(q.question, style: t.titleSmall),
+          if (_takes(r).any((v) => v.question == i))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: Key('watch-$i'),
+                icon: const Icon(Icons.ondemand_video_outlined),
+                label: const Text('Watch this answer'),
+                onPressed: () => openVideoReview(context, r.id, i),
+              ),
+            ),
           ExpansionTile(
             tilePadding: EdgeInsets.zero,
             title: const Text('What you said'),
@@ -491,14 +509,10 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
           if (strengthQuote.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(left: 12, bottom: 4),
-              child: Text(
-                '"$strengthQuote"',
-                key: Key('strength-quote-$i'),
-                style: t.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
-              ),
+              child: QuotedLine(strengthQuote, key: Key('strength-quote-$i'), takes: _takes(r)),
             ),
           if (fix.isNotEmpty) Text('Fix: ${ie.oneFix(fix)}'),
-          if (expected != null) _Expectations(expected, key: Key('expectations-$i')),
+          if (expected != null) _Expectations(expected, takes: _takes(r), key: Key('expectations-$i')),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -576,8 +590,9 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
 /// answer: each covered one with the line that covered it, the rest as
 /// not covered, and "no sources yet" where there are no cards.
 class _Expectations extends StatelessWidget {
-  const _Expectations(this.e, {super.key});
+  const _Expectations(this.e, {super.key, this.takes = const []});
   final ie.AnswerExpectations e;
+  final List<ie.VideoTake> takes;
 
   @override
   Widget build(BuildContext context) {
@@ -595,7 +610,13 @@ class _Expectations extends StatelessWidget {
           for (final h in g.covered)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text('Covered: ${h.expectation.text}\n"${h.quote}"'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Covered: ${h.expectation.text}'),
+                  QuotedLine(h.quote, takes: takes, italic: false),
+                ],
+              ),
             ),
           for (final h in g.notCovered)
             Padding(
@@ -608,6 +629,42 @@ class _Expectations extends StatelessWidget {
           const SizedBox(height: 8),
         ],
       ],
+    );
+  }
+}
+
+/// A quoted line of the answer. With a video take that holds it, tapping it
+/// plays the moment it was said.
+class QuotedLine extends StatelessWidget {
+  const QuotedLine(this.quote, {super.key, this.takes = const [], this.italic = true});
+  final String quote;
+  final List<ie.VideoTake> takes;
+  final bool italic;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final style = italic ? t.bodyMedium?.copyWith(fontStyle: FontStyle.italic) : t.bodyMedium;
+    final text = Text('"$quote"', style: style);
+    final seek = takes.isEmpty ? null : ie.seekToQuote(takes, quote);
+    if (seek == null) return text;
+    return Semantics(
+      button: true,
+      label: 'Play the moment you said: $quote',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: () => openVideoReview(context, seek.take.roundId, seek.take.question, at: seek),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 4, top: 2),
+              child: Icon(Icons.play_circle_outline, size: 18, color: Theme.of(context).colorScheme.primary),
+            ),
+            Flexible(child: text),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -14,9 +14,9 @@ import 'common.dart';
 import 'zen.dart';
 
 const cameraPrivacy =
-    'Off unless you turn it on, every time. The picture is looked at on this device and dropped: never saved, '
-    'sent or synced. It checks your setup only. Nothing about your face, expression or eyes is read, and '
-    'nothing is scored.';
+    'Off unless you turn it on, every time. The picture is looked at on this device and dropped: never sent '
+    'or synced, and saved only if you turn on video for a round. It checks your setup only. Nothing about '
+    'your face, expression or eyes is read, and nothing is scored.';
 
 /// The red "Camera on" pill. Tapping it turns the camera off.
 class CameraOnPill extends StatelessWidget {

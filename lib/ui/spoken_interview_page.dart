@@ -7,6 +7,12 @@
 ///
 /// Recordings stay in a temporary folder on this device and are deleted
 /// when this screen closes; only the text is kept with the round.
+///
+/// Video takes (J7) are opt-in per round: "Record video for this round"
+/// is off every time the screen opens. With it on (and the camera on), the
+/// camera records while the microphone is open, with no sound of its own;
+/// each clip is kept with the answer's audio in Vidya's own folder for the
+/// days set in Settings, never synced, backed up or sent to an AI.
 library;
 
 import 'dart:async';
@@ -26,6 +32,7 @@ import '../domain/spoken_interview.dart';
 import 'camera_setup.dart';
 import 'common.dart';
 import 'interview_debrief_page.dart';
+import 'video_review_page.dart' show videoTakePrivacy;
 import 'zen.dart';
 
 /// Opens the interviewer on a program's drills, or on one drill.
@@ -158,6 +165,10 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
   SpokenEngines? _engines;
   SpokenRound? _round;
   String? _roundId;
+
+  /// Off every time the screen opens; never remembered.
+  bool _recordVideo = false;
+  RoundVideo? _video;
   bool _typedRound = false;
   StreamSubscription<void>? _sub;
   final _typed = TextEditingController();
@@ -217,6 +228,8 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
     _hold(false);
     _sub?.cancel();
     _typed.dispose();
+    // A clip still recording is not kept; kept clips stay for their days.
+    _video?.dispose();
     _coach.dispose();
     final round = _round, engines = _engines;
     // Recordings go when the round screen closes.
@@ -378,6 +391,18 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
         ]);
         takes = await e.takes(roundId);
       }
+      RoundVideo? video;
+      if (!typed && _recordVideo) {
+        if (_coach.feed case final RecordingFeed feed) {
+          video = RoundVideo(
+            roundId: roundId,
+            recorder: feed.recorder,
+            store: await ref.read(videoTakeStoreProvider.future),
+          );
+        } else if (mounted) {
+          notify(context, 'The camera is off, so this round has no video.', status: KitStatus.warning);
+        }
+      }
       final round = SpokenRound(
         questions: [for (final q in questions) RoundQuestion(q.question, tests: q.why, lookFor: q.lookFor)],
         voice: voice,
@@ -385,9 +410,11 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
         takes: takes,
         sink: _RoundSink(ref, roundId),
         interviewer: interviewer,
+        video: video,
         endSilence: settings.endSilence,
       );
       if (!mounted) {
+        video?.dispose();
         await round.close();
         return;
       }
@@ -405,6 +432,7 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
       _coach.roundStarted();
       setState(() {
         _round = round;
+        _video = video;
         _roundId = roundId;
         _typedRound = typed;
         _planSource = source;
@@ -465,8 +493,9 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
       Text(s.role, style: text.titleLarge),
       const SizedBox(height: 4),
       Text(
-        'The interviewer asks your drills aloud and writes down what you say, on this device. Recordings are '
-        'deleted when you leave this screen; only the text is kept with the round.',
+        'The interviewer asks your drills aloud and writes down what you say, on this device. Audio recordings '
+        'are deleted when you leave this screen; only the text is kept with the round, plus video if you turn '
+        'it on below.',
         style: text.bodySmall,
       ),
       const SizedBox(height: 12),
@@ -508,6 +537,7 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
       ),
       _settingsCard(setup, offline),
       CameraSetupCard(_coach, offline: offline),
+      _videoCard(),
       _before(s, offline),
     ];
   }
@@ -592,6 +622,40 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
       ),
     );
   }
+
+  /// The per-round opt-in for video takes.
+  Widget _videoCard() => ListenableBuilder(
+    listenable: _coach,
+    builder: (context, _) {
+      final days = ref.watch(videoKeepDaysProvider).value ?? VideoTakeStore.defaultKeepDays;
+      final camera = _coach.feed is RecordingFeed;
+      final muted = Theme.of(context).textTheme.bodySmall;
+      return SectionCard(
+        title: 'Video of my answers (optional)',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SwitchListTile(
+              key: const Key('record-video'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Record video for this round'),
+              subtitle: Text(
+                'Watch yourself back next to your words. Off at the start of every round. '
+                '${videoTakePrivacy(days)}',
+              ),
+              value: _recordVideo && camera,
+              onChanged: camera ? (v) => setState(() => _recordVideo = v) : null,
+            ),
+            if (!camera)
+              Text(
+                'Turn the camera on above first. The video uses the same camera and no second microphone.',
+                style: muted,
+              ),
+          ],
+        ),
+      );
+    },
+  );
 
   static double _levelShare(double dbfs) => ((dbfs + 60) / 60).clamp(0.0, 1.0);
 
@@ -703,6 +767,7 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
     final iv = r.interviewer;
     return [
       CameraRoundBar(_coach),
+      if (_video case final v?) _VideoBar(v),
       Text('Question ${r.index + 1} of ${r.questions.length}', style: t.labelLarge),
       if (iv != null)
         Text(
@@ -966,6 +1031,14 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
             'You answered $answered of ${r.questions.length}. The text is saved with the round; the recordings '
             'are deleted when you leave this screen.',
           ),
+          if (_video case final v? when v.saved.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${v.saved.length} video ${v.saved.length == 1 ? 'clip is' : 'clips are'} kept with this round. '
+              'Watch them from the debrief. '
+              '${videoTakePrivacy(ref.watch(videoKeepDaysProvider).value ?? VideoTakeStore.defaultKeepDays)}',
+            ),
+          ],
           if (_coach.setupNotes.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('Setup notes (not scored, not saved)', style: Theme.of(context).textTheme.titleSmall),
@@ -987,4 +1060,58 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
       ),
     );
   }
+}
+
+/// During a round with video on: the red "Recording video" pill while the
+/// camera records, and why when it could not.
+class _VideoBar extends StatelessWidget {
+  const _VideoBar(this.video);
+  final RoundVideo video;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: video,
+    builder: (context, _) {
+      final muted = Theme.of(context).textTheme.bodySmall;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (video.recording)
+                  Semantics(
+                    liveRegion: true,
+                    label: 'Recording video',
+                    excludeSemantics: true,
+                    child: StatusPill(
+                      'Recording video',
+                      icon: Icons.fiber_manual_record,
+                      status: KitStatus.critical,
+                    ),
+                  )
+                else
+                  const StatusPill('Video on for this round', icon: Icons.videocam_outlined, quiet: true),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    video.recording && video.recorder.pausesCues
+                        ? 'Setup hints pause while this camera records.'
+                        : 'Records only while the microphone is open.',
+                    style: muted,
+                  ),
+                ),
+              ],
+            ),
+            if (video.error case final e?)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(e, style: TextStyle(color: KitStatus.warning.color)),
+              ),
+          ],
+        ),
+      );
+    },
+  );
 }
