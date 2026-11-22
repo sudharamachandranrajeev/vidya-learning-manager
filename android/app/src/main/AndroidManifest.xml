@@ -7,6 +7,13 @@
          across a reboot. No server or push service is involved. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- The spoken interviewer: the microphone and camera, asked for at run
+         time only when a round or the camera setup check opens them. Audio
+         and frames are processed on the device and never uploaded. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
     <!-- usesCleartextTraffic: plain http is allowed only so a sync server on
          the user's own network (192.168.x, Tailscale, .local) can be reached.
          The app refuses http to any public host (validateServerUrl), and

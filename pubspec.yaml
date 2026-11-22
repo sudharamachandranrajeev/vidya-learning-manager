@@ -20,6 +20,15 @@ dependencies:
       url: https://github.com/sudharamachandranrajeev/pariksha-interview-kit.git
       path: packages/ui_kit
       ref: main
+  # The spoken interviewer shared with Udyoga: Kokoro voice, Moonshine
+  # transcripts, probes, personas, verified-quote scoring and the camera
+  # setup check. Speech models are downloaded only when the learner asks.
+  # A local pubspec_overrides.yaml can point it at a checkout.
+  interview_engine:
+    git:
+      url: https://github.com/sudharamachandranrajeev/pariksha-interview-kit.git
+      path: packages/interview_engine
+      ref: main
   drift: ^2.35.2
   file_picker: ^13.3.2
   flutter:
@@ -29,6 +38,8 @@ dependencies:
   # Free resource search: the catalogues' JSON APIs.
   http: ^1.6.0
   intl: ^0.20.3
+  # Where the speech models and the round's short-lived recordings live.
+  path_provider: ^2.1.6
   timezone: ^0.11.2
   url_launcher: ^6.3.2
 
