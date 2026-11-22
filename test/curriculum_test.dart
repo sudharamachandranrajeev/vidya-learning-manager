@@ -115,6 +115,12 @@ Good luck!''');
       expect(topic.items.first.url, 'https://…');
       expect(topic.items[1].content, contains('doneWhen'));
       expect(curriculumPrompt, contains('"version": $curriculumVersion'));
+      // Format 3: the journey example reads, with its research stage.
+      final j = p.journey!;
+      expect((j.employer, j.sector), ("Employer's name", 'nhs'));
+      final research = j.stage('research')!;
+      expect(research.teach.single.source!.url, 'https://…');
+      expect(research.produce.single.kind, 'list');
     });
 
     test('parts pasted one after another read separately; missing parts are named', () {

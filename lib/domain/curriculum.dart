@@ -556,6 +556,20 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
     "targetDate": "yyyy-mm-dd"
   },
   "criteria": [{ "id": "c1", "text": "Something the goal or job asks for", "essential": true }],
+  "journey": {
+    "role": "Job title (only when the goal is one job)",
+    "employer": "Employer's name",
+    "sector": "nhs",
+    "advertUrl": "https://…",
+    "closes": "yyyy-mm-dd",
+    "stages": [
+      {
+        "id": "research",
+        "teach": [{ "text": "A fact about this job or employer", "source": { "url": "https://…", "title": "Where it is from", "date": "yyyy-mm-dd" } }],
+        "produce": [{ "title": "Three reasons for choosing this employer", "kind": "list" }]
+      }
+    ]
+  },
   "courses": [
     {
       "title": "Unique course title",
@@ -595,6 +609,7 @@ RULES:
 - An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note. Give links and titles only; never copy a course's text.
 - A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card. Add a one-sentence "explain" where it helps.
 - "criteria" lists what the goal asks for (for a job: the essential and desirable criteria); each topic's "criteria" names the ids it works towards. Leave both out if there are none.
+- "journey" is only for a goal that is one job; leave it out otherwise. "sector" is one of: nhs, university, private, civil-service, other. A stage "id" is one of: decide, research, contact, apply, follow-up, prepare, interview-day, after, offer, checks, joining, first-90-days, grow. Vidya fills in every stage you leave out from its own dated guides, so add only what is special to this job. A line with no "source" is shown as general advice; never invent a source or a date.
 - Plain JSON: double quotes, no comments, no trailing commas, \\n for line breaks inside text.
 - Every card's "course" must match a course title exactly.
 - Be accurate. Leave out anything you are not sure of rather than guess.
