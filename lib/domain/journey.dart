@@ -191,6 +191,34 @@ class JourneyFact {
   Map<String, Object> toJson() => {'claim': claim, 'url': url, if (title.isNotEmpty) 'title': title};
 }
 
+/// One pre-employment check as Udyoga's finalise checklist has it: what
+/// it is (`identity`, `references`, `criminal_record`, `health` …), its
+/// title, its status (`todo`, `sent`, `done`, `not_needed`) and dates.
+class JourneyCheckItem {
+  const JourneyCheckItem({
+    required this.kind,
+    required this.title,
+    this.status = 'todo',
+    this.due,
+    this.done,
+  });
+  final String kind, title, status;
+
+  /// yyyy-MM-dd, or null.
+  final String? due, done;
+
+  Map<String, Object> toJson() => {
+    'kind': kind,
+    'title': title,
+    'status': status,
+    'due': ?due,
+    'done': ?done,
+  };
+}
+
+/// The statuses a check can have.
+const checkStatuses = {'todo': 'To do', 'sent': 'Sent', 'done': 'Done', 'not_needed': 'Not needed'};
+
 /// A job's journey: the job's own data and any stages it brings.
 class Journey {
   const Journey({
@@ -205,8 +233,13 @@ class Journey {
     this.checked = '',
     this.advertText = '',
     this.facts = const [],
+    this.checks = const [],
   });
   final String employer, role, sector, advertUrl;
+
+  /// Udyoga's finalise checklist for the application, as it last sent it;
+  /// empty when Udyoga has none (Vidya then keeps its own list).
+  final List<JourneyCheckItem> checks;
 
   /// The advert's text as Udyoga keeps it, '' when not sent: the dossier
   /// can read it as a source.
@@ -241,6 +274,7 @@ class Journey {
     if (stages.isNotEmpty) 'stages': [for (final s in stages) s.toJson()],
     if (advertText.isNotEmpty) 'advertText': advertText,
     if (facts.isNotEmpty) 'facts': [for (final f in facts) f.toJson()],
+    if (checks.isNotEmpty) 'checks': [for (final c in checks) c.toJson()],
   };
 }
 
@@ -287,6 +321,22 @@ Journey parseJourney(Object? j) {
     stages: stages,
     advertText: _str(j['advertText'], _maxAdvert),
     facts: [for (final f in _list(j['facts'], _maxFacts, 'employer facts')) ?_fact(f)],
+    checks: [for (final c in _list(j['checks'], _maxChecklist, 'pre-employment checks')) ?_checkItem(c)],
+  );
+}
+
+JourneyCheckItem? _checkItem(Object? c) {
+  if (c is! Map) return null;
+  final kind = _str(c['kind'], 30).toLowerCase(), title = _str(c['title'], _maxTitle);
+  if (kind.isEmpty || title.isEmpty) return null;
+  final status = _str(c['status'], 20).toLowerCase();
+  final due = _str(c['due'], 10), done = _str(c['done'], 10);
+  return JourneyCheckItem(
+    kind: kind,
+    title: title,
+    status: checkStatuses.containsKey(status) ? status : 'todo',
+    due: isValidIsoDate(due) ? due : null,
+    done: isValidIsoDate(done) ? done : null,
   );
 }
 
@@ -440,6 +490,7 @@ Journey mergeJourney(Journey job, Journey template, {List<PlanCriterion> criteri
     checked: template.checked,
     advertText: job.advertText,
     facts: job.facts,
+    checks: job.checks,
   );
 }
 

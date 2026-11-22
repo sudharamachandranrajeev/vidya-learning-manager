@@ -20,6 +20,9 @@ import 'study_items.dart';
 /// The most text a pasted draft keeps.
 const maxDraft = 40000;
 
+/// The most text one template fill-in keeps.
+const maxFill = 200;
+
 /// The local day (yyyy-MM-dd) of [now], a UTC ISO time; today when it is
 /// not a time.
 String _day(String now) => switch (DateTime.tryParse(now)) {
@@ -36,6 +39,7 @@ class StageProgress {
     this.checkDone = '',
     this.checkResult = '',
     this.draft = '',
+    this.pack = const {},
   });
 
   /// Artefact titles ticked, with the day.
@@ -56,6 +60,29 @@ class StageProgress {
   /// The draft pasted for a coverage check.
   final String draft;
 
+  /// The stage pack's own data (stage_packs.dart): offer facts, checks,
+  /// people and acronyms, training, wins, plans. Plain JSON, read by the
+  /// pack that owns the stage.
+  final Map<String, Object?> pack;
+
+  StageProgress copyWith({
+    Map<String, String>? produced,
+    Map<String, String>? notes,
+    Set<String>? ticked,
+    String? checkDone,
+    String? checkResult,
+    String? draft,
+    Map<String, Object?>? pack,
+  }) => StageProgress(
+    produced: produced ?? this.produced,
+    notes: notes ?? this.notes,
+    ticked: ticked ?? this.ticked,
+    checkDone: checkDone ?? this.checkDone,
+    checkResult: checkResult ?? this.checkResult,
+    draft: draft ?? this.draft,
+    pack: pack ?? this.pack,
+  );
+
   factory StageProgress.fromJson(Object? j) {
     if (j is! Map) return const StageProgress();
     Map<String, String> strings(Object? m) => {
@@ -74,6 +101,12 @@ class StageProgress {
       checkDone: j['checkDone'] is String ? j['checkDone'] as String : '',
       checkResult: j['checkResult'] is String ? j['checkResult'] as String : '',
       draft: j['draft'] is String ? j['draft'] as String : '',
+      pack: j['pack'] is Map
+          ? {
+              for (final e in (j['pack'] as Map).entries)
+                if (e.key is String) e.key as String: e.value,
+            }
+          : const {},
     );
   }
 
@@ -84,6 +117,7 @@ class StageProgress {
     if (checkDone.isNotEmpty) 'checkDone': checkDone,
     if (checkResult.isNotEmpty) 'checkResult': checkResult,
     if (draft.isNotEmpty) 'draft': draft,
+    if (pack.isNotEmpty) 'pack': pack,
   };
 
   /// Done when every artefact is ticked and the check is done.
@@ -99,8 +133,12 @@ class JourneyView {
     required this.current,
     required this.progress,
     this.suggested,
+    this.fills = const {},
   });
   final JourneyRow row;
+
+  /// The learner's fill-ins for the stage templates.
+  final Map<String, String> fills;
 
   /// Merged with its template and the program's criteria.
   final Journey journey;
@@ -172,16 +210,33 @@ extension JourneyBook on LearningBook {
       current: current,
       suggested: suggested == current ? null : suggested,
       progress: _progress(row),
+      fills: _fills(row),
     );
   }
 
-  static Map<String, StageProgress> _progress(JourneyRow row) {
-    Object? j;
+  static Object? _progressJson(JourneyRow row) {
     try {
-      j = jsonDecode(row.progress);
+      return jsonDecode(row.progress);
     } on FormatException {
-      j = null;
+      return null;
     }
+  }
+
+  /// The learner's own fill-ins for the stage templates (the manager's
+  /// name, their own name …), kept beside the stages under `fills`.
+  static Map<String, String> _fills(JourneyRow row) {
+    final j = _progressJson(row);
+    final f = j is Map ? j['fills'] : null;
+    return {
+      if (f is Map)
+        for (final e in f.entries)
+          if (e.key is String && e.value is String && (e.value as String).isNotEmpty)
+            e.key as String: e.value as String,
+    };
+  }
+
+  static Map<String, StageProgress> _progress(JourneyRow row) {
+    final j = _progressJson(row);
     return {
       if (j is Map)
         for (final e in j.entries)
@@ -218,30 +273,57 @@ extension JourneyBook on LearningBook {
     if (row == null) return;
     final all = _progress(row);
     all[stage] = change(all[stage] ?? const StageProgress());
+    await _write(row, all, _fills(row), now);
+  });
+
+  Future<void> _write(
+    JourneyRow row,
+    Map<String, StageProgress> all,
+    Map<String, String> fills,
+    String now,
+  ) async {
     final json = jsonEncode({
       for (final e in all.entries)
         if (e.value.toJson().isNotEmpty) e.key: e.value.toJson(),
+      if (fills.isNotEmpty) 'fills': fills,
     });
     if (json == row.progress) return;
     await save(db.learnJourneys, row.copyWith(progress: json, updated: now), row.id);
-  });
+  }
+
+  /// Sets the learner's fill-ins for the stage templates; an empty value
+  /// removes one. Kept to [maxFill] characters each.
+  Future<void> setJourneyFills(String programId, Map<String, String> fills, {required String now}) =>
+      db.transaction(() async {
+        final row = await journeyRow(programId);
+        if (row == null) return;
+        final next = {..._fills(row)};
+        for (final e in fills.entries) {
+          final v = e.value.trim();
+          v.isEmpty ? next.remove(e.key) : next[e.key] = v.length > maxFill ? v.substring(0, maxFill) : v;
+        }
+        await _write(row, _progress(row), next, now);
+      });
+
+  /// Replaces one stage pack's data (see stage_packs.dart).
+  Future<void> setStagePack(
+    String programId,
+    String stage,
+    Map<String, Object?> Function(Map<String, Object?> old) change, {
+    required String now,
+  }) => _update(programId, stage, (p) => p.copyWith(pack: change(p.pack)), now: now);
 
   /// Ticks (or unticks) an artefact.
   Future<void> setProduced(String programId, String stage, String title, bool done, {required String now}) =>
       _update(
         programId,
         stage,
-        (p) => StageProgress(
+        (p) => p.copyWith(
           produced: {
             for (final e in p.produced.entries)
               if (e.key != title) e.key: e.value,
             if (done) title: _day(now),
           },
-          notes: p.notes,
-          ticked: p.ticked,
-          checkDone: p.checkDone,
-          checkResult: p.checkResult,
-          draft: p.draft,
         ),
         now: now,
       );
@@ -256,18 +338,13 @@ extension JourneyBook on LearningBook {
   }) => _update(
     programId,
     stage,
-    (p) => StageProgress(
-      produced: p.produced,
+    (p) => p.copyWith(
       notes: {
         for (final e in p.notes.entries)
           if (e.key != title) e.key: e.value,
         if (note.trim().isNotEmpty)
           title: note.trim().length > maxDraft ? note.trim().substring(0, maxDraft) : note.trim(),
       },
-      ticked: p.ticked,
-      checkDone: p.checkDone,
-      checkResult: p.checkResult,
-      draft: p.draft,
     ),
     now: now,
   );
@@ -285,15 +362,12 @@ extension JourneyBook on LearningBook {
     final ticked = {...p.ticked};
     on ? ticked.add(item) : ticked.remove(item);
     final all = items.isNotEmpty && items.every(ticked.contains);
-    return StageProgress(
-      produced: p.produced,
-      notes: p.notes,
+    return p.copyWith(
       ticked: ticked,
       checkDone: all ? (p.checkDone.isNotEmpty ? p.checkDone : _day(now)) : '',
       checkResult: all
           ? 'All ${items.length} ticked'
           : '${ticked.where(items.contains).length} of ${items.length} ticked',
-      draft: p.draft,
     );
   }, now: now);
 
@@ -308,14 +382,7 @@ extension JourneyBook on LearningBook {
   }) => _update(
     programId,
     stage,
-    (p) => StageProgress(
-      produced: p.produced,
-      notes: p.notes,
-      ticked: p.ticked,
-      checkDone: day,
-      checkResult: day.isEmpty ? '' : result,
-      draft: p.draft,
-    ),
+    (p) => p.copyWith(checkDone: day, checkResult: day.isEmpty ? '' : result),
     now: now,
   );
 
@@ -335,10 +402,7 @@ extension JourneyBook on LearningBook {
     await _update(
       programId,
       stage,
-      (p) => StageProgress(
-        produced: p.produced,
-        notes: p.notes,
-        ticked: p.ticked,
+      (p) => p.copyWith(
         checkDone: all ? _day(now) : '',
         checkResult: rows.isEmpty ? '' : '$exact of ${rows.length} essential criteria in their own words',
         draft: text,
