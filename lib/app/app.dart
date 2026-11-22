@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../ui/common.dart';
 import '../ui/zen.dart';
+import 'interview_providers.dart';
 import 'modules.dart';
 import 'providers.dart';
 import 'reminders.dart';
@@ -71,6 +72,8 @@ class _VidyaHomeState extends ConsumerState<VidyaHome> {
   @override
   Widget build(BuildContext context) {
     ref.watch(reminderSyncProvider);
+    // Video takes past their limit go at start and then daily.
+    ref.watch(videoRetentionProvider);
     ref.watch(guideSplitProvider);
     ref.listen(careerFileAutoAddProvider, (_, next) {
       final titles = next.value ?? const <String>[];

@@ -64,6 +64,67 @@ final spokenEnginesProvider = FutureProvider<SpokenEngines>((ref) async {
   );
 });
 
+/// Opt-in video takes (J7) live here: the app's own private folder, never
+/// synced, and excluded from Android backup and device-to-device transfer
+/// (android/app/src/main/res/xml/data_extraction_rules.xml).
+const videoTakesFolder = 'video-takes';
+
+final videoTakeStoreProvider = FutureProvider<VideoTakeStore>((ref) async {
+  final base = await getApplicationSupportDirectory();
+  return VideoTakeStore(Directory('${base.path}/$videoTakesFolder'));
+});
+
+/// How many days video takes are kept on this device (a local setting,
+/// never synced). [VideoTakeStore.defaultKeepDays] unless changed.
+final videoKeepDaysProvider = AsyncNotifierProvider<VideoKeepDays, int>(VideoKeepDays.new);
+
+class VideoKeepDays extends AsyncNotifier<int> {
+  static const key = 'interview.videoKeepDays';
+
+  @override
+  Future<int> build() async {
+    final raw = await ref.watch(sessionProvider).db.localSetting(key);
+    final n = int.tryParse(raw ?? '');
+    return n == null
+        ? VideoTakeStore.defaultKeepDays
+        : n.clamp(VideoTakeStore.minKeepDays, VideoTakeStore.maxKeepDays);
+  }
+
+  Future<void> set(int days) async {
+    final n = days.clamp(VideoTakeStore.minKeepDays, VideoTakeStore.maxKeepDays);
+    state = AsyncData(n);
+    await ref.read(sessionProvider).db.setLocalSetting(key, '$n');
+    // A shorter limit applies at once.
+    try {
+      await (await ref.read(videoTakeStoreProvider.future)).purge(keepDays: n);
+    } on Object {
+      // The daily run tries again.
+    }
+    ref.invalidate(videoTakesProvider);
+  }
+}
+
+/// Deletes video takes past the limit when the app starts, then daily.
+final videoRetentionProvider = FutureProvider<int>((ref) async {
+  final store = await ref.watch(videoTakeStoreProvider.future);
+  final retention = VideoRetention(store, () => ref.read(videoKeepDaysProvider.future));
+  ref.onDispose(retention.stop);
+  final gone = await retention.start();
+  if (gone > 0) ref.invalidate(videoTakesProvider);
+  return gone;
+});
+
+/// The video takes kept for a round (all rounds when null), oldest first.
+/// Empty where there is no store (tests, a failed folder).
+final videoTakesProvider = FutureProvider.family<List<VideoTake>, String?>((ref, roundId) async {
+  try {
+    final store = await ref.watch(videoTakeStoreProvider.future);
+    return await store.list(roundId: roundId);
+  } on Object {
+    return const [];
+  }
+});
+
 /// The camera for the opt-in setup check.
 final coachCameraProvider = FutureProvider<CoachCamera>(
   (ref) async => NativeCoachCamera(await ref.watch(modelManagerProvider.future)),

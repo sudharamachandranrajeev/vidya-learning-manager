@@ -38,6 +38,18 @@ dependencies:
   # Free resource search: the catalogues' JSON APIs.
   http: ^1.6.0
   intl: ^0.20.3
+  # Opt-in video takes (J7): playback of the picture with the round's own
+  # audio. media_kit (MIT) on Linux and Windows, over libmpv: Linux needs
+  # the system's libmpv (libmpv-dev to build, libmpv2 / mpv to run);
+  # Windows gets its own copy from media_kit_libs_windows_video. On Android
+  # video_player (BSD-3-Clause) shows the picture and audioplayers (MIT)
+  # plays the paired audio. Nothing streams: only files on this device.
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  media_kit_libs_linux: ^1.2.1
+  media_kit_libs_windows_video: ^1.0.11
+  video_player: ^2.11.1
+  audioplayers: ^6.8.1
   # Where the speech models and the round's short-lived recordings live.
   path_provider: ^2.1.6
   timezone: ^0.11.2
