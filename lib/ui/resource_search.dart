@@ -5,6 +5,7 @@ import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/resources.dart';
 import 'common.dart';
+import 'zen.dart';
 
 /// Opens the free resource search with [query] filled in. With [topicId]
 /// a tap on Add puts the result in that topic; otherwise the learner picks
@@ -164,6 +165,9 @@ class _ResourceSearchSheetState extends ConsumerState<ResourceSearchSheet> {
                       'Nothing found for "$_searched". Try fewer or broader words.',
                       style: text.bodyMedium,
                     )
+                  // Placeholder cards until the first catalogue answers.
+                  : _results.isEmpty
+                  ? const SingleChildScrollView(child: SkeletonCards())
                   : ListView.builder(
                       padding: EdgeInsets.only(bottom: 16 + MediaQuery.paddingOf(context).bottom),
                       itemCount: _results.length,
