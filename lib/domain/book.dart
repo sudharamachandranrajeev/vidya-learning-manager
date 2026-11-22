@@ -70,7 +70,13 @@ class LearningBook {
     final id = newId();
     await save(
       db.learnPrograms,
-      LearnProgramsCompanion.insert(id: id, title: title, goal: Value(goal), started: today, target: Value(target)),
+      LearnProgramsCompanion.insert(
+        id: id,
+        title: title,
+        goal: Value(goal),
+        started: today,
+        target: Value(target),
+      ),
       id,
     );
     return id;
@@ -130,30 +136,38 @@ class LearningBook {
   /// Marks a topic done today (or open again) and moves its course on: a
   /// planned course starts, and one whose topics are all done finishes.
   /// [note] is why it was ticked before its required items were done.
-  Future<void> setTopicDone(Topic t, bool done, {required String today, String? note}) => db.transaction(() async {
-    final fresh = await (db.select(db.learnTopics)..where((x) => x.id.equals(t.id))).getSingleOrNull() ?? t;
-    await save(
-      db.learnTopics,
-      fresh.copyWith(done: Value(done ? today : null), tickNote: done ? (note ?? '') : ''),
-      t.id,
-    );
-    final course = await (db.select(db.learnCourses)..where((c) => c.id.equals(t.courseId))).getSingleOrNull();
-    if (course == null || course.deleted) return;
-    final topics = await (db.select(
-      db.learnTopics,
-    )..where((x) => x.courseId.equals(t.courseId) & x.deleted.not())).get();
-    final all = topics.every((x) => x.id == t.id ? done : x.done != null);
-    if (done && all) {
-      await setCourseStatus(course, 'done', today: today);
-    } else if (done && course.status == 'planned') {
-      await setCourseStatus(course, 'doing', today: today);
-    } else if (!done && course.status == 'done') {
-      await setCourseStatus(course, 'doing', today: today);
-    }
-  });
+  Future<void> setTopicDone(Topic t, bool done, {required String today, String? note}) => db.transaction(
+    () async {
+      final fresh = await (db.select(db.learnTopics)..where((x) => x.id.equals(t.id))).getSingleOrNull() ?? t;
+      await save(
+        db.learnTopics,
+        fresh.copyWith(done: Value(done ? today : null), tickNote: done ? (note ?? '') : ''),
+        t.id,
+      );
+      final course = await (db.select(
+        db.learnCourses,
+      )..where((c) => c.id.equals(t.courseId))).getSingleOrNull();
+      if (course == null || course.deleted) return;
+      final topics = await (db.select(
+        db.learnTopics,
+      )..where((x) => x.courseId.equals(t.courseId) & x.deleted.not())).get();
+      final all = topics.every((x) => x.id == t.id ? done : x.done != null);
+      if (done && all) {
+        await setCourseStatus(course, 'done', today: today);
+      } else if (done && course.status == 'planned') {
+        await setCourseStatus(course, 'doing', today: today);
+      } else if (!done && course.status == 'done') {
+        await setCourseStatus(course, 'doing', today: today);
+      }
+    },
+  );
 
   Future<void> setCourseStatus(Course c, String status, {required String today}) async {
-    await save(db.learnCourses, c.copyWith(status: status, finished: Value(status == 'done' ? today : null)), c.id);
+    await save(
+      db.learnCourses,
+      c.copyWith(status: status, finished: Value(status == 'done' ? today : null)),
+      c.id,
+    );
     final pid = c.programId;
     if (pid == null) return;
     final program = await (db.select(db.learnPrograms)..where((p) => p.id.equals(pid))).getSingleOrNull();
@@ -161,7 +175,8 @@ class LearningBook {
     final courses = await (db.select(
       db.learnCourses,
     )..where((x) => x.programId.equals(pid) & x.deleted.not() & x.status.equals('dropped').not())).get();
-    final finished = courses.isNotEmpty && courses.every((x) => x.id == c.id ? status == 'done' : x.status == 'done');
+    final finished =
+        courses.isNotEmpty && courses.every((x) => x.id == c.id ? status == 'done' : x.status == 'done');
     if (finished && program.status != 'done') {
       await save(db.learnPrograms, program.copyWith(status: 'done'), pid);
     } else if (!finished && program.status == 'done') {
@@ -189,7 +204,9 @@ class LearningBook {
 
   /// Deletes a topic and its study items. Its note stays in Notes.
   Future<void> removeTopic(String id) => db.transaction(() async {
-    for (final i in await (db.select(db.learnItems)..where((i) => i.topicId.equals(id) & i.deleted.not())).get()) {
+    for (final i in await (db.select(
+      db.learnItems,
+    )..where((i) => i.topicId.equals(id) & i.deleted.not())).get()) {
       await remove(db.learnItems, i.id);
     }
     await remove(db.learnTopics, id);
@@ -281,7 +298,11 @@ class LearningBook {
         final old = await (db.select(db.learnNotes)..where((n) => n.id.equals(id))).getSingleOrNull();
         final tags = old == null
             ? 'topic note'
-            : old.tags.split(',').map((x) => x.trim()).where((x) => x.isNotEmpty && x != planNoteTag).join(', ');
+            : old.tags
+                  .split(',')
+                  .map((x) => x.trim())
+                  .where((x) => x.isNotEmpty && x != planNoteTag)
+                  .join(', ');
         await save(
           db.learnNotes,
           LearnNotesCompanion.insert(
@@ -308,7 +329,8 @@ class LearningBook {
   Future<int> _savePlanItems(String topicId, List<PlanItem> items, {bool unretire = false}) async {
     if (items.isEmpty) return 0;
     final have = {
-      for (final i in await (db.select(db.learnItems)..where((i) => i.topicId.equals(topicId))).get()) i.id: i,
+      for (final i in await (db.select(db.learnItems)..where((i) => i.topicId.equals(topicId))).get())
+        i.id: i,
     };
     var ord = have.values.where((i) => !i.deleted).fold(-1, (a, i) => i.ord > a ? i.ord : a) + 1;
     var added = 0;
@@ -326,7 +348,9 @@ class LearningBook {
           minutes: p.minutes,
           required: p.required,
           ref: p.ref,
-          content: p.type == 'quiz' && known.type == 'quiz' ? mergeQuizContent(p.content, known.content) : p.content,
+          content: p.type == 'quiz' && known.type == 'quiz'
+              ? mergeQuizContent(p.content, known.content)
+              : p.content,
           retired: unretire ? '' : known.retired,
         );
         if (next != known) await save(db.learnItems, next, id);
@@ -419,7 +443,9 @@ class LearningBook {
       // when two programs have one of the same name.
       final course =
           matches
-              .where((c) => programs[c.programId]?.title.replaceAll(',', ' ').toLowerCase() == tag.toLowerCase())
+              .where(
+                (c) => programs[c.programId]?.title.replaceAll(',', ' ').toLowerCase() == tag.toLowerCase(),
+              )
               .firstOrNull ??
           matches.first;
       final topics = await (db.select(
@@ -465,9 +491,12 @@ class LearningBook {
     List<QuizQuestion> questions, {
     List<String> dropped = const [],
   }) => db.transaction(() async {
-    final items = await (db.select(
-      db.learnItems,
-    )..where((i) => i.topicId.equals(topicId) & i.deleted.not() & i.type.equals('quiz') & i.retired.equals(''))).get();
+    final items =
+        await (db.select(db.learnItems)..where(
+              (i) =>
+                  i.topicId.equals(topicId) & i.deleted.not() & i.type.equals('quiz') & i.retired.equals(''),
+            ))
+            .get();
     final content = quizContent(questions, dropped: dropped);
     final minutes = (questions.length * 1.5).ceil();
     final quiz = items.firstOrNull;
@@ -489,59 +518,67 @@ class LearningBook {
   /// the learner deleted is not made again, and a later right answer leaves
   /// the card where it is. [right] holds, per question in order, whether it
   /// was answered right. Returns the score and how many cards were added.
-  Future<({int score, int max, int cards})> recordQuiz(StudyItem quiz, List<bool> right, {required String today}) =>
-      db.transaction(() async {
-        final questions = quizQuestions(quiz);
-        final n = right.length < questions.length ? right.length : questions.length;
-        final score = right.take(n).where((x) => x).length;
-        final topic = await (db.select(db.learnTopics)..where((t) => t.id.equals(quiz.topicId))).getSingle();
-        final course = await (db.select(
-          db.learnCourses,
-        )..where((c) => c.id.equals(topic.courseId))).getSingleOrNull();
-        await addAssessment(
-          quiz.title,
-          score.toDouble(),
-          n.toDouble(),
-          today: today,
-          courseId: course?.id,
-          topicId: topic.id,
-        );
-        final fresh = await (db.select(db.learnItems)..where((i) => i.id.equals(quiz.id))).getSingle();
-        if (fresh.done != today) await save(db.learnItems, fresh.copyWith(done: Value(today)), quiz.id);
-        final known = {
-          for (final c in await (db.select(db.learnCards)..where((c) => c.ref.like('quiz.${quiz.id}.%'))).get())
-            c.ref,
-        };
-        var cards = 0;
-        for (var k = 0; k < n; k++) {
-          if (right[k]) continue;
-          final q = questions[k];
-          final ref = quizCardRef(quiz.id, q);
-          if (!known.add(ref)) continue;
-          final id = newId();
-          await save(
-            db.learnCards,
-            LearnCardsCompanion.insert(
-              id: id,
-              front: q.question,
-              back: q.explain.isEmpty ? q.answer : '${q.answer}\n\n${q.explain}',
-              deck: Value(course?.title ?? 'Quiz'),
-              courseId: Value(course?.id),
-              due: today,
-              created: today,
-              ref: Value(ref),
-            ),
-            id,
-          );
-          cards++;
-        }
-        return (score: score, max: n, cards: cards);
-      });
+  Future<({int score, int max, int cards})> recordQuiz(
+    StudyItem quiz,
+    List<bool> right, {
+    required String today,
+  }) => db.transaction(() async {
+    final questions = quizQuestions(quiz);
+    final n = right.length < questions.length ? right.length : questions.length;
+    final score = right.take(n).where((x) => x).length;
+    final topic = await (db.select(db.learnTopics)..where((t) => t.id.equals(quiz.topicId))).getSingle();
+    final course = await (db.select(
+      db.learnCourses,
+    )..where((c) => c.id.equals(topic.courseId))).getSingleOrNull();
+    await addAssessment(
+      quiz.title,
+      score.toDouble(),
+      n.toDouble(),
+      today: today,
+      courseId: course?.id,
+      topicId: topic.id,
+    );
+    final fresh = await (db.select(db.learnItems)..where((i) => i.id.equals(quiz.id))).getSingle();
+    if (fresh.done != today) await save(db.learnItems, fresh.copyWith(done: Value(today)), quiz.id);
+    final known = {
+      for (final c in await (db.select(db.learnCards)..where((c) => c.ref.like('quiz.${quiz.id}.%'))).get())
+        c.ref,
+    };
+    var cards = 0;
+    for (var k = 0; k < n; k++) {
+      if (right[k]) continue;
+      final q = questions[k];
+      final ref = quizCardRef(quiz.id, q);
+      if (!known.add(ref)) continue;
+      final id = newId();
+      await save(
+        db.learnCards,
+        LearnCardsCompanion.insert(
+          id: id,
+          front: q.question,
+          back: q.explain.isEmpty ? q.answer : '${q.answer}\n\n${q.explain}',
+          deck: Value(course?.title ?? 'Quiz'),
+          courseId: Value(course?.id),
+          due: today,
+          created: today,
+          ref: Value(ref),
+        ),
+        id,
+      );
+      cards++;
+    }
+    return (score: score, max: n, cards: cards);
+  });
 
   /// Marks a practice task done with its [evidence] link, or a short
   /// [note] on what was done when there is nothing to link to. Returns why
   /// it cannot be done yet, or null when saved.
-  Future<String?> completeTask(StudyItem task, {String evidence = '', String note = '', required String today}) async {
+  Future<String?> completeTask(
+    StudyItem task, {
+    String evidence = '',
+    String note = '',
+    required String today,
+  }) async {
     if (!taskCanBeDone(evidence, note)) return 'Add an evidence link, or a short note on what you did.';
     await save(
       db.learnItems,
@@ -558,7 +595,9 @@ class LearningBook {
   /// deleted. Returns the portfolio item's id.
   Future<String> taskToPortfolio(StudyItem task, {required String today}) => db.transaction(() async {
     final id = taskPortfolioId(task.id);
-    final topic = await (db.select(db.learnTopics)..where((t) => t.id.equals(task.topicId))).getSingleOrNull();
+    final topic = await (db.select(
+      db.learnTopics,
+    )..where((t) => t.id.equals(task.topicId))).getSingleOrNull();
     final course = topic == null
         ? null
         : await (db.select(db.learnCourses)..where((c) => c.id.equals(topic.courseId))).getSingleOrNull();
@@ -609,7 +648,11 @@ class LearningBook {
 
   Future<void> setWeekTarget(int minutes) => save(
     db.prefs,
-    PrefsCompanion.insert(id: weekTargetKey, value: '${minutes.clamp(0, 10080)}', deleted: const Value(false)),
+    PrefsCompanion.insert(
+      id: weekTargetKey,
+      value: '${minutes.clamp(0, 10080)}',
+      deleted: const Value(false),
+    ),
     weekTargetKey,
   );
 
@@ -640,7 +683,9 @@ class LearningBook {
     String? day,
   }) async {
     if (topicId != null && courseId == null) {
-      courseId = (await (db.select(db.learnTopics)..where((t) => t.id.equals(topicId))).getSingleOrNull())?.courseId;
+      courseId = (await (db.select(
+        db.learnTopics,
+      )..where((t) => t.id.equals(topicId))).getSingleOrNull())?.courseId;
     }
     final id = newId();
     return save(
@@ -766,7 +811,14 @@ class LearningBook {
     if (existing != null) {
       return save(
         db.learnCards,
-        existing.copyWith(front: front, back: back, deck: deck, courseId: Value(courseId), image: image, audio: audio),
+        existing.copyWith(
+          front: front,
+          back: back,
+          deck: deck,
+          courseId: Value(courseId),
+          image: image,
+          audio: audio,
+        ),
         id,
       );
     }
@@ -841,7 +893,10 @@ class LearningBook {
     for (final c in cards) {
       final courseId = courseIds[c.course.toLowerCase()];
       if (c.id.isEmpty) {
-        plain.add((card: (front: c.front, back: c.back, deck: c.deck, image: '', audio: ''), courseId: courseId));
+        plain.add((
+          card: (front: c.front, back: c.back, deck: c.deck, image: '', audio: ''),
+          courseId: courseId,
+        ));
         continue;
       }
       final known = byRef[c.id] ?? byFront.remove('${c.deck}\u0000${c.front}');
@@ -913,131 +968,140 @@ class LearningBook {
   /// and each topic also gets them as its own note and link items. Format 2
   /// items, quiz and drills become study items, updated in place by their
   /// stable ids when the plan comes again; criteria are kept per program.
-  Future<CurriculumImport> importCurriculum(CurriculumPlan plan, {required String today}) => db.transaction(() async {
-    final key = plan.title.toLowerCase();
-    final program = (await (db.select(
-      db.learnPrograms,
-    )..where((p) => p.deleted.not())).get()).where((p) => p.title.toLowerCase() == key).firstOrNull;
-    final String pid;
-    if (program == null) {
-      pid = await addProgram(plan.title, plan.goal, today: today, target: plan.targetDate);
-      if (plan.role.isNotEmpty) {
-        final made = await (db.select(db.learnPrograms)..where((p) => p.id.equals(pid))).getSingle();
-        await save(db.learnPrograms, made.copyWith(role: plan.role), pid);
+  Future<CurriculumImport> importCurriculum(CurriculumPlan plan, {required String today}) => db.transaction(
+    () async {
+      final key = plan.title.toLowerCase();
+      final program = (await (db.select(
+        db.learnPrograms,
+      )..where((p) => p.deleted.not())).get()).where((p) => p.title.toLowerCase() == key).firstOrNull;
+      final String pid;
+      if (program == null) {
+        pid = await addProgram(plan.title, plan.goal, today: today, target: plan.targetDate);
+        if (plan.role.isNotEmpty) {
+          final made = await (db.select(db.learnPrograms)..where((p) => p.id.equals(pid))).getSingle();
+          await save(db.learnPrograms, made.copyWith(role: plan.role), pid);
+        }
+      } else {
+        pid = program.id;
+        final goal = program.goal.isEmpty ? plan.goal : program.goal;
+        final target = program.target ?? plan.targetDate;
+        final role = plan.role.isNotEmpty ? plan.role : program.role;
+        if (goal != program.goal || target != program.target || role != program.role) {
+          await save(db.learnPrograms, program.copyWith(goal: goal, target: Value(target), role: role), pid);
+        }
       }
-    } else {
-      pid = program.id;
-      final goal = program.goal.isEmpty ? plan.goal : program.goal;
-      final target = program.target ?? plan.targetDate;
-      final role = plan.role.isNotEmpty ? plan.role : program.role;
-      if (goal != program.goal || target != program.target || role != program.role) {
-        await save(db.learnPrograms, program.copyWith(goal: goal, target: Value(target), role: role), pid);
-      }
-    }
-    final criteria = await _savePlanCriteria(pid, plan.criteria);
-    if (plan.journey case final j?) await saveJourney(pid, j, now: today);
+      final criteria = await _savePlanCriteria(pid, plan.criteria);
+      if (plan.journey case final j?) await saveJourney(pid, j, now: today);
 
-    final noteTitles = {
-      for (final n in await (db.select(db.learnNotes)..where((n) => n.deleted.not())).get()) n.title.toLowerCase(),
-    };
-    var notes = 0;
-    final tag = plan.title.replaceAll(',', ' ');
-    Future<void> note(String title, String body, String tags) async {
-      if (!noteTitles.add(title.toLowerCase())) return;
-      await saveNote(title, body, tags, today: today);
-      notes++;
-    }
-
-    final courseIds = {
-      for (final c in await (db.select(db.learnCourses)..where((c) => c.programId.equals(pid) & c.deleted.not())).get())
-        c.title.toLowerCase(): c.id,
-    };
-    var courses = 0, topics = 0, items = 0, retiredItems = 0;
-    for (final c in plan.courses) {
-      final due = c.dueWeek == null ? null : addDays(today, c.dueWeek! * 7);
-      var cid = courseIds[c.title.toLowerCase()];
-      if (cid == null) {
-        cid = await addCourse(
-          c.title,
-          today: today,
-          programId: pid,
-          kind: c.kind,
-          provider: c.provider,
-          url: c.url,
-          hours: c.hours,
-          due: due,
-        );
-        courseIds[c.title.toLowerCase()] = cid;
-        courses++;
-      }
-      final courseId = cid;
-      final have = {
-        for (final t in await (db.select(
-          db.learnTopics,
-        )..where((t) => t.courseId.equals(courseId) & t.deleted.not())).get())
-          t.title.toLowerCase(): t.id,
+      final noteTitles = {
+        for (final n in await (db.select(db.learnNotes)..where((n) => n.deleted.not())).get())
+          n.title.toLowerCase(),
       };
-      for (final t in c.topics) {
-        var tid = have[t.title.toLowerCase()];
-        if (tid == null) {
-          tid = await addTopic(courseId, t.title, minutes: t.minutes);
-          have[t.title.toLowerCase()] = tid;
-          topics++;
-        }
-        // The plan owns a topic's criteria: a re-sent plan updates them.
-        // Links to the learner's own criteria (refs starting `own.`) stay.
-        var topic = await (db.select(db.learnTopics)..where((x) => x.id.equals(tid!))).getSingle();
-        final refs = [
-          ...t.criteria,
-          for (final r in criteriaRefs(topic))
-            if (r.startsWith('own.') && !t.criteria.contains(r)) r,
-        ].join(',');
-        if (t.criteria.isNotEmpty && topic.criteria != refs) {
-          topic = topic.copyWith(criteria: refs);
-          await save(db.learnTopics, topic, tid);
-        }
-        final sent = [...t.items, ..._resourceItems(t.resources)];
-        items += await _savePlanItems(tid, sent, unretire: true);
-        // Every part of a plan holds whole topics, so any part can retire.
-        retiredItems += await _retirePlanItems(tid, {for (final p in sent) planItemId(tid, p.ref)}, today);
-        await _ensureTopicNote(topic, c.title, topicGuideMarkdown(t), tag, today);
+      var notes = 0;
+      final tag = plan.title.replaceAll(',', ' ');
+      Future<void> note(String title, String body, String tags) async {
+        if (!noteTitles.add(title.toLowerCase())) return;
+        await saveNote(title, body, tags, today: today);
+        notes++;
       }
-      if (c.hasGuide) {
-        await note('${c.title} — study guide', courseGuideMarkdown(c, due: due), '$tag, study guide');
+
+      final courseIds = {
+        for (final c in await (db.select(
+          db.learnCourses,
+        )..where((c) => c.programId.equals(pid) & c.deleted.not())).get())
+          c.title.toLowerCase(): c.id,
+      };
+      var courses = 0, topics = 0, items = 0, retiredItems = 0;
+      for (final c in plan.courses) {
+        final due = c.dueWeek == null ? null : addDays(today, c.dueWeek! * 7);
+        var cid = courseIds[c.title.toLowerCase()];
+        if (cid == null) {
+          cid = await addCourse(
+            c.title,
+            today: today,
+            programId: pid,
+            kind: c.kind,
+            provider: c.provider,
+            url: c.url,
+            hours: c.hours,
+            due: due,
+          );
+          courseIds[c.title.toLowerCase()] = cid;
+          courses++;
+        }
+        final courseId = cid;
+        final have = {
+          for (final t in await (db.select(
+            db.learnTopics,
+          )..where((t) => t.courseId.equals(courseId) & t.deleted.not())).get())
+            t.title.toLowerCase(): t.id,
+        };
+        for (final t in c.topics) {
+          var tid = have[t.title.toLowerCase()];
+          if (tid == null) {
+            tid = await addTopic(courseId, t.title, minutes: t.minutes);
+            have[t.title.toLowerCase()] = tid;
+            topics++;
+          }
+          // The plan owns a topic's criteria: a re-sent plan updates them.
+          // Links to the learner's own criteria (refs starting `own.`) stay.
+          var topic = await (db.select(db.learnTopics)..where((x) => x.id.equals(tid!))).getSingle();
+          final refs = [
+            ...t.criteria,
+            for (final r in criteriaRefs(topic))
+              if (r.startsWith('own.') && !t.criteria.contains(r)) r,
+          ].join(',');
+          if (t.criteria.isNotEmpty && topic.criteria != refs) {
+            topic = topic.copyWith(criteria: refs);
+            await save(db.learnTopics, topic, tid);
+          }
+          final sent = [...t.items, ..._resourceItems(t.resources)];
+          items += await _savePlanItems(tid, sent, unretire: true);
+          // Every part of a plan holds whole topics, so any part can retire.
+          retiredItems += await _retirePlanItems(tid, {for (final p in sent) planItemId(tid, p.ref)}, today);
+          await _ensureTopicNote(topic, c.title, topicGuideMarkdown(t), tag, today);
+        }
+        if (c.hasGuide) {
+          await note('${c.title} — study guide', courseGuideMarkdown(c, due: due), '$tag, study guide');
+        }
       }
-    }
 
-    for (final n in plan.notes) {
-      final title = n.title.toLowerCase().contains(key) ? n.title : '${plan.title} — ${n.title}';
-      await note(title, n.body, [tag, n.tags].where((x) => x.isNotEmpty).join(', '));
-    }
+      for (final n in plan.notes) {
+        final title = n.title.toLowerCase().contains(key) ? n.title : '${plan.title} — ${n.title}';
+        await note(title, n.body, [tag, n.tags].where((x) => x.isNotEmpty).join(', '));
+      }
 
-    final haveSkills = (await (db.select(
-      db.learnSkills,
-    )..where((s) => s.deleted.not())).get()).map((s) => s.name.toLowerCase()).toSet();
-    var skills = 0;
-    for (final s in plan.skills) {
-      if (!haveSkills.add(s.name.toLowerCase())) continue;
-      await addSkill(s.name, today: today, category: s.category, target: s.target);
-      skills++;
-    }
+      final haveSkills = (await (db.select(
+        db.learnSkills,
+      )..where((s) => s.deleted.not())).get()).map((s) => s.name.toLowerCase()).toSet();
+      var skills = 0;
+      for (final s in plan.skills) {
+        if (!haveSkills.add(s.name.toLowerCase())) continue;
+        await addSkill(s.name, today: today, category: s.category, target: s.target);
+        skills++;
+      }
 
-    final (added: cards, updated: updatedCards, retired: retiredCards) = await _savePlanCards(plan, courseIds, today);
+      final (added: cards, updated: updatedCards, retired: retiredCards) = await _savePlanCards(
+        plan,
+        courseIds,
+        today,
+      );
 
-    return (
-      programId: pid,
-      courses: courses,
-      topics: topics,
-      skills: skills,
-      cards: cards,
-      updatedCards: updatedCards,
-      retiredCards: retiredCards,
-      notes: notes,
-      items: items,
-      criteria: criteria,
-      retiredItems: retiredItems,
-    );
-  });
+      return (
+        programId: pid,
+        courses: courses,
+        topics: topics,
+        skills: skills,
+        cards: cards,
+        updatedCards: updatedCards,
+        retiredCards: retiredCards,
+        notes: notes,
+        items: items,
+        criteria: criteria,
+        retiredItems: retiredItems,
+      );
+    },
+  );
 
   /// Retires a topic's plan items the plan no longer sends (ids not in
   /// [sent]): kept, with anything the learner did on them, but no longer
@@ -1045,7 +1109,9 @@ class LearningBook {
   /// never touched. Returns how many were retired.
   Future<int> _retirePlanItems(String topicId, Set<String> sent, String today) async {
     var n = 0;
-    for (final i in await (db.select(db.learnItems)..where((i) => i.topicId.equals(topicId) & i.deleted.not())).get()) {
+    for (final i in await (db.select(
+      db.learnItems,
+    )..where((i) => i.topicId.equals(topicId) & i.deleted.not())).get()) {
       if (i.ref.isEmpty || i.retired.isNotEmpty || i.done != null || sent.contains(i.id)) continue;
       await save(db.learnItems, i.copyWith(retired: today), i.id);
       n++;
@@ -1061,7 +1127,8 @@ class LearningBook {
   Future<int> _savePlanCriteria(String programId, List<PlanCriterion> criteria) async {
     if (criteria.isEmpty) return 0;
     final have = {
-      for (final c in await (db.select(db.learnCriteria)..where((c) => c.programId.equals(programId))).get()) c.ref: c,
+      for (final c in await (db.select(db.learnCriteria)..where((c) => c.programId.equals(programId))).get())
+        c.ref: c,
     };
     var added = 0;
     for (final (k, c) in criteria.indexed) {
@@ -1102,17 +1169,25 @@ class LearningBook {
   }
 
   /// Records a review and moves the card to its next due day.
-  Future<void> reviewCard(Flashcard c, Grade g, {required String today, ReviewPace pace = ReviewPace.standard}) =>
-      db.transaction(() async {
-        final n = nextSchedule(c, g, today, pace: pace);
-        await save(
-          db.learnCards,
-          c.copyWith(interval: n.interval, ease: n.ease, reps: n.reps, lapses: n.lapses, due: n.due),
-          c.id,
-        );
-        final id = newId();
-        await save(db.learnReviews, LearnReviewsCompanion.insert(id: id, cardId: c.id, day: today, grade: g.index), id);
-      });
+  Future<void> reviewCard(
+    Flashcard c,
+    Grade g, {
+    required String today,
+    ReviewPace pace = ReviewPace.standard,
+  }) => db.transaction(() async {
+    final n = nextSchedule(c, g, today, pace: pace);
+    await save(
+      db.learnCards,
+      c.copyWith(interval: n.interval, ease: n.ease, reps: n.reps, lapses: n.lapses, due: n.due),
+      c.id,
+    );
+    final id = newId();
+    await save(
+      db.learnReviews,
+      LearnReviewsCompanion.insert(id: id, cardId: c.id, day: today, grade: g.index),
+      id,
+    );
+  });
 
   Future<void> removeCard(String id) => remove(db.learnCards, id);
 
@@ -1134,7 +1209,9 @@ class LearningBook {
         db.learnNotes,
       )..where((r) => r.deleted.not())).get()).where((n) => !hasPlanNoteTag(n)).toList(),
       cards: await (db.select(db.learnCards)..where((r) => r.deleted.not() & r.retired.equals(''))).get(),
-      retiredCards: await (db.select(db.learnCards)..where((r) => r.deleted.not() & r.retired.equals('').not())).get(),
+      retiredCards: await (db.select(
+        db.learnCards,
+      )..where((r) => r.deleted.not() & r.retired.equals('').not())).get(),
       reviews: await (db.select(db.learnReviews)..where((r) => r.deleted.not())).get(),
       unlocked: unlocks.length,
     );

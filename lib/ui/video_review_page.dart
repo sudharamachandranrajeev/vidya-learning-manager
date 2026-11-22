@@ -189,10 +189,7 @@ class _VideoReviewPageState extends ConsumerState<VideoReviewPage> {
     if (_error case final e?) {
       return SectionCard(
         title: 'Playback',
-        child: Text(
-          e,
-          style: TextStyle(color: KitStatus.warning.color),
-        ),
+        child: Text(e, style: TextStyle(color: KitStatus.warning.color)),
       );
     }
     if (p == null) return const SizedBox(height: 220, child: Center(child: CircularProgressIndicator()));

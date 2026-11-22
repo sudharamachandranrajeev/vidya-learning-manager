@@ -101,6 +101,7 @@ class FakePlayback implements TakePlayback {
     if (openError case final e?) throw e;
     opened.add(take);
   }
+
   @override
   Future<void> play() async {
     plays++;

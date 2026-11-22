@@ -93,7 +93,8 @@ extension UdyogaLink on LearningBook {
             .get();
     return StudyProgress(
       learning: [
-        for (final c in courses) (title: c.title, kind: c.kind, provider: c.provider, finished: c.finished ?? ''),
+        for (final c in courses)
+          (title: c.title, kind: c.kind, provider: c.provider, finished: c.finished ?? ''),
       ],
       skills: [for (final k in skills) (name: k.name, category: k.category, level: k.level)],
     );
@@ -149,8 +150,11 @@ extension UdyogaLink on LearningBook {
     if (program != null) {
       final titles = {for (final c in plan.courses) c.title.toLowerCase()};
       final courses =
-          (await (db.select(db.learnCourses)..where((c) => c.programId.equals(program.id) & c.deleted.not())).get())
-              .where((c) => titles.contains(c.title.toLowerCase()));
+          (await (db.select(
+            db.learnCourses,
+          )..where((c) => c.programId.equals(program.id) & c.deleted.not())).get()).where(
+            (c) => titles.contains(c.title.toLowerCase()),
+          );
       for (final c in courses) {
         for (final t in await (db.select(
           db.learnTopics,
@@ -173,7 +177,9 @@ extension UdyogaLink on LearningBook {
   }
 
   Future<void> _report(String planId, {String? planUpdated, required String now, bool force = false}) async {
-    final old = await (db.select(db.bridgeStudyProgress)..where((p) => p.id.equals(planId))).getSingleOrNull();
+    final old = await (db.select(
+      db.bridgeStudyProgress,
+    )..where((p) => p.id.equals(planId))).getSingleOrNull();
     var progress = (await studyProgress()).encode();
     // The plan's drills ride along in the same JSON; readers that do not
     // know the field ignore it. Left out when empty.
@@ -185,7 +191,9 @@ extension UdyogaLink on LearningBook {
       plan = null;
     }
     final drills = plan == null ? const <Map<String, Object>>[] : await planDrills(plan);
-    if (drills.isNotEmpty) progress = jsonEncode({...jsonDecode(progress) as Map<String, Object?>, 'drills': drills});
+    if (drills.isNotEmpty) {
+      progress = jsonEncode({...jsonDecode(progress) as Map<String, Object?>, 'drills': drills});
+    }
     // The program's weak and missing criteria ride along too, as
     // `readiness` (see `readinessReport`), so Udyoga can turn them into
     // drill cards. Only for a program with criteria; an empty list then
@@ -194,7 +202,10 @@ extension UdyogaLink on LearningBook {
     if (program != null) {
       final r = await readiness(program.id, today: reportDay(now));
       if (r.rows.isNotEmpty) {
-        progress = jsonEncode({...jsonDecode(progress) as Map<String, Object?>, 'readiness': readinessReport(r)});
+        progress = jsonEncode({
+          ...jsonDecode(progress) as Map<String, Object?>,
+          'readiness': readinessReport(r),
+        });
       }
     }
     final mark = planUpdated ?? old?.planUpdated ?? '';

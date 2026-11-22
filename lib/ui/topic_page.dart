@@ -70,7 +70,9 @@ final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) as
               ..orderBy([(c) => OrderingTerm.asc(c.ord)]))
             .get();
   final noteId = topic.noteId.isNotEmpty ? topic.noteId : topicNoteId(id);
-  final note = await (db.select(db.learnNotes)..where((n) => n.id.equals(noteId) & n.deleted.not())).getSingleOrNull();
+  final note = await (db.select(
+    db.learnNotes,
+  )..where((n) => n.id.equals(noteId) & n.deleted.not())).getSingleOrNull();
   final sessions = await (db.select(
     db.learnSessions,
   )..where((s) => (s.courseId.equals(topic.courseId) | s.topicId.equals(id)) & s.deleted.not())).get();
@@ -317,8 +319,11 @@ class _Header extends ConsumerWidget {
             Chip(label: Text('${minutesText(t.minutes)} planned')),
             if (doneMinutes > 0) Chip(label: Text('${minutesText(doneMinutes)} of items done')),
             if (v.topicMinutes > 0) Chip(label: Text('${minutesText(v.topicMinutes)} studied')),
-            if (v.courseHours > 0) Chip(label: Text('${v.courseHours.toStringAsFixed(1)} h logged on the course')),
-            Chip(label: Text(v.quizPercent == null ? 'Last quiz: not taken' : 'Last quiz: ${v.quizPercent}%')),
+            if (v.courseHours > 0)
+              Chip(label: Text('${v.courseHours.toStringAsFixed(1)} h logged on the course')),
+            Chip(
+              label: Text(v.quizPercent == null ? 'Last quiz: not taken' : 'Last quiz: ${v.quizPercent}%'),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -328,7 +333,10 @@ class _Header extends ConsumerWidget {
                 ? 'Required items done${hasQuiz ? ' and quiz passed' : ''}. This topic is earned.'
                 : [
                     if (required > 0) '$requiredDone of $required required items done.',
-                    if (hasQuiz) quizPending(v.items, v.quizPercent) ? 'Quiz: $passPercent% or more to earn it.' : 'Quiz passed.',
+                    if (hasQuiz)
+                      quizPending(v.items, v.quizPercent)
+                          ? 'Quiz: $passPercent% or more to earn it.'
+                          : 'Quiz passed.',
                   ].join(' '),
             style: text.bodyMedium,
           ),
@@ -340,12 +348,28 @@ class _Header extends ConsumerWidget {
                   ? FilledButton.icon(
                       icon: const Icon(Icons.check),
                       label: const Text('Tick off topic'),
-                      onPressed: () => tickTopic(context, ref, t, v.items, true, today: v.today, quizPercent: v.quizPercent),
+                      onPressed: () => tickTopic(
+                        context,
+                        ref,
+                        t,
+                        v.items,
+                        true,
+                        today: v.today,
+                        quizPercent: v.quizPercent,
+                      ),
                     )
                   : OutlinedButton.icon(
                       icon: const Icon(Icons.undo),
                       label: Text('Done ${relativeDay(t.done!, v.today)}. Open again'),
-                      onPressed: () => tickTopic(context, ref, t, v.items, false, today: v.today, quizPercent: v.quizPercent),
+                      onPressed: () => tickTopic(
+                        context,
+                        ref,
+                        t,
+                        v.items,
+                        false,
+                        today: v.today,
+                        quizPercent: v.quizPercent,
+                      ),
                     ),
             ),
           ],
@@ -382,7 +406,13 @@ class _WhyItMatters extends StatelessWidget {
 }
 
 class _ItemTile extends ConsumerWidget {
-  const _ItemTile(this.i, {required this.today, required this.first, required this.last, this.inPortfolio = false});
+  const _ItemTile(
+    this.i, {
+    required this.today,
+    required this.first,
+    required this.last,
+    this.inPortfolio = false,
+  });
   final StudyItem i;
   final String today;
   final bool first, last;
@@ -407,16 +437,25 @@ class _ItemTile extends ConsumerWidget {
       if (content['doneWhen'] case final String s when task && s.isNotEmpty) 'Done when: $s',
       if (i.done != null) 'Done ${relativeDay(i.done!, today)}',
       if (resumeText(i) case final r when r.isNotEmpty && i.done == null) r,
-      if (i.takeaway.isNotEmpty) i.type == 'note' ? i.takeaway : (task ? 'Note: ${i.takeaway}' : 'Takeaway: ${i.takeaway}'),
+      if (i.takeaway.isNotEmpty)
+        i.type == 'note' ? i.takeaway : (task ? 'Note: ${i.takeaway}' : 'Takeaway: ${i.takeaway}'),
       if (task && i.evidence.isNotEmpty) 'Evidence: ${i.evidence}',
     ];
     final tile = ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Checkbox(value: i.done != null, onChanged: (v) => _setDone(context, ref, i, v ?? false, today)),
-      title: Text(i.title, style: i.done != null ? const TextStyle(decoration: TextDecoration.lineThrough) : null),
+      leading: Checkbox(
+        value: i.done != null,
+        onChanged: (v) => _setDone(context, ref, i, v ?? false, today),
+      ),
+      title: Text(
+        i.title,
+        style: i.done != null ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
+      ),
       subtitle: Text([facts, ...extra].join('\n')),
       isThreeLine: extra.isNotEmpty,
-      onTap: i.url.isNotEmpty ? () => openLink(context, i.url) : () => itemDialog(context, ref, i.topicId, item: i),
+      onTap: i.url.isNotEmpty
+          ? () => openLink(context, i.url)
+          : () => itemDialog(context, ref, i.topicId, item: i),
       trailing: PopupMenuButton<String>(
         tooltip: 'Item actions',
         onSelected: (k) async {
@@ -492,9 +531,8 @@ Future<void> _setDone(BuildContext context, WidgetRef ref, StudyItem i, bool don
         Field(evidence, 'Evidence link', autofocus: true, hint: 'Where the work is'),
         Field(note, 'Or a short note on what you did', lines: 2),
       ],
-      onSave: () => ref.mutate(
-        (s) => s.book.completeTask(i, evidence: evidence.text, note: note.text, today: today),
-      ),
+      onSave: () =>
+          ref.mutate((s) => s.book.completeTask(i, evidence: evidence.text, note: note.text, today: today)),
     );
     return;
   }
@@ -503,7 +541,9 @@ Future<void> _setDone(BuildContext context, WidgetRef ref, StudyItem i, bool don
     context,
     title: 'Done: ${i.title}',
     action: 'Done',
-    fields: (_) => [Field(c, 'One-line takeaway', autofocus: true, hint: 'What you will remember (optional)')],
+    fields: (_) => [
+      Field(c, 'One-line takeaway', autofocus: true, hint: 'What you will remember (optional)'),
+    ],
     onSave: () async {
       await ref.mutate((s) => s.book.saveItem(i.copyWith(done: Value(today), takeaway: c.text.trim())));
       return null;
@@ -696,8 +736,9 @@ class _MyNotes extends ConsumerWidget {
     );
   }
 
-  Future<void> _editNote(BuildContext context) => Navigator.of(context)
-      .push(MaterialPageRoute(builder: (_) => _TopicNoteEditor(v.topic, v.course?.title ?? '', v.note?.body ?? '')));
+  Future<void> _editNote(BuildContext context) => Navigator.of(context).push(
+    MaterialPageRoute(builder: (_) => _TopicNoteEditor(v.topic, v.course?.title ?? '', v.note?.body ?? '')),
+  );
 }
 
 /// A topic's note: the body only; the title is the topic's.

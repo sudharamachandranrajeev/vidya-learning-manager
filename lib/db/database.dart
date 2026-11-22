@@ -75,7 +75,15 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
-      for (final sql in [..._indexes, ..._v7Indexes, ..._v8Indexes, ..._v9Indexes, ..._v10Indexes, ..._v11Indexes, ..._v12Indexes]) {
+      for (final sql in [
+        ..._indexes,
+        ..._v7Indexes,
+        ..._v8Indexes,
+        ..._v9Indexes,
+        ..._v10Indexes,
+        ..._v11Indexes,
+        ..._v12Indexes,
+      ]) {
         await customStatement(sql);
       }
     },
@@ -97,12 +105,16 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
       }
       if (from < 5) {
         // A plan card's stable id. A cards table made above already has it.
-        final have = await customSelect('PRAGMA table_info(learn_cards)').map((r) => r.read<String>('name')).get();
+        final have = await customSelect('PRAGMA table_info(learn_cards)')
+            .map((r) => r.read<String>('name'))
+            .get();
         if (!have.contains(learnCards.ref.name)) await m.addColumn(learnCards, learnCards.ref);
       }
       if (from < 6) {
         // Which plan a card came from, and whether it was retired from it.
-        final have = await customSelect('PRAGMA table_info(learn_cards)').map((r) => r.read<String>('name')).get();
+        final have = await customSelect('PRAGMA table_info(learn_cards)')
+            .map((r) => r.read<String>('name'))
+            .get();
         if (!have.contains(learnCards.plan.name)) await m.addColumn(learnCards, learnCards.plan);
         if (!have.contains(learnCards.retired.name)) await m.addColumn(learnCards, learnCards.retired);
         await backfillCardPlans();
@@ -115,7 +127,12 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
         final programs = await _columns('learn_programs');
         if (!programs.contains(learnPrograms.role.name)) await m.addColumn(learnPrograms, learnPrograms.role);
         final topics = await _columns('learn_topics');
-        for (final c in [learnTopics.status, learnTopics.noteId, learnTopics.criteria, learnTopics.tickNote]) {
+        for (final c in [
+          learnTopics.status,
+          learnTopics.noteId,
+          learnTopics.criteria,
+          learnTopics.tickNote,
+        ]) {
           if (!topics.contains(c.name)) await m.addColumn(learnTopics, c);
         }
         final tables = await customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
@@ -132,7 +149,9 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
         // sending. New columns only, each added once (a table made above
         // already has them).
         final sessions = await _columns('learn_sessions');
-        if (!sessions.contains(learnSessions.topicId.name)) await m.addColumn(learnSessions, learnSessions.topicId);
+        if (!sessions.contains(learnSessions.topicId.name)) {
+          await m.addColumn(learnSessions, learnSessions.topicId);
+        }
         final tests = await _columns('learn_assessments');
         if (!tests.contains(learnAssessments.topicId.name)) {
           await m.addColumn(learnAssessments, learnAssessments.topicId);
@@ -150,9 +169,9 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
         for (final c in [learnAssessments.itemId, learnAssessments.detail]) {
           if (!tests.contains(c.name)) await m.addColumn(learnAssessments, c);
         }
-        final tables = await customSelect(
-          "SELECT name FROM sqlite_master WHERE type = 'table'",
-        ).map((r) => r.read<String>('name')).get();
+        final tables = await customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+            .map((r) => r.read<String>('name'))
+            .get();
         if (!tables.contains(learnStories.actualTableName)) await m.createTable(learnStories);
         for (final sql in _v9Indexes) {
           await customStatement(sql);
@@ -160,9 +179,9 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
       }
       if (from < 10) {
         // Spoken interview rounds. A new table only: no row is touched.
-        final tables = await customSelect(
-          "SELECT name FROM sqlite_master WHERE type = 'table'",
-        ).map((r) => r.read<String>('name')).get();
+        final tables = await customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+            .map((r) => r.read<String>('name'))
+            .get();
         if (!tables.contains(learnRounds.actualTableName)) await m.createTable(learnRounds);
         for (final sql in _v10Indexes) {
           await customStatement(sql);
@@ -170,9 +189,9 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
       }
       if (from < 11) {
         // Job journeys. A new table only: no row is touched.
-        final tables = await customSelect(
-          "SELECT name FROM sqlite_master WHERE type = 'table'",
-        ).map((r) => r.read<String>('name')).get();
+        final tables = await customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+            .map((r) => r.read<String>('name'))
+            .get();
         if (!tables.contains(learnJourneys.actualTableName)) await m.createTable(learnJourneys);
         for (final sql in _v11Indexes) {
           await customStatement(sql);
@@ -181,9 +200,9 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
       if (from < 12) {
         // The job dossier: its sources and fact cards. New tables only: no
         // row is touched.
-        final tables = await customSelect(
-          "SELECT name FROM sqlite_master WHERE type = 'table'",
-        ).map((r) => r.read<String>('name')).get();
+        final tables = await customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+            .map((r) => r.read<String>('name'))
+            .get();
         if (!tables.contains(learnFactSources.actualTableName)) await m.createTable(learnFactSources);
         if (!tables.contains(learnFacts.actualTableName)) await m.createTable(learnFacts);
         for (final sql in _v12Indexes) {
@@ -253,9 +272,7 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   ];
 
   // Added in version 10.
-  static const _v10Indexes = [
-    'CREATE INDEX IF NOT EXISTS learn_rounds_program ON learn_rounds (program_id)',
-  ];
+  static const _v10Indexes = ['CREATE INDEX IF NOT EXISTS learn_rounds_program ON learn_rounds (program_id)'];
 
   // Added in version 11.
   static const _v11Indexes = [
