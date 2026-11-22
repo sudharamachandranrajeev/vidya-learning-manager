@@ -11,6 +11,7 @@ import 'common.dart';
 import 'course_page.dart';
 import 'dialogs.dart';
 import 'interview_pages.dart';
+import 'journey_page.dart';
 import 'plan_import.dart';
 import 'readiness_page.dart';
 import 'resource_search.dart';
@@ -324,6 +325,7 @@ class ProgramPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 12),
                         _ReadinessTile(id),
+                        JourneyTile(id),
                         SectionCard(
                           title: 'Courses',
                           child: courses.isEmpty
