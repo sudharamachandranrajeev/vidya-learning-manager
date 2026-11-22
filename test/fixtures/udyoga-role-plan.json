@@ -7,6 +7,10 @@
     "goal": "Close the gaps for IT Trainer and make the first moves, with evidence for each criterion."
   },
   "role": "IT Trainer",
+  "journey": {
+    "role": "IT Trainer",
+    "sector": "nhs"
+  },
   "criteria": [
     {
       "id": "e1",

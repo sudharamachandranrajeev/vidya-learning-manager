@@ -477,6 +477,51 @@ void main() {
     });
   });
 
+  group('from Udyoga', () {
+    late AppDatabase db;
+    late LearningBook book;
+    setUp(() async {
+      db = memoryDatabase();
+      book = LearningBook(await Store.open(db));
+    });
+    tearDown(() => db.close());
+
+    test('"Study for this role" brings a journey with the role and a sector guess', () async {
+      // Written by Udyoga's tests (test/fixtures/udyoga-role-plan.json there).
+      final p = parseCurriculum(File('test/fixtures/udyoga-role-plan.json').readAsStringSync());
+      expect((p.journey!.role, p.journey!.sector, p.journey!.employer), ('IT Trainer', 'nhs', ''));
+      final pid = (await book.importCurriculum(p, today: today)).programId;
+      final v = (await book.journeyView(pid))!;
+      expect((v.journey.template, v.current), ('NHS', 'decide'));
+      expect(
+        v.journey.stage('apply')!.produce.map((x) => x.title),
+        contains('Evidence for: Teaching qualification'),
+      );
+    });
+
+    test(
+      '"Prepare this job" brings the employer, advert, closing date, criteria and the application stage',
+      () async {
+        // Written by Udyoga's tests (test/fixtures/udyoga-job-plan.json there).
+        final p = parseCurriculum(File('test/fixtures/udyoga-job-plan.json').readAsStringSync());
+        final j = p.journey!;
+        expect(
+          (j.employer, j.sector, j.advertUrl, j.closes, j.applicationStage),
+          ('Example Health Trust', 'nhs', 'https://example.org/jobs/123', '2026-12-10', 'applied'),
+        );
+        expect(p.criteria.map((c) => (c.id, c.essential)), [('c1', true), ('c2', true), ('c3', false)]);
+        final pid = (await book.importCurriculum(p, today: today)).programId;
+        final v = (await book.journeyView(pid))!;
+        // No stage chosen yet: Udyoga's "applied" picks one, with nothing else to suggest.
+        expect((v.current, v.suggested), ('follow-up', null));
+        expect(v.journey.stage('apply')!.due, '2026-12-08');
+        expect(v.journey.stage('decide')!.teach.first.text, contains('2 essential criteria'));
+        final program = await (db.select(db.learnPrograms)..where((x) => x.id.equals(pid))).getSingle();
+        expect(program.title, 'Prepare: Clinical Informatics Nurse at Example Health Trust');
+      },
+    );
+  });
+
   test('a version 10 database gains the journeys table and keeps every row', () async {
     final dir = await Directory.systemTemp.createTemp('vidya');
     final file = File('${dir.path}/v10.db');
