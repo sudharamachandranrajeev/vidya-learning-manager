@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and later. android:allowBackup="false" already turns cloud
+     backup off, but not device-to-device transfer, so interview recordings
+     are excluded from both here: video takes (J7, opt-in, kept for the days
+     set in Settings) and the round's short-lived audio. They live in the
+     app's own files folder (path_provider's application support folder)
+     and never leave this device. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="video-takes/"/>
+        <exclude domain="file" path="interview-takes/"/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="video-takes/"/>
+        <exclude domain="file" path="interview-takes/"/>
+    </device-transfer>
+</data-extraction-rules>

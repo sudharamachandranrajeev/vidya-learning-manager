@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -5,6 +6,7 @@ import 'package:brahma_core/brahma_core.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:interview_engine/interview_engine.dart' as ie show VideoTake, VideoTakeStore, formatBytes;
 
 import '../domain/dossier_readers.dart';
 import '../domain/export.dart';
@@ -12,7 +14,9 @@ import '../domain/resources.dart';
 import '../domain/review.dart';
 import '../ui/common.dart';
 import '../ui/dialogs.dart';
+import '../ui/video_review_page.dart' show videoTakePrivacy;
 import '../domain/udyoga_link.dart';
+import 'interview_providers.dart';
 import 'providers.dart';
 import 'research_providers.dart';
 import 'reminders.dart';
@@ -29,6 +33,7 @@ class SettingsPage extends StatelessWidget {
       _PaceCard(),
       _RemindersCard(),
       _CareerFileCard(),
+      _VideoTakesCard(),
       _HistoryCard(),
       _DataSourcesCard(),
       _ResearchKeysCard(),
@@ -214,6 +219,92 @@ Future<void> _researchKeyDialog(
       return null;
     },
   );
+}
+
+/// How much space the video takes use on this device.
+final _videoBytesProvider = FutureProvider<int>((ref) async {
+  ref.watch(videoTakesProvider(null));
+  try {
+    return await (await ref.watch(videoTakeStoreProvider.future)).bytesUsed();
+  } on Object {
+    return 0;
+  }
+});
+
+/// Video takes from mock interviews (J7): how long they are kept, the space
+/// they use, and delete all. This device only.
+class _VideoTakesCard extends ConsumerWidget {
+  const _VideoTakesCard();
+
+  static const _choices = [1, 3, 7, 14, 30, 60, 90];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final days = ref.watch(videoKeepDaysProvider).value ?? ie.VideoTakeStore.defaultKeepDays;
+    final takes = ref.watch(videoTakesProvider(null)).value ?? const <ie.VideoTake>[];
+    final bytes = ref.watch(_videoBytesProvider).value ?? 0;
+    final muted = Theme.of(context).textTheme.bodySmall;
+    return SectionCard(
+      title: 'Interview video takes',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Only rounds where you turned on "Record video for this round" have any. ${videoTakePrivacy(days)}',
+            style: muted,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Expanded(child: Text('Delete video takes after')),
+              DropdownButton<int>(
+                key: const Key('video-keep-days'),
+                value: _choices.contains(days) ? days : null,
+                hint: Text('$days days'),
+                items: [
+                  for (final d in _choices)
+                    DropdownMenuItem(value: d, child: Text('$d ${d == 1 ? 'day' : 'days'}')),
+                ],
+                onChanged: (v) {
+                  if (v != null) unawaited(ref.read(videoKeepDaysProvider.notifier).set(v));
+                },
+              ),
+            ],
+          ),
+          Text(
+            takes.isEmpty
+                ? 'No video takes on this device.'
+                : '${takes.length} video ${takes.length == 1 ? 'take' : 'takes'} · ${ie.formatBytes(bytes)} on this device',
+            key: const Key('video-storage'),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              key: const Key('video-delete-all'),
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Delete all video takes'),
+              onPressed: takes.isEmpty
+                  ? null
+                  : () async {
+                      final ok = await askSure(
+                        context,
+                        'Delete all video takes?',
+                        'Every interview video on this device goes, with its audio. Transcripts and scores stay. '
+                            'This cannot be undone.',
+                        action: 'Delete all',
+                      );
+                      if (!ok) return;
+                      await (await ref.read(videoTakeStoreProvider.future)).deleteAll();
+                      ref.invalidate(videoTakesProvider);
+                      if (context.mounted) notify(context, 'All video takes deleted.');
+                    },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Streaks are opt-in: off, no day count is shown anywhere. Achievements

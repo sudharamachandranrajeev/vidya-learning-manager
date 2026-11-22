@@ -9,7 +9,8 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- The spoken interviewer: the microphone and camera, asked for at run
          time only when a round or the camera setup check opens them. Audio
-         and frames are processed on the device and never uploaded. -->
+         and frames are processed on the device and never uploaded. Video
+         takes (opt-in per round) are kept in the app's own storage only. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
@@ -20,14 +21,18 @@
          synced data is end-to-end encrypted either way.
          allowBackup: the database key lives in the Android keystore, which is
          not backed up, so a restored copy could never be opened. Sync is the
-         backup. -->
+         backup.
+         dataExtractionRules: on Android 12 and later allowBackup="false" does
+         not stop device-to-device transfer, so the rules keep interview video
+         takes and recordings on this device (res/xml/data_extraction_rules.xml). -->
     <application
         android:label="Vidya"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:allowBackup="false"
-        android:fullBackupContent="false">
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
