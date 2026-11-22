@@ -209,6 +209,38 @@ class LearnStories extends Table with SyncedRow {
   TextColumn get updated => text()();
 }
 
+/// A spoken practice round with the interviewer (J3): the drills asked,
+/// the text of each answer and, when an AI scored it, both scoring runs.
+/// Only text is kept: the round's recordings stay in a temporary folder on
+/// the device and are deleted when the round screen closes.
+@DataClassName('RoundRow')
+class LearnRounds extends Table with SyncedRow {
+  TextColumn get programId => text().nullable()();
+  TextColumn get title => text()();
+  TextColumn get day => text()();
+
+  /// A framework id from the interview engine (`nhs_values`, `private` …).
+  TextColumn get framework => text().withDefault(const Constant('private'))();
+
+  /// The panel, level and silence settings it ran with, as JSON.
+  TextColumn get settings => text().withDefault(const Constant(''))();
+
+  /// The questions, as JSON: each drill's question, its item id and the
+  /// criterion row ids it tests.
+  TextColumn get questions => text()();
+
+  /// The saved text of each answer by question number, follow-ups
+  /// included and labelled, as JSON.
+  TextColumn get answers => text().withDefault(const Constant('{}'))();
+
+  /// The AI's two scoring runs and the engine version that checked them,
+  /// as JSON; '' when it was not scored by an AI.
+  TextColumn get scoring => text().withDefault(const Constant(''))();
+
+  /// When the round finished (an ISO time), null while it runs.
+  TextColumn get finished => text().nullable()();
+}
+
 /// A skill and how far it has come against where it should be.
 @DataClassName('Skill')
 class LearnSkills extends Table with SyncedRow {

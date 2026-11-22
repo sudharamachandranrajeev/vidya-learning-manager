@@ -22,6 +22,7 @@ part 'database.g.dart';
     LearnPortfolio,
     LearnNotes,
     LearnStories,
+    LearnRounds,
     LearnUnlocks,
     LearnCards,
     LearnReviews,
@@ -52,6 +53,7 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
     'learn_portfolio',
     'learn_notes',
     'learn_stories',
+    'learn_rounds',
     'learn_unlocks',
     'learn_cards',
     'learn_reviews',
@@ -61,13 +63,13 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   ];
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
-      for (final sql in [..._indexes, ..._v7Indexes, ..._v8Indexes, ..._v9Indexes]) {
+      for (final sql in [..._indexes, ..._v7Indexes, ..._v8Indexes, ..._v9Indexes, ..._v10Indexes]) {
         await customStatement(sql);
       }
     },
@@ -150,6 +152,16 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
           await customStatement(sql);
         }
       }
+      if (from < 10) {
+        // Spoken interview rounds. A new table only: no row is touched.
+        final tables = await customSelect(
+          "SELECT name FROM sqlite_master WHERE type = 'table'",
+        ).map((r) => r.read<String>('name')).get();
+        if (!tables.contains(learnRounds.actualTableName)) await m.createTable(learnRounds);
+        for (final sql in _v10Indexes) {
+          await customStatement(sql);
+        }
+      }
     },
   );
 
@@ -210,5 +222,10 @@ class AppDatabase extends _$AppDatabase with SyncedDatabase {
   // Added in version 9.
   static const _v9Indexes = [
     'CREATE INDEX IF NOT EXISTS learn_assessments_item ON learn_assessments (item_id)',
+  ];
+
+  // Added in version 10.
+  static const _v10Indexes = [
+    'CREATE INDEX IF NOT EXISTS learn_rounds_program ON learn_rounds (program_id)',
   ];
 }

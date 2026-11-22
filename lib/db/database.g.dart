@@ -7042,6 +7042,712 @@ class LearnStoriesCompanion extends UpdateCompanion<StoryRow> {
   }
 }
 
+class $LearnRoundsTable extends LearnRounds
+    with TableInfo<$LearnRoundsTable, RoundRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LearnRoundsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _hlcMeta = const VerificationMeta('hlc');
+  @override
+  late final GeneratedColumn<String> hlc = GeneratedColumn<String>(
+    'hlc',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _programIdMeta = const VerificationMeta(
+    'programId',
+  );
+  @override
+  late final GeneratedColumn<String> programId = GeneratedColumn<String>(
+    'program_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<String> day = GeneratedColumn<String>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _frameworkMeta = const VerificationMeta(
+    'framework',
+  );
+  @override
+  late final GeneratedColumn<String> framework = GeneratedColumn<String>(
+    'framework',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('private'),
+  );
+  static const VerificationMeta _settingsMeta = const VerificationMeta(
+    'settings',
+  );
+  @override
+  late final GeneratedColumn<String> settings = GeneratedColumn<String>(
+    'settings',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _questionsMeta = const VerificationMeta(
+    'questions',
+  );
+  @override
+  late final GeneratedColumn<String> questions = GeneratedColumn<String>(
+    'questions',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _answersMeta = const VerificationMeta(
+    'answers',
+  );
+  @override
+  late final GeneratedColumn<String> answers = GeneratedColumn<String>(
+    'answers',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _scoringMeta = const VerificationMeta(
+    'scoring',
+  );
+  @override
+  late final GeneratedColumn<String> scoring = GeneratedColumn<String>(
+    'scoring',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _finishedMeta = const VerificationMeta(
+    'finished',
+  );
+  @override
+  late final GeneratedColumn<String> finished = GeneratedColumn<String>(
+    'finished',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    hlc,
+    deleted,
+    programId,
+    title,
+    day,
+    framework,
+    settings,
+    questions,
+    answers,
+    scoring,
+    finished,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'learn_rounds';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RoundRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('hlc')) {
+      context.handle(
+        _hlcMeta,
+        hlc.isAcceptableOrUnknown(data['hlc']!, _hlcMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
+    if (data.containsKey('program_id')) {
+      context.handle(
+        _programIdMeta,
+        programId.isAcceptableOrUnknown(data['program_id']!, _programIdMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    if (data.containsKey('framework')) {
+      context.handle(
+        _frameworkMeta,
+        framework.isAcceptableOrUnknown(data['framework']!, _frameworkMeta),
+      );
+    }
+    if (data.containsKey('settings')) {
+      context.handle(
+        _settingsMeta,
+        settings.isAcceptableOrUnknown(data['settings']!, _settingsMeta),
+      );
+    }
+    if (data.containsKey('questions')) {
+      context.handle(
+        _questionsMeta,
+        questions.isAcceptableOrUnknown(data['questions']!, _questionsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_questionsMeta);
+    }
+    if (data.containsKey('answers')) {
+      context.handle(
+        _answersMeta,
+        answers.isAcceptableOrUnknown(data['answers']!, _answersMeta),
+      );
+    }
+    if (data.containsKey('scoring')) {
+      context.handle(
+        _scoringMeta,
+        scoring.isAcceptableOrUnknown(data['scoring']!, _scoringMeta),
+      );
+    }
+    if (data.containsKey('finished')) {
+      context.handle(
+        _finishedMeta,
+        finished.isAcceptableOrUnknown(data['finished']!, _finishedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RoundRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RoundRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      hlc: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}hlc'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      programId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}program_id'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day'],
+      )!,
+      framework: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}framework'],
+      )!,
+      settings: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}settings'],
+      )!,
+      questions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}questions'],
+      )!,
+      answers: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}answers'],
+      )!,
+      scoring: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scoring'],
+      )!,
+      finished: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}finished'],
+      ),
+    );
+  }
+
+  @override
+  $LearnRoundsTable createAlias(String alias) {
+    return $LearnRoundsTable(attachedDatabase, alias);
+  }
+}
+
+class RoundRow extends DataClass implements Insertable<RoundRow> {
+  final String id;
+  final String hlc;
+  final bool deleted;
+  final String? programId;
+  final String title;
+  final String day;
+
+  /// A framework id from the interview engine (`nhs_values`, `private` …).
+  final String framework;
+
+  /// The panel, level and silence settings it ran with, as JSON.
+  final String settings;
+
+  /// The questions, as JSON: each drill's question, its item id and the
+  /// criterion row ids it tests.
+  final String questions;
+
+  /// The saved text of each answer by question number, follow-ups
+  /// included and labelled, as JSON.
+  final String answers;
+
+  /// The AI's two scoring runs and the engine version that checked them,
+  /// as JSON; '' when it was not scored by an AI.
+  final String scoring;
+
+  /// When the round finished (an ISO time), null while it runs.
+  final String? finished;
+  const RoundRow({
+    required this.id,
+    required this.hlc,
+    required this.deleted,
+    this.programId,
+    required this.title,
+    required this.day,
+    required this.framework,
+    required this.settings,
+    required this.questions,
+    required this.answers,
+    required this.scoring,
+    this.finished,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['hlc'] = Variable<String>(hlc);
+    map['deleted'] = Variable<bool>(deleted);
+    if (!nullToAbsent || programId != null) {
+      map['program_id'] = Variable<String>(programId);
+    }
+    map['title'] = Variable<String>(title);
+    map['day'] = Variable<String>(day);
+    map['framework'] = Variable<String>(framework);
+    map['settings'] = Variable<String>(settings);
+    map['questions'] = Variable<String>(questions);
+    map['answers'] = Variable<String>(answers);
+    map['scoring'] = Variable<String>(scoring);
+    if (!nullToAbsent || finished != null) {
+      map['finished'] = Variable<String>(finished);
+    }
+    return map;
+  }
+
+  LearnRoundsCompanion toCompanion(bool nullToAbsent) {
+    return LearnRoundsCompanion(
+      id: Value(id),
+      hlc: Value(hlc),
+      deleted: Value(deleted),
+      programId: programId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(programId),
+      title: Value(title),
+      day: Value(day),
+      framework: Value(framework),
+      settings: Value(settings),
+      questions: Value(questions),
+      answers: Value(answers),
+      scoring: Value(scoring),
+      finished: finished == null && nullToAbsent
+          ? const Value.absent()
+          : Value(finished),
+    );
+  }
+
+  factory RoundRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RoundRow(
+      id: serializer.fromJson<String>(json['id']),
+      hlc: serializer.fromJson<String>(json['hlc']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+      programId: serializer.fromJson<String?>(json['programId']),
+      title: serializer.fromJson<String>(json['title']),
+      day: serializer.fromJson<String>(json['day']),
+      framework: serializer.fromJson<String>(json['framework']),
+      settings: serializer.fromJson<String>(json['settings']),
+      questions: serializer.fromJson<String>(json['questions']),
+      answers: serializer.fromJson<String>(json['answers']),
+      scoring: serializer.fromJson<String>(json['scoring']),
+      finished: serializer.fromJson<String?>(json['finished']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'hlc': serializer.toJson<String>(hlc),
+      'deleted': serializer.toJson<bool>(deleted),
+      'programId': serializer.toJson<String?>(programId),
+      'title': serializer.toJson<String>(title),
+      'day': serializer.toJson<String>(day),
+      'framework': serializer.toJson<String>(framework),
+      'settings': serializer.toJson<String>(settings),
+      'questions': serializer.toJson<String>(questions),
+      'answers': serializer.toJson<String>(answers),
+      'scoring': serializer.toJson<String>(scoring),
+      'finished': serializer.toJson<String?>(finished),
+    };
+  }
+
+  RoundRow copyWith({
+    String? id,
+    String? hlc,
+    bool? deleted,
+    Value<String?> programId = const Value.absent(),
+    String? title,
+    String? day,
+    String? framework,
+    String? settings,
+    String? questions,
+    String? answers,
+    String? scoring,
+    Value<String?> finished = const Value.absent(),
+  }) => RoundRow(
+    id: id ?? this.id,
+    hlc: hlc ?? this.hlc,
+    deleted: deleted ?? this.deleted,
+    programId: programId.present ? programId.value : this.programId,
+    title: title ?? this.title,
+    day: day ?? this.day,
+    framework: framework ?? this.framework,
+    settings: settings ?? this.settings,
+    questions: questions ?? this.questions,
+    answers: answers ?? this.answers,
+    scoring: scoring ?? this.scoring,
+    finished: finished.present ? finished.value : this.finished,
+  );
+  RoundRow copyWithCompanion(LearnRoundsCompanion data) {
+    return RoundRow(
+      id: data.id.present ? data.id.value : this.id,
+      hlc: data.hlc.present ? data.hlc.value : this.hlc,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+      programId: data.programId.present ? data.programId.value : this.programId,
+      title: data.title.present ? data.title.value : this.title,
+      day: data.day.present ? data.day.value : this.day,
+      framework: data.framework.present ? data.framework.value : this.framework,
+      settings: data.settings.present ? data.settings.value : this.settings,
+      questions: data.questions.present ? data.questions.value : this.questions,
+      answers: data.answers.present ? data.answers.value : this.answers,
+      scoring: data.scoring.present ? data.scoring.value : this.scoring,
+      finished: data.finished.present ? data.finished.value : this.finished,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoundRow(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('title: $title, ')
+          ..write('day: $day, ')
+          ..write('framework: $framework, ')
+          ..write('settings: $settings, ')
+          ..write('questions: $questions, ')
+          ..write('answers: $answers, ')
+          ..write('scoring: $scoring, ')
+          ..write('finished: $finished')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    hlc,
+    deleted,
+    programId,
+    title,
+    day,
+    framework,
+    settings,
+    questions,
+    answers,
+    scoring,
+    finished,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RoundRow &&
+          other.id == this.id &&
+          other.hlc == this.hlc &&
+          other.deleted == this.deleted &&
+          other.programId == this.programId &&
+          other.title == this.title &&
+          other.day == this.day &&
+          other.framework == this.framework &&
+          other.settings == this.settings &&
+          other.questions == this.questions &&
+          other.answers == this.answers &&
+          other.scoring == this.scoring &&
+          other.finished == this.finished);
+}
+
+class LearnRoundsCompanion extends UpdateCompanion<RoundRow> {
+  final Value<String> id;
+  final Value<String> hlc;
+  final Value<bool> deleted;
+  final Value<String?> programId;
+  final Value<String> title;
+  final Value<String> day;
+  final Value<String> framework;
+  final Value<String> settings;
+  final Value<String> questions;
+  final Value<String> answers;
+  final Value<String> scoring;
+  final Value<String?> finished;
+  final Value<int> rowid;
+  const LearnRoundsCompanion({
+    this.id = const Value.absent(),
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.programId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.day = const Value.absent(),
+    this.framework = const Value.absent(),
+    this.settings = const Value.absent(),
+    this.questions = const Value.absent(),
+    this.answers = const Value.absent(),
+    this.scoring = const Value.absent(),
+    this.finished = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LearnRoundsCompanion.insert({
+    required String id,
+    this.hlc = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.programId = const Value.absent(),
+    required String title,
+    required String day,
+    this.framework = const Value.absent(),
+    this.settings = const Value.absent(),
+    required String questions,
+    this.answers = const Value.absent(),
+    this.scoring = const Value.absent(),
+    this.finished = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       day = Value(day),
+       questions = Value(questions);
+  static Insertable<RoundRow> custom({
+    Expression<String>? id,
+    Expression<String>? hlc,
+    Expression<bool>? deleted,
+    Expression<String>? programId,
+    Expression<String>? title,
+    Expression<String>? day,
+    Expression<String>? framework,
+    Expression<String>? settings,
+    Expression<String>? questions,
+    Expression<String>? answers,
+    Expression<String>? scoring,
+    Expression<String>? finished,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (hlc != null) 'hlc': hlc,
+      if (deleted != null) 'deleted': deleted,
+      if (programId != null) 'program_id': programId,
+      if (title != null) 'title': title,
+      if (day != null) 'day': day,
+      if (framework != null) 'framework': framework,
+      if (settings != null) 'settings': settings,
+      if (questions != null) 'questions': questions,
+      if (answers != null) 'answers': answers,
+      if (scoring != null) 'scoring': scoring,
+      if (finished != null) 'finished': finished,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LearnRoundsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? hlc,
+    Value<bool>? deleted,
+    Value<String?>? programId,
+    Value<String>? title,
+    Value<String>? day,
+    Value<String>? framework,
+    Value<String>? settings,
+    Value<String>? questions,
+    Value<String>? answers,
+    Value<String>? scoring,
+    Value<String?>? finished,
+    Value<int>? rowid,
+  }) {
+    return LearnRoundsCompanion(
+      id: id ?? this.id,
+      hlc: hlc ?? this.hlc,
+      deleted: deleted ?? this.deleted,
+      programId: programId ?? this.programId,
+      title: title ?? this.title,
+      day: day ?? this.day,
+      framework: framework ?? this.framework,
+      settings: settings ?? this.settings,
+      questions: questions ?? this.questions,
+      answers: answers ?? this.answers,
+      scoring: scoring ?? this.scoring,
+      finished: finished ?? this.finished,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (hlc.present) {
+      map['hlc'] = Variable<String>(hlc.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (programId.present) {
+      map['program_id'] = Variable<String>(programId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (day.present) {
+      map['day'] = Variable<String>(day.value);
+    }
+    if (framework.present) {
+      map['framework'] = Variable<String>(framework.value);
+    }
+    if (settings.present) {
+      map['settings'] = Variable<String>(settings.value);
+    }
+    if (questions.present) {
+      map['questions'] = Variable<String>(questions.value);
+    }
+    if (answers.present) {
+      map['answers'] = Variable<String>(answers.value);
+    }
+    if (scoring.present) {
+      map['scoring'] = Variable<String>(scoring.value);
+    }
+    if (finished.present) {
+      map['finished'] = Variable<String>(finished.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LearnRoundsCompanion(')
+          ..write('id: $id, ')
+          ..write('hlc: $hlc, ')
+          ..write('deleted: $deleted, ')
+          ..write('programId: $programId, ')
+          ..write('title: $title, ')
+          ..write('day: $day, ')
+          ..write('framework: $framework, ')
+          ..write('settings: $settings, ')
+          ..write('questions: $questions, ')
+          ..write('answers: $answers, ')
+          ..write('scoring: $scoring, ')
+          ..write('finished: $finished, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $LearnUnlocksTable extends LearnUnlocks
     with TableInfo<$LearnUnlocksTable, Unlock> {
   @override
@@ -10522,6 +11228,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LearnPortfolioTable learnPortfolio = $LearnPortfolioTable(this);
   late final $LearnNotesTable learnNotes = $LearnNotesTable(this);
   late final $LearnStoriesTable learnStories = $LearnStoriesTable(this);
+  late final $LearnRoundsTable learnRounds = $LearnRoundsTable(this);
   late final $LearnUnlocksTable learnUnlocks = $LearnUnlocksTable(this);
   late final $LearnCardsTable learnCards = $LearnCardsTable(this);
   late final $LearnReviewsTable learnReviews = $LearnReviewsTable(this);
@@ -10550,6 +11257,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     learnPortfolio,
     learnNotes,
     learnStories,
+    learnRounds,
     learnUnlocks,
     learnCards,
     learnReviews,
@@ -14082,6 +14790,345 @@ typedef $$LearnStoriesTableProcessedTableManager =
       StoryRow,
       PrefetchHooks Function()
     >;
+typedef $$LearnRoundsTableCreateCompanionBuilder =
+    LearnRoundsCompanion Function({
+      required String id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String?> programId,
+      required String title,
+      required String day,
+      Value<String> framework,
+      Value<String> settings,
+      required String questions,
+      Value<String> answers,
+      Value<String> scoring,
+      Value<String?> finished,
+      Value<int> rowid,
+    });
+typedef $$LearnRoundsTableUpdateCompanionBuilder =
+    LearnRoundsCompanion Function({
+      Value<String> id,
+      Value<String> hlc,
+      Value<bool> deleted,
+      Value<String?> programId,
+      Value<String> title,
+      Value<String> day,
+      Value<String> framework,
+      Value<String> settings,
+      Value<String> questions,
+      Value<String> answers,
+      Value<String> scoring,
+      Value<String?> finished,
+      Value<int> rowid,
+    });
+
+class $$LearnRoundsTableFilterComposer
+    extends Composer<_$AppDatabase, $LearnRoundsTable> {
+  $$LearnRoundsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get framework => $composableBuilder(
+    column: $table.framework,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get settings => $composableBuilder(
+    column: $table.settings,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get questions => $composableBuilder(
+    column: $table.questions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get answers => $composableBuilder(
+    column: $table.answers,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scoring => $composableBuilder(
+    column: $table.scoring,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get finished => $composableBuilder(
+    column: $table.finished,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LearnRoundsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LearnRoundsTable> {
+  $$LearnRoundsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get hlc => $composableBuilder(
+    column: $table.hlc,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get programId => $composableBuilder(
+    column: $table.programId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get framework => $composableBuilder(
+    column: $table.framework,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get settings => $composableBuilder(
+    column: $table.settings,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get questions => $composableBuilder(
+    column: $table.questions,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get answers => $composableBuilder(
+    column: $table.answers,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scoring => $composableBuilder(
+    column: $table.scoring,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get finished => $composableBuilder(
+    column: $table.finished,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LearnRoundsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LearnRoundsTable> {
+  $$LearnRoundsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get hlc =>
+      $composableBuilder(column: $table.hlc, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
+  GeneratedColumn<String> get programId =>
+      $composableBuilder(column: $table.programId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  GeneratedColumn<String> get framework =>
+      $composableBuilder(column: $table.framework, builder: (column) => column);
+
+  GeneratedColumn<String> get settings =>
+      $composableBuilder(column: $table.settings, builder: (column) => column);
+
+  GeneratedColumn<String> get questions =>
+      $composableBuilder(column: $table.questions, builder: (column) => column);
+
+  GeneratedColumn<String> get answers =>
+      $composableBuilder(column: $table.answers, builder: (column) => column);
+
+  GeneratedColumn<String> get scoring =>
+      $composableBuilder(column: $table.scoring, builder: (column) => column);
+
+  GeneratedColumn<String> get finished =>
+      $composableBuilder(column: $table.finished, builder: (column) => column);
+}
+
+class $$LearnRoundsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LearnRoundsTable,
+          RoundRow,
+          $$LearnRoundsTableFilterComposer,
+          $$LearnRoundsTableOrderingComposer,
+          $$LearnRoundsTableAnnotationComposer,
+          $$LearnRoundsTableCreateCompanionBuilder,
+          $$LearnRoundsTableUpdateCompanionBuilder,
+          (
+            RoundRow,
+            BaseReferences<_$AppDatabase, $LearnRoundsTable, RoundRow>,
+          ),
+          RoundRow,
+          PrefetchHooks Function()
+        > {
+  $$LearnRoundsTableTableManager(_$AppDatabase db, $LearnRoundsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LearnRoundsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LearnRoundsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LearnRoundsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String?> programId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> day = const Value.absent(),
+                Value<String> framework = const Value.absent(),
+                Value<String> settings = const Value.absent(),
+                Value<String> questions = const Value.absent(),
+                Value<String> answers = const Value.absent(),
+                Value<String> scoring = const Value.absent(),
+                Value<String?> finished = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnRoundsCompanion(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                title: title,
+                day: day,
+                framework: framework,
+                settings: settings,
+                questions: questions,
+                answers: answers,
+                scoring: scoring,
+                finished: finished,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> hlc = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<String?> programId = const Value.absent(),
+                required String title,
+                required String day,
+                Value<String> framework = const Value.absent(),
+                Value<String> settings = const Value.absent(),
+                required String questions,
+                Value<String> answers = const Value.absent(),
+                Value<String> scoring = const Value.absent(),
+                Value<String?> finished = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LearnRoundsCompanion.insert(
+                id: id,
+                hlc: hlc,
+                deleted: deleted,
+                programId: programId,
+                title: title,
+                day: day,
+                framework: framework,
+                settings: settings,
+                questions: questions,
+                answers: answers,
+                scoring: scoring,
+                finished: finished,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LearnRoundsTable, RoundRow>(table),
+                  BaseReferences<_$AppDatabase, $LearnRoundsTable, RoundRow>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LearnRoundsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LearnRoundsTable,
+      RoundRow,
+      $$LearnRoundsTableFilterComposer,
+      $$LearnRoundsTableOrderingComposer,
+      $$LearnRoundsTableAnnotationComposer,
+      $$LearnRoundsTableCreateCompanionBuilder,
+      $$LearnRoundsTableUpdateCompanionBuilder,
+      (RoundRow, BaseReferences<_$AppDatabase, $LearnRoundsTable, RoundRow>),
+      RoundRow,
+      PrefetchHooks Function()
+    >;
 typedef $$LearnUnlocksTableCreateCompanionBuilder =
     LearnUnlocksCompanion Function({
       required String id,
@@ -16092,6 +17139,8 @@ class $AppDatabaseManager {
       $$LearnNotesTableTableManager(_db, _db.learnNotes);
   $$LearnStoriesTableTableManager get learnStories =>
       $$LearnStoriesTableTableManager(_db, _db.learnStories);
+  $$LearnRoundsTableTableManager get learnRounds =>
+      $$LearnRoundsTableTableManager(_db, _db.learnRounds);
   $$LearnUnlocksTableTableManager get learnUnlocks =>
       $$LearnUnlocksTableTableManager(_db, _db.learnUnlocks);
   $$LearnCardsTableTableManager get learnCards =>
