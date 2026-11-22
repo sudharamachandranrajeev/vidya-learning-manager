@@ -161,6 +161,7 @@ class ReadinessPage extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(r.summary.text(day), key: const Key('readiness-summary'), style: text.titleMedium),
                       const SizedBox(height: 12),
+                      if (r.rows.isNotEmpty) _Counts(r.summary),
                       DatePick(
                         label: 'Interview date',
                         value: r.summary.interviewDate,
@@ -235,6 +236,47 @@ class ReadinessPage extends ConsumerWidget {
         );
       },
     ),
+  );
+}
+
+/// The summary as number tiles that roll to new counts as evidence comes
+/// in (still under reduced motion).
+class _Counts extends StatelessWidget {
+  const _Counts(this.s);
+  final ReadinessSummary s;
+
+  @override
+  Widget build(BuildContext context) => StatGrid(
+    children: [
+      StatTile(
+        label: 'Essential covered',
+        icon: Icons.verified_outlined,
+        value: s.essentialCovered,
+        suffix: ' of ${s.essential}',
+        caption: s.essential > 0 && s.essentialCovered == s.essential ? 'All covered' : null,
+        status: s.essential > 0 && s.essentialCovered == s.essential ? KitStatus.good : null,
+      ),
+      StatTile(
+        label: 'Essential weak',
+        icon: Icons.trending_flat,
+        value: s.essentialWeak,
+        caption: s.essentialWeak > 0 ? 'Strengthen' : null,
+        status: s.essentialWeak > 0 ? KitStatus.warning : null,
+      ),
+      StatTile(
+        label: 'Essential missing',
+        icon: Icons.help_outline,
+        value: s.essentialMissing,
+        caption: s.essentialMissing > 0 ? 'No evidence yet' : null,
+        status: s.essentialMissing > 0 ? KitStatus.serious : null,
+      ),
+      StatTile(
+        label: 'Desirable covered',
+        icon: Icons.star_outline,
+        value: s.desirableCovered,
+        suffix: ' of ${s.desirable}',
+      ),
+    ],
   );
 }
 
