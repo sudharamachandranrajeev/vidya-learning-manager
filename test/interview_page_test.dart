@@ -97,7 +97,7 @@ void main() {
     expect(find.byType(DrillPage), findsOneWidget);
     expect(find.text('Tests: Explain a new system to beginners who have never used one'), findsOneWidget);
     expect(find.textContaining('What a good answer covers'), findsOneWidget);
-    expect(find.textContaining('does not record sound'), findsOneWidget);
+    expect(find.textContaining('This timer records nothing'), findsOneWidget);
     expect(find.text('2:00'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
