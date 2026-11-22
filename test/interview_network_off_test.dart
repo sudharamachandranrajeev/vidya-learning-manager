@@ -275,6 +275,114 @@ void main() {
       expect(trap.attempts, isEmpty, reason: 'the dossier reads nothing by itself');
     },
   );
+
+  test(
+    'a round with opt-in video, offline: clips kept here, no path in synced tables or brain requests',
+    () async {
+      final trap = _Trap();
+      final db = memoryDatabase();
+      final tmp = await Directory.systemTemp.createTemp('vidya-video-off-');
+      addTearDown(() async {
+        await db.close();
+        await tmp.delete(recursive: true);
+      });
+      await _offline(trap, () async {
+        await ie.OfflineGuard.instance.run(() async {
+          final book = LearningBook(await Store.open(db));
+          const day = '2026-11-22';
+          final pid = (await book.importCurriculum(
+            parseCurriculum(jsonEncode(plan())),
+            today: day,
+          )).programId;
+          final drills = (await book.programDrills(pid)).drills;
+          final criteria = await book.programCriteria(pid);
+          final topics = {for (final t in await db.select(db.learnTopics).get()) t.id: t};
+          final drill = drills.firstWhere((d) => d.ref == 'q1');
+          final questions = [drillQuestionFor(drill, topics[drill.topicId], criteria)];
+          final id = await book.startRound(
+            programId: pid,
+            title: 'Example Trainer',
+            framework: 'nhs_values',
+            settings: const ie.RoundSettings(level: 1, aiPlan: false),
+            questions: questions,
+            criteria: criteria,
+            today: day,
+          );
+          final store = ie.VideoTakeStore(Directory('${tmp.path}/video-takes'));
+          final video = ie.RoundVideo(
+            roundId: id,
+            recorder: FakeVideoRecorder(Directory('${tmp.path}/camera')),
+            store: store,
+          );
+          final round = ie.SpokenRound(
+            questions: [for (final q in questions) ie.RoundQuestion(q.question, tests: q.why)],
+            voice: FakeVoice(),
+            listener: FakeListener([spokenAnswer(answer)]),
+            takes: MemoryTakes(),
+            sink: _BookSink(book, id),
+            video: video,
+            pause: (_) async {},
+          )..start();
+          await round.ask();
+          await round.done();
+          await round.close();
+          await book.finishRound(id, now: '${day}T10:00:00Z');
+          final clips = await store.list(roundId: id);
+          expect(clips, hasLength(1));
+          expect(ie.seekToQuote(clips, 'I wrote a one-page guide'), isNotNull);
+
+          var r = (await book.savedRound(id))!;
+          final local = ScriptedBrain(
+            (req) => scoreAll(req, '3', 'I wrote a one-page guide and ran short practice sessions'),
+          );
+          await book.saveRoundScoring(
+            id,
+            await ie.scoreTwice(
+              brain: VidyaInterviewBrain(
+                (system, text) async => jsonEncode(
+                  await local.ask(ie.BrainRequest(system: system, texts: [text], schema: const {})),
+                ),
+              ),
+              role: r.row.title,
+              framework: r.framework,
+              round: r.debriefRound,
+              random: math.Random(1),
+            ),
+          );
+          r = (await book.savedRound(id))!;
+          await book.recordRoundResults(r, today: day);
+
+          // Every row of every table (the synced ones and the device-only
+          // settings) and every brain request: no video path, file or folder.
+          final rows = <String>[];
+          for (final t in db.allTables) {
+            for (final row in await db.select(t).get()) {
+              rows.add('$row');
+            }
+          }
+          final sent = [
+            for (final q in local.requests) ...[q.system, ...q.texts],
+          ].join('\n');
+          final dump = rows.join('\n');
+          expect(dump, contains('one-page guide'), reason: 'sanity: the transcript is saved');
+          for (final leak in [
+            clips.single.videoPath,
+            clips.single.id,
+            tmp.path,
+            'video-takes',
+            '.mp4',
+            '.wav',
+          ]) {
+            expect(dump, isNot(contains(leak)), reason: 'a table holds $leak');
+            expect(sent, isNot(contains(leak)), reason: 'a brain request holds $leak');
+          }
+          await store.deleteAll();
+          expect(await store.list(), isEmpty);
+        });
+      });
+      expect(trap.attempts, isEmpty, reason: 'nothing tried to reach another machine');
+    },
+  );
 }
 
 class _BookSink implements ie.AnswerSink {
