@@ -5,7 +5,10 @@ import 'package:vidya/app/providers.dart';
 import 'package:vidya/app/reminders.dart';
 import 'package:vidya/app/session.dart';
 import 'package:vidya/domain/book.dart';
+import 'package:vidya/domain/journey_book.dart';
+import 'package:vidya/domain/offer_checker.dart';
 import 'package:vidya/domain/reminders.dart';
+import 'package:vidya/domain/stage_packs_book.dart';
 
 import 'support.dart';
 
@@ -52,6 +55,18 @@ void main() {
     test('today is skipped once its reminder time has passed, but its cards still count', () {
       final plan = planReminders([3, 0, 0, 0, 0, 0, 0], perWeek: 1, todayOpen: false);
       expect(plan, [(day: 1, due: 3)]);
+    });
+  });
+
+  group('checkInReminderDays', () {
+    test('one a day, a missed check-in today or tomorrow, only the next 60 days', () {
+      const today = '2027-02-10';
+      expect(checkInReminderDays(['2027-02-04', '2027-02-12', '2027-02-12', 'x'], today, todayOpen: true), [
+        0,
+        2,
+      ]);
+      expect(checkInReminderDays(['2027-02-04', '2027-02-10'], today, todayOpen: false), [1]);
+      expect(checkInReminderDays(['2027-06-01'], today, todayOpen: true), isEmpty);
     });
   });
 
@@ -125,6 +140,36 @@ void main() {
       await n.setEnabled(false);
       await container.read(reminderSyncProvider.future);
       expect(scheduler.scheduled, isEmpty);
+    });
+
+    test('a monthly job check-in due is scheduled with due 0', () async {
+      await open();
+      final now = DateTime.now();
+      final day = isoDate(now);
+      final pid = await session.book.addProgram('Example Officer', '', today: day);
+      await session.book.startJourney(
+        pid,
+        role: 'Example Officer',
+        sector: 'nhs',
+        now: now.toUtc().toIso8601String(),
+      );
+      // Started five weeks ago: the first check-in fell a week ago.
+      await session.book.setOfferFacts(
+        pid,
+        OfferFacts(startDate: addDays(day, -35)),
+        now: now.toUtc().toIso8601String(),
+      );
+      final n = container.read(remindersProvider.notifier);
+      await container.read(remindersProvider.future);
+      await n.setEnabled(true);
+      await n.setHour(23);
+      await container.read(reminderSyncProvider.future);
+      final checkIns = [
+        for (final (at, due) in scheduler.scheduled!)
+          if (due == 0) at,
+      ];
+      expect(checkIns, hasLength(1));
+      expect(checkIns.single.hour, 23);
     });
   });
 }

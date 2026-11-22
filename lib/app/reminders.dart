@@ -1,10 +1,12 @@
 import 'dart:io' show Platform;
 
+import 'package:brahma_core/brahma_core.dart' show isoDate, revisionProvider;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../domain/reminders.dart';
+import '../domain/stage_packs_book.dart';
 import 'providers.dart';
 
 /// The learner's reminder choices, made once in Settings. Device-only. Off
@@ -30,6 +32,7 @@ abstract class ReminderScheduler {
   Future<bool> requestPermission();
 
   /// Replaces every pending reminder with [reminders]: when, and cards due.
+  /// A due of 0 is the monthly job check-in from the journey's first 90 days.
   Future<void> replaceAll(List<(DateTime when, int due)> reminders);
 }
 
@@ -66,7 +69,11 @@ class LocalReminderScheduler implements ReminderScheduler {
       await _plugin.zonedSchedule(
         id: i,
         title: 'Vidya',
-        body: due == 1 ? '1 card is ready to review.' : '$due cards are ready to review.',
+        body: switch (due) {
+          0 => 'Time for your monthly job check-in: open the journey\'s first 90 days.',
+          1 => '1 card is ready to review.',
+          _ => '$due cards are ready to review.',
+        },
         // The instant is what matters, so UTC is as good as the local zone.
         scheduledDate: tz.TZDateTime.from(at, tz.UTC),
         notificationDetails: const NotificationDetails(
@@ -123,17 +130,29 @@ class Reminders extends AsyncNotifier<ReminderSettings> {
 
 final remindersProvider = AsyncNotifierProvider<Reminders, ReminderSettings>(Reminders.new);
 
-/// Keeps the device's pending reminders in step with the settings and the
-/// cards due. Watched from the home screen so it runs whenever either changes.
+/// Keeps the device's pending reminders in step with the settings, the
+/// cards due and any monthly job check-in due. Watched from the home screen
+/// so it runs whenever they change.
 final reminderSyncProvider = FutureProvider<void>((ref) async {
   final scheduler = ref.watch(reminderSchedulerProvider);
   if (!scheduler.supported) return;
   final settings = await ref.watch(remindersProvider.future);
   final stats = await ref.watch(statsProvider.future);
+  ref.watch(revisionProvider);
   final now = DateTime.now();
   DateTime at(int day) => DateTime(now.year, now.month, now.day + day, settings.hour);
   final plan = settings.enabled
       ? planReminders(stats.forecast(), perWeek: settings.perWeek, todayOpen: at(0).isAfter(now))
       : const <Reminder>[];
-  await scheduler.replaceAll([for (final r in plan) (at(r.day), r.due)]);
+  final checkIns = settings.enabled
+      ? checkInReminderDays(
+          [for (final c in await ref.watch(sessionProvider).book.checkInsDue()) c.day],
+          isoDate(now),
+          todayOpen: at(0).isAfter(now),
+        )
+      : const <int>[];
+  await scheduler.replaceAll([
+    for (final r in plan) (at(r.day), r.due),
+    for (final d in checkIns) (at(d), 0),
+  ]);
 });
