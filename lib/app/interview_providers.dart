@@ -104,10 +104,30 @@ class VideoKeepDays extends AsyncNotifier<int> {
   }
 }
 
-/// Deletes video takes past the limit when the app starts, then daily.
+/// Where the camera plugins leave a recording before it is moved into the
+/// store: the system temporary folder on Linux and Windows, the app's cache
+/// on Android.
+Future<List<Directory>> recorderTempDirs() async {
+  final dirs = [Directory.systemTemp];
+  try {
+    final t = await getTemporaryDirectory();
+    if (t.path != Directory.systemTemp.path) dirs.add(t);
+  } on Object {
+    // No platform folder (tests): the system one is enough.
+  }
+  return dirs;
+}
+
+/// When the app starts: sweeps what a crash or failed save left (half-moved
+/// clips, stale camera temporary files), then deletes video takes past the
+/// limit, and again daily.
 final videoRetentionProvider = FutureProvider<int>((ref) async {
   final store = await ref.watch(videoTakeStoreProvider.future);
-  final retention = VideoRetention(store, () => ref.read(videoKeepDaysProvider.future));
+  final retention = VideoRetention(
+    store,
+    () => ref.read(videoKeepDaysProvider.future),
+    recorderTemps: await recorderTempDirs(),
+  );
   ref.onDispose(retention.stop);
   final gone = await retention.start();
   if (gone > 0) ref.invalidate(videoTakesProvider);
