@@ -23,7 +23,7 @@ class Ring extends StatelessWidget {
     final c = color ?? Theme.of(context).colorScheme.primary;
     return TweenAnimationBuilder<double>(
       tween: Tween(end: value.clamp(0, 1)),
-      duration: const Duration(milliseconds: 700),
+      duration: _motion(context, 700),
       curve: Curves.easeOutCubic,
       builder: (context, v, _) => SizedBox(
         width: size,
@@ -94,7 +94,7 @@ class BarChart extends StatelessWidget {
                   children: [
                     TweenAnimationBuilder<double>(
                       tween: Tween(end: v / top),
-                      duration: const Duration(milliseconds: 600),
+                      duration: _motion(context, 600),
                       curve: Curves.easeOutCubic,
                       builder: (context, f, _) => Container(
                         height: math.max(4, (height - 4) * f),
@@ -195,7 +195,7 @@ class Meter extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           child: TweenAnimationBuilder<double>(
             tween: Tween(end: value.clamp(0, 1)),
-            duration: const Duration(milliseconds: 600),
+            duration: _motion(context, 600),
             curve: Curves.easeOutCubic,
             builder: (context, v, _) => LinearProgressIndicator(value: v, minHeight: 7, color: color),
           ),
@@ -204,3 +204,7 @@ class Meter extends StatelessWidget {
     ),
   );
 }
+
+/// [ms] of animation, or none when the system asks for reduced motion.
+Duration _motion(BuildContext context, int ms) =>
+    MediaQuery.maybeDisableAnimationsOf(context) ?? false ? Duration.zero : Duration(milliseconds: ms);

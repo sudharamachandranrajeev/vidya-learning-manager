@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/book.dart';
+import '../domain/exam.dart';
 import '../domain/quiz.dart';
 import '../domain/stats.dart';
+import '../domain/study_items.dart' show topicQuiz;
 import 'charts.dart';
 import 'common.dart';
 import 'dialogs.dart';
@@ -157,6 +159,7 @@ class CoursePage extends ConsumerWidget {
                                         ],
                                         today: s.today,
                                         quizPercent: quiz[tp.id],
+                                        exams: examAttempts(s.assessments, tp.id),
                                       ),
                                     ),
                                 ],
@@ -208,15 +211,21 @@ class CoursePage extends ConsumerWidget {
 
 /// A topic on the course page: the box ticks it off, a tap opens its page.
 class _TopicTile extends ConsumerWidget {
-  const _TopicTile(this.tp, this.items, {required this.today, this.quizPercent});
+  const _TopicTile(this.tp, this.items, {required this.today, this.quizPercent, this.exams = const []});
   final Topic tp;
   final List<StudyItem> items;
   final String today;
   final int? quizPercent;
 
+  /// The topic's exam attempts, oldest first.
+  final List<Assessment> exams;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final done = items.where((i) => i.done != null).length;
+    final quiz = topicQuiz(items);
+    final exam = quiz == null ? null : examRules(quiz);
+    final nextExam = exam == null ? null : examNextDay(exams, exam);
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Checkbox(
@@ -232,7 +241,9 @@ class _TopicTile extends ConsumerWidget {
         [
           tp.done != null ? 'Done ${relativeDay(tp.done!, today)}' : minutesText(tp.minutes),
           if (items.isNotEmpty) '$done of ${items.length} items',
-          if (quizPercent != null) 'quiz $quizPercent%',
+          if (quizPercent != null) '${exam != null ? 'exam' : 'quiz'} $quizPercent%',
+          if (exam != null && quizPercent == null) 'exam not taken',
+          if (examLocked(nextExam, today)) 'next exam ${niceDate(nextExam!)}',
         ].join(' · '),
       ),
       trailing: const Icon(Icons.chevron_right),
