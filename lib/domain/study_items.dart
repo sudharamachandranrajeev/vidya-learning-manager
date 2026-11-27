@@ -17,10 +17,19 @@ const itemTypes = {
   'quiz': 'Quiz',
   'interview drill': 'Interview drill',
   'note': 'Note',
+  'capstone': 'Capstone',
+  'scenario': 'Stress test',
 };
 
 /// Types listed under "Check yourself" rather than with the other items.
-const checkTypes = {'quiz', 'interview drill'};
+const checkTypes = {'quiz', 'interview drill', 'capstone', 'scenario'};
+
+/// Types a learner can add by hand: a capstone comes only from a plan,
+/// with its rules, and a stress test only from a plan, with its table.
+Map<String, String> get addableItemTypes => {
+  for (final e in itemTypes.entries)
+    if (e.key != 'capstone' && e.key != 'scenario') e.key: e.value,
+};
 
 /// Types that have a place to stop and come back to.
 const stoppableTypes = {'video', 'book'};
@@ -42,6 +51,7 @@ String itemTypeOf(String raw) {
     'mooc' || 'class' || 'module' => 'course',
     'youtube' || 'podcast' || 'lecture' => 'video',
     'test' || 'self test' => 'quiz',
+    'stress test' || 'stress' || 'in tray' || 'in tray exercise' || 'triage' => 'scenario',
     _ => '',
   };
 }
@@ -141,11 +151,26 @@ const passPercent = 70;
 StudyItem? topicQuiz(Iterable<StudyItem> items) =>
     items.where((i) => i.type == 'quiz' && i.retired.isEmpty && quizLength(i) > 0).firstOrNull;
 
+/// The pass mark of a quiz: its exam's `passPercent` when the plan set
+/// one (1–100), else [passPercent].
+int quizPassPercent(StudyItem quiz) => switch (itemContent(quiz)['exam']) {
+  {'passPercent': final num p} => p.round().clamp(1, 100),
+  _ => passPercent,
+};
+
+/// The pass mark of the topic's quiz, [passPercent] when it has none.
+int topicPassPercent(Iterable<StudyItem> items) => switch (topicQuiz(items)) {
+  final q? => quizPassPercent(q),
+  null => passPercent,
+};
+
 /// Whether the topic's quiz still stands between it and being earned: it
 /// has one, and the last score ([quizPercent], null when never taken) is
-/// under 70%.
-bool quizPending(Iterable<StudyItem> items, int? quizPercent) =>
-    topicQuiz(items) != null && (quizPercent == null || quizPercent < passPercent);
+/// under its pass mark (70% unless its exam sets another).
+bool quizPending(Iterable<StudyItem> items, int? quizPercent) => switch (topicQuiz(items)) {
+  final q? => quizPercent == null || quizPercent < quizPassPercent(q),
+  null => false,
+};
 
 /// Whether the topic is earned: it has something to earn it by (required
 /// items or a quiz), every required item is done, and, when it has a quiz,

@@ -3,8 +3,13 @@ import 'dart:math';
 
 import 'package:brahma_core/brahma_core.dart';
 
+import 'capstone.dart';
 import 'cloze.dart';
+import 'exam.dart';
+import 'framework.dart';
+import 'interview.dart' show drillPersonas;
 import 'journey.dart';
+import 'scenario.dart';
 import 'study_items.dart';
 
 /// A whole study plan in one file: a program, its roadmap of courses with
@@ -101,8 +106,12 @@ class CurriculumPlan {
     this.role = '',
     this.criteria = const [],
     this.journey,
+    this.framework,
   });
   final String title, goal, part;
+
+  /// The framework to self-assess against (format 3), null when none.
+  final Framework? framework;
 
   /// The job journey (format 3), null when the plan has none.
   final Journey? journey;
@@ -127,7 +136,12 @@ const curriculumFormat = 'vidya-curriculum';
 // Limits keep a runaway or hostile file from flooding the database.
 const _maxCourses = 100, _maxTopics = 300, _maxCards = 5000, _maxNotes = 300, _maxSkills = 200;
 const _maxTitle = 200, _maxText = 4000, _maxBody = 40000;
-const _maxItems = 50, _maxQuiz = 20, _maxDrills = 30, _maxCriteria = 200, _maxAllItems = 5000;
+const _maxItems = 50,
+    _maxQuiz = 20,
+    _maxExamQuiz = 100,
+    _maxDrills = 30,
+    _maxCriteria = 200,
+    _maxAllItems = 5000;
 
 /// The newest plan format this Vidya reads. Format 1 plans (no items,
 /// quiz, drills or criteria) and format 2 plans (no journey) still import.
@@ -252,15 +266,30 @@ CurriculumPlan parseCurriculum(String text) {
     final name = _str(c['title'], _maxTitle);
     if (name.isEmpty || !seen.add(name.toLowerCase())) continue;
     final topics = <PlanTopic>[];
-    for (final tp in _list(c['topics'], _maxTopics, 'topics in “$name”')) {
+    final rawTopics = _list(c['topics'], _maxTopics, 'topics in “$name”');
+    // A quiz question's `topic` names a topic in the same course, by title
+    // or by the topic's `id`; either becomes the topic's title.
+    final topicNames = <String, String>{};
+    for (final tp in rawTopics) {
+      final t = _str(tp is Map ? tp['title'] : tp, _maxTitle);
+      if (t.isEmpty) continue;
+      topicNames.putIfAbsent(t.toLowerCase(), () => t);
+      final id = tp is Map ? _str(tp['id'], 200) : '';
+      if (id.isNotEmpty) topicNames.putIfAbsent(id.toLowerCase(), () => t);
+    }
+    // Capstones name drills anywhere in the course, so they are read once
+    // every topic's drills are known.
+    final capstones = <int, Object?>{};
+    for (final tp in rawTopics) {
       final topic = tp is Map ? tp : {'title': tp};
       final tt = _str(topic['title'], _maxTitle);
       if (tt.isEmpty) continue;
-      final items = _items(topic, tt);
+      final items = _items(topic, tt, topicNames);
       allItems += items.length;
       if (allItems > _maxAllItems) {
         throw const FormatException('Too many study items; the most is $_maxAllItems in one plan.');
       }
+      if (topic['capstone'] != null) capstones[topics.length] = topic['capstone'];
       topics.add(
         PlanTopic(
           tt,
@@ -277,6 +306,44 @@ CurriculumPlan parseCurriculum(String text) {
           ],
         ),
       );
+    }
+    if (c['capstone'] != null && topics.isNotEmpty) capstones[-1] = c['capstone'];
+    if (capstones.isNotEmpty) {
+      // A drill is named by its `id`, or by its question.
+      final drillRefs = <String, String>{
+        for (final t in topics)
+          for (final i in t.items)
+            if (i.type == 'interview drill') ...{
+              i.ref.toLowerCase(): i.ref,
+              (jsonDecode(i.content)['question'] as String).toLowerCase(): i.ref,
+            },
+      };
+      for (final MapEntry(key: k, value: raw) in capstones.entries) {
+        final rules = planCapstone(raw, drillRefs, course: k < 0);
+        if (rules == null) continue;
+        final at = k < 0 ? topics.length - 1 : k;
+        final t = topics[at];
+        if (++allItems > _maxAllItems) {
+          throw const FormatException('Too many study items; the most is $_maxAllItems in one plan.');
+        }
+        topics[at] = PlanTopic(
+          t.title,
+          minutes: t.minutes,
+          details: t.details,
+          resources: t.resources,
+          criteria: t.criteria,
+          items: [
+            ...t.items,
+            PlanItem(
+              type: capstoneType,
+              title: 'Capstone: ${k < 0 ? name : t.title}',
+              ref: k < 0 ? 'capstone|course' : 'capstone',
+              minutes: rules.minutes ?? 0,
+              content: jsonEncode(rules.toJson()),
+            ),
+          ],
+        );
+      }
     }
     final kind = _str(c['kind'], 20).toLowerCase();
     final start = c['startWeek'] is num ? _int(c['startWeek'], 0, 0, 520) : null;
@@ -338,6 +405,12 @@ CurriculumPlan parseCurriculum(String text) {
   ];
 
   final journey = j['journey'] == null ? null : parseJourney(j['journey']);
+  // A framework on the program, else the first one a course carries.
+  var framework = Framework.fromJson(j['framework'] ?? program['framework']);
+  for (final c in _list(j['courses'], _maxCourses, 'courses')) {
+    if (framework != null) break;
+    if (c is Map) framework = Framework.fromJson(c['framework']);
+  }
 
   if (courses.isEmpty && cards.isEmpty && notes.isEmpty && journey == null) {
     throw const FormatException('The plan has no courses, cards or notes.');
@@ -354,6 +427,7 @@ CurriculumPlan parseCurriculum(String text) {
     role: _str(j['role'] ?? program['role'], _maxTitle),
     criteria: criteria,
     journey: journey,
+    framework: framework,
   );
 }
 
@@ -361,8 +435,9 @@ CurriculumPlan parseCurriculum(String text) {
 String _ref(Object? v) => _str(v, 60).replaceAll(',', ' ');
 
 /// A topic's `items`, `quiz` and `drills` as items, in that order, each
-/// once by its stable ref.
-List<PlanItem> _items(Map topic, String topicTitle) {
+/// once by its stable ref. [topicNames] maps the course's topic titles and
+/// ids (lower case) to their titles, for quiz questions' `topic`.
+List<PlanItem> _items(Map topic, String topicTitle, [Map<String, String> topicNames = const {}]) {
   final out = <PlanItem>[];
   final refs = <String>{};
   void add(PlanItem i) {
@@ -375,7 +450,13 @@ List<PlanItem> _items(Map topic, String topicTitle) {
     final title = _str(x['title'], _maxTitle).isNotEmpty ? _str(x['title'], _maxTitle) : url;
     if (title.isEmpty) continue;
     var type = itemTypeOf(_str(x['type'], 40));
+    // A capstone comes only from a `capstone` block, with its rules.
+    if (type == capstoneType) type = '';
     if (type.isEmpty) type = url.isEmpty ? 'note' : linkTypeOf(url);
+    // A stress test (format 3) carries its brief and table; one with no
+    // column or no row is left out.
+    final scenario = type == scenarioType ? Scenario.fromJson(x) : null;
+    if (type == scenarioType && scenario == null) continue;
     final extra = {
       for (final k in ['instructions', 'doneWhen'])
         if (_str(x[k], _maxText) case final v when v.isNotEmpty) k: v,
@@ -389,22 +470,37 @@ List<PlanItem> _items(Map topic, String topicTitle) {
         url: url,
         source: _str(x['source'], 100),
         licence: _str(x['licence'] ?? x['license'], 100),
-        minutes: _int(x['minutes'], 0, 0, 6000),
+        minutes: scenario?.minutes ?? _int(x['minutes'], 0, 0, 6000),
         required: x['required'] == true,
-        content: extra.isEmpty ? '' : jsonEncode(extra),
+        content: scenario != null
+            ? jsonEncode(scenario.toJson())
+            : extra.isEmpty
+            ? ''
+            : jsonEncode(extra),
       ),
     );
   }
 
-  final questions = parseQuizQuestions(topic['quiz'], 'quiz questions in “$topicTitle”');
+  // `quiz` is a list of questions, or (also accepted) an object holding
+  // `questions` and `exam`.
+  final quiz = topic['quiz'];
+  final rawExam = topic['exam'] ?? (quiz is Map ? quiz['exam'] : null);
+  // An exam may hold a bigger pool than a practice quiz.
+  final questions = parseQuizQuestions(
+    quiz is Map ? quiz['questions'] : quiz,
+    'quiz questions in “$topicTitle”',
+    topics: topicNames,
+    max: rawExam is Map ? _maxExamQuiz : _maxQuiz,
+  );
   if (questions.isNotEmpty) {
+    final exam = _exam(rawExam, questions.length);
     add(
       PlanItem(
         type: 'quiz',
         title: 'Quiz: $topicTitle',
         ref: 'quiz',
-        minutes: (questions.length * 1.5).ceil(),
-        content: jsonEncode({'questions': questions}),
+        minutes: exam?.minutes ?? (questions.length * 1.5).ceil(),
+        content: jsonEncode({'questions': questions, 'exam': ?exam?.toJson()}),
       ),
     );
   }
@@ -413,10 +509,17 @@ List<PlanItem> _items(Map topic, String topicTitle) {
     final m = d is Map ? d : {'question': d};
     final question = _str(m['question'] ?? m['title'], _maxText);
     if (question.isEmpty) continue;
+    // `persona` and `ladder` (format 3) preselect the interviewer's panel
+    // and level for this drill; an unknown panel or a level that is not a
+    // number is left out, a number out of range held to 1–5.
+    final persona = _str(m['persona'], 40).toLowerCase();
+    final ladder = m['ladder'];
     final extra = {
       'question': question,
       for (final k in ['criterion', 'rubric', 'story'])
         if (_str(m[k], _maxText) case final v when v.isNotEmpty) k: v,
+      if (drillPersonas.contains(persona)) 'persona': persona,
+      if (ladder is num || int.tryParse('${ladder ?? ''}') != null) 'ladder': _int(ladder, 1, 1, 5),
     };
     final id = _str(m['id'], 200);
     add(
@@ -432,12 +535,27 @@ List<PlanItem> _items(Map topic, String topicTitle) {
   return out;
 }
 
+/// A topic's `exam` block (format 3): `minutes` 1–300 (1.5 a question
+/// asked when missing), `passPercent` 1–100 (70 when missing), `retakeDays`
+/// 0–60 (0 when missing), `shuffle`, and `count` 1–100 (questions drawn per
+/// attempt; all when missing). Out-of-range values are held to the range,
+/// as the plan's other numbers are. Null when there is none.
+ExamRules? _exam(Object? v, int questions) => v is Map ? ExamRules.fromJson(v, questions: questions) : null;
+
 /// Quiz questions from a plan, checked as a topic's quiz is: a question
 /// and an answer each, a choice with two or more options (an index answer
-/// becomes the option), at most [_maxQuiz]. Also used by journey checks.
-List<Map<String, Object>> parseQuizQuestions(Object? list, String what) {
+/// becomes the option), at most [max] ([_maxQuiz], or [_maxExamQuiz] for
+/// an exam). A question's optional `topic`
+/// is matched against [topics] (lower-case title or id to title) and kept
+/// as written when it matches none. Also used by journey checks.
+List<Map<String, Object>> parseQuizQuestions(
+  Object? list,
+  String what, {
+  Map<String, String> topics = const {},
+  int max = _maxQuiz,
+}) {
   final questions = <Map<String, Object>>[];
-  for (final q in _list(list, _maxQuiz, what)) {
+  for (final q in _list(list, max, what)) {
     if (q is! Map) continue;
     final question = _str(q['question'] ?? q['q'] ?? q['front'], _maxText);
     final options = [
@@ -462,6 +580,7 @@ List<Map<String, Object>> parseQuizQuestions(Object? list, String what) {
       if (kind == 'choice') 'options': options,
       'answer': answer,
       if (_str(q['explain'], _maxText) case final e when e.isNotEmpty) 'explain': e,
+      if (_str(q['topic'], _maxTitle) case final t when t.isNotEmpty) 'topic': topics[t.toLowerCase()] ?? t,
     });
   }
   return questions;
@@ -540,7 +659,7 @@ ABOUT ME (I have filled these in):
 
 WHAT TO MAKE:
 1. A roadmap. Split the goal into courses (modules) in the order I should study them. Give each a startWeek and dueWeek, counted in whole weeks from today (week 0), so the whole plan fits my weekly hours before the deadline and leaves the last weeks for revision and practice tests.
-2. Topics. For every course, list the topics to cover in order. Each topic has minutes of study, details (the key facts, formulas, procedures and common mistakes, 2–6 sentences), and items: what to study or do, in order. Items are real, well-known resources (preferably free; if you are not sure of a web address, leave out the url — never invent links) and at least one practice task. Mark "required": true on the items that must be done before the topic counts as learned. Give 3–10 quiz questions per topic, and interview drills where the goal is a job.
+2. Topics. For every course, list the topics to cover in order. Each topic has minutes of study, details (the key facts, formulas, procedures and common mistakes, 2–6 sentences), and items: what to study or do, in order. Items are real, well-known resources (preferably free; if you are not sure of a web address, leave out the url — never invent links) and at least one practice task. Mark "required": true on the items that must be done before the topic counts as learned. Give 3–10 quiz questions per topic (up to 100 for a topic with an "exam"), and interview drills where the goal is a job.
 3. Skills the plan builds, each with a category and a target level from 1 (aware) to 5 (expert).
 4. Flashcards: 10–30 per course, testing the facts and principles in its topics. Write them in your own words; never copy questions from copyrighted books or past papers. Cloze cards are allowed: put {{c1::hidden words}} in the front and leave back empty.
 5. Notes: one titled "Roadmap" with a week-by-week plan in Markdown; for an exam, one titled "Exam day" (format, timing, pass mark, what to bring, rules); add any others that help.
@@ -556,6 +675,15 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
     "targetDate": "yyyy-mm-dd"
   },
   "criteria": [{ "id": "c1", "text": "Something the goal or job asks for", "essential": true }],
+  "framework": {
+    "id": "nhs_lmf",
+    "name": "Framework name",
+    "status": "draft",
+    "stages": [{ "id": "1", "name": "First stage" }, { "id": "2", "name": "Next stage" }],
+    "targetStage": "1",
+    "areas": [{ "id": "self", "title": "Area name" }],
+    "standards": [{ "id": "self_safety", "area": "self", "title": "Standard title", "descriptors": { "1": "What it looks like at stage 1", "2": "At stage 2" }, "criteria": ["c1"], "topics": ["Topic title"] }]
+  },
   "journey": {
     "role": "Job title (only when the goal is one job)",
     "employer": "Employer's name",
@@ -588,13 +716,19 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
           "criteria": ["c1"],
           "items": [
             { "type": "video", "title": "Resource name", "url": "https://…", "source": "Site, channel or publisher", "licence": "Optional, e.g. CC BY", "minutes": 20, "required": true },
-            { "type": "practice task", "title": "What to do", "instructions": "How to do it", "doneWhen": "What finished looks like", "minutes": 30, "required": true }
+            { "type": "practice task", "title": "What to do", "instructions": "How to do it", "doneWhen": "What finished looks like", "minutes": 30, "required": true },
+            { "type": "scenario", "id": "st1", "title": "Stress test name", "minutes": 20, "brief": "The situation and the task, in Markdown", "columns": ["Item", "Detail", "Waited", "Flags"], "rows": [{ "cells": ["A1", "Made-up detail", "3 weeks", "urgent"], "risk": "high", "expect": "escalate", "why": "Model answer" }], "actions": ["act", "escalate", "leave", "note"], "rubric": "What good work looks like", "criteria": ["c1"] }
           ],
           "quiz": [
-            { "question": "A question", "kind": "choice", "options": ["One", "Two", "Three"], "answer": "Two" },
+            { "question": "A question", "kind": "choice", "options": ["One", "Two", "Three"], "answer": "Two", "topic": "Topic title" },
             { "question": "A question", "kind": "short", "answer": "The answer" }
           ],
-          "drills": [{ "question": "An interview question on this topic", "criterion": "c1" }]
+          "exam": { "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true, "count": 15 },
+          "drills": [
+            { "id": "d1", "question": "An interview question on this topic", "criterion": "c1" },
+            { "id": "d2", "question": "A question a tough panel would press on", "criterion": "c1", "persona": "challenging", "ladder": 2 }
+          ],
+          "capstone": { "drills": ["d1", "d2"], "average": 4.0, "minimum": 3, "passesInRow": 2, "minutes": 45 }
         }
       ]
     }
@@ -606,8 +740,13 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
 
 RULES:
 - "kind" is one of: course, book, certification, degree, project, practice.
-- An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note. Give links and titles only; never copy a course's text.
+- An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note, scenario. Give links and titles only; never copy a course's text.
+- A "scenario" item is a timed stress test: a made-up table (a workqueue, an inbox, a list of jobs) where I pick an action for each row against a clock that never pauses. Only invent fictional data; never use real people's details. "minutes" is 5–180; at most 8 "columns" and 60 "rows" (each cell up to 200 characters); "actions" lists 2–8 choices (act, escalate, leave, note when left out). Mark rows that would do harm if missed "risk": "high" (or medium, low); "expect" is the action a good answer takes and "why" a one-line model answer, both optional. "rubric" says what good work looks like. Use it where the goal involves triage, prioritising or an in-tray exercise; leave it out otherwise.
 - A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card. Add a one-sentence "explain" where it helps.
+- "exam" is only for a topic whose quiz is a timed mock exam (for example a course's final topic, "Mock exam"); leave it out for ordinary quizzes. "minutes" is 1–300, "passPercent" 1–100 (the real exam's pass mark if known), "retakeDays" 0–60 (days to wait before the next attempt counts), "shuffle" true or false, "count" 1–100 (how many questions each attempt draws; give a pool of at least twice that many so attempts differ, and leave it out to ask them all). An exam's quiz may hold up to 100 questions; other quizzes at most 20. In an exam, give each question a "topic": the title of the topic in the same course that it tests, so the results show which topics to study first.
+- A drill may set "persona": the interview panel that asks it, one of friendly, neutral, probing, quiet or challenging (firm: challenges claims, asks for evidence, interrupts politely, never rude), and "ladder": its difficulty from 1 (rehearsal) to 5 (tough). Use "challenging" for stress tests and cross-examination, and start it at ladder 1 or 2 so the first practice is a safe rehearsal. Leave both out to let me choose.
+- "capstone" is only for a final test of several interview drills taken in one sitting; put it on a topic, or on a course to cover drills from all its topics. "drills" lists the drills' "id"s from the same course (give those drills an "id"); "average" is the lowest average to pass on a 1–5 scale (1.0–5.0), "minimum" the lowest single drill score allowed (1–5), "passesInRow" how many sittings in a row must pass (1–10), "minutes" the time for the whole sitting (5–300). Leave it out otherwise.
+- "framework" is only for a goal judged against a published framework of standards (a leadership or competency framework); leave it out otherwise. At most 6 "stages" and 40 "standards"; each descriptor up to 1000 characters, written in your own words (never copy the framework's text). "status" is "final" only when you know the published final wording, else "draft". "targetStage" is the stage I am aiming for. A standard's "criteria" names criterion ids it supports and "topics" names topics (titles) that teach it. Use these ids so my tagged interview stories match: NHS Leadership and Management Framework "nhs_lmf" (standards self_safety, self_communicating, self_accountability, people_environment, people_performance, people_resources, care_outcomes, care_improvement, care_collaboration); Healthcare Leadership Model "nhs_hlm" (shared_purpose, leading_with_care, evaluating_information, connecting_service, sharing_vision, engaging_team, holding_to_account, developing_capability, influencing_results); NHS Constitution values "nhs_values" (working_together, respect_dignity, quality_of_care, compassion, improving_lives, everyone_counts). I rate myself; nothing is shared.
 - "criteria" lists what the goal asks for (for a job: the essential and desirable criteria); each topic's "criteria" names the ids it works towards. Leave both out if there are none.
 - "journey" is only for a goal that is one job; leave it out otherwise. "sector" is one of: nhs, university, private, civil-service, other. A stage "id" is one of: decide, research, contact, apply, follow-up, prepare, interview-day, after, offer, checks, joining, first-90-days, grow. Vidya fills in every stage you leave out from its own dated guides, so add only what is special to this job. A line with no "source" is shown as general advice; never invent a source or a date.
 - Plain JSON: double quotes, no comments, no trailing commas, \\n for line breaks inside text.

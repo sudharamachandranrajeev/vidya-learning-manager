@@ -120,7 +120,7 @@ void main() {
     for (final (k, pick) in [(0, 'Yes'), (1, 'Partly'), (2, 'Partly'), (3, 'No')]) {
       await app.tap(find.descendant(of: find.byKey(Key('check-$k')), matching: find.text(pick)));
     }
-    expect(find.text('Score: 4/8 (weak, under 5)'), findsOneWidget);
+    expect(find.text('Score: 3/5 (4/8) · weak'), findsOneWidget);
     await app.tapText('Save this attempt');
     // The confirmation may queue behind an achievement toast; the attempt itself shows at once.
     expect(find.text('Past attempts'), findsOneWidget);

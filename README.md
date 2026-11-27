@@ -211,6 +211,66 @@ Plans made before topic pages (format 1) still import. Format 2 adds, all option
 - for the plan, `criteria`: `{ "id", "text", "essential", "kind", "source", "shown" }`, and a
   `role`; each topic lists the criteria it works towards in its own `criteria` (ids).
 
+Format 3 adds, also optional (older plans import unchanged):
+
+- per topic, `exam`: `{ "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true,
+  "count": 15 }` makes the topic's quiz a timed exam. `minutes` is 1–300 (1.5 a question asked
+  when left out), `passPercent` 1–100 (70), `retakeDays` 0–60 (0: no wait), `shuffle` true or
+  false (false), `count` 1–100 (questions drawn per attempt; all when left out). Values outside a
+  range are held to it. An exam's quiz may hold up to 100 questions; other quizzes up to 20. The quiz may also be written as
+  `"quiz": { "questions": [ … ], "exam": { … } }`.
+- per quiz question, `topic`: the title of the topic in the same course it tests (or that
+  topic's `id`, when the plan gives topics one), for the exam's per-topic breakdown. A name
+  that matches no topic is kept as written.
+- per drill, `persona` and `ladder`: `{ "id": "d2", "question": "…", "persona": "challenging",
+  "ladder": 2 }`. `persona` is the panel that asks it (friendly, neutral, probing, quiet or
+  challenging; any other name is left out) and `ladder` its level, 1–5 (held to the range). When
+  you open the drill in the interviewer they are chosen for you; you can still change them, and
+  they are never saved as your own settings.
+- per topic or per course, `capstone`: `{ "drills": ["d1", "d2"], "average": 4.0, "minimum": 3,
+  "passesInRow": 2, "minutes": 45 }`. Only `drills` is needed: drill `id`s (or questions) from
+  the same course, in the order asked, at most 12; unknown ones are left out, and with none left
+  there is no capstone. `average` is 1.0–5.0 (4.0 when left out), `minimum` 1–5 (3),
+  `passesInRow` 1–10 (1), `minutes` 5–300 (no clock). Values outside a range are held to it. A
+  course's capstone is kept on its last topic.
+- per topic item, a stress test of type `scenario` (also read from "stress test" or "in-tray
+  exercise"):
+
+  ```json
+  { "type": "scenario", "id": "st1", "title": "Workqueue triage", "minutes": 20,
+    "brief": "Markdown text", "columns": ["Item", "Specialty", "Weeks waited", "Flags"],
+    "rows": [{ "cells": ["T001", "ENT", "34", "urgent referral"], "risk": "high",
+               "expect": "escalate", "why": "optional model answer" }],
+    "actions": ["act", "escalate", "leave", "note"], "rubric": "text", "criteria": ["c1"] }
+  ```
+
+  `columns` and `rows` are needed: at most 8 columns and 60 rows (the rest are left out), each
+  cell up to 200 characters; a row may be written as a bare list of cells. `minutes` is 5–180
+  (20 when left out). `actions` takes 2–8 names (act, escalate, leave, note when left out).
+  `risk` is high, medium or low and `expect` one of the actions; anything else is left out. A
+  scenario with no column or no row is left out. Use made-up data only.
+- per program (or on one course), a `framework` to rate yourself against:
+
+  ```json
+  "framework": { "id": "nhs_lmf", "name": "Framework name", "status": "draft",
+    "stages": [{ "id": "1", "name": "New and first-line" }, { "id": "2", "name": "Middle" }],
+    "targetStage": "1", "areas": [{ "id": "self", "title": "Self effectiveness" }],
+    "standards": [{ "id": "self_safety", "area": "self", "title": "Standard title",
+      "descriptors": { "1": "text", "2": "text" }, "criteria": ["c1"], "topics": ["Topic title"] }] }
+  ```
+
+  `id`, `name` and at least one standard with an `id` and `title` are needed. At most 40
+  standards and 6 stages (more is an error, like other lists); a descriptor is cut at 1000
+  characters and one for a stage the framework does not have is left out. `status` is `final`
+  or else `draft`. A `targetStage` the framework does not have becomes its first stage. Use
+  Udyoga's ids so tagged stories match: `nhs_lmf` (self_safety, self_communicating,
+  self_accountability, people_environment, people_performance, people_resources,
+  care_outcomes, care_improvement, care_collaboration), `nhs_hlm` (shared_purpose,
+  leading_with_care, evaluating_information, connecting_service, sharing_vision, engaging_team,
+  holding_to_account, developing_capability, influencing_results) and `nhs_values`
+  (working_together, respect_dignity, quality_of_care, compassion, improving_lives,
+  everyone_counts). Ids compare in lower case with `-` and `_` alike.
+
 An item the plan stops sending is set aside on its topic page (**No longer in the plan**), not
 deleted, and no longer counts; items you had done stay as they are. Quiz questions you add or
 change are kept when the plan comes again.
@@ -226,8 +286,24 @@ change are kept when the plan comes again.
 3. **Edit questions** adds your own. If you connected an AI for **Ask AI**, **Write questions
    with AI** adds a few, labelled AI and editable; only the topic and item titles are sent.
 4. A topic is earned when its required items are done and, if it has a quiz, your last score was
-   70% or more. You can still tick it off earlier with a short note.
-5. A practice task shows its instructions and "done when" line. Marking it done asks for an
+   70% or more (or the exam's own pass mark). You can still tick it off earlier with a short note.
+5. **Exams.** When the plan made a topic's quiz an exam, the topic page shows **Start the exam**
+   with its time and pass mark. The timer does not pause, even if you leave the app, and you see
+   no answers until you hand in; when time runs out the exam is handed in by itself. Typed answers
+   that do not match, and cards, you mark yourself after the timer stops. The report card shows
+   your score, pass or fail, the time taken, how many you answered, a score per topic, the topics
+   to **study these first**, and every answer with its explanation. Missed questions become
+   flashcards, as in a quiz. If the plan sets a wait between attempts, the topic and course pages
+   show the date of the next one; **Practise anyway (not counted)** runs the questions as an
+   ordinary quiz that saves no score. With a `count`, each attempt draws that many questions,
+   ones you have not had in an exam first, then those asked longest ago; the report card says how
+   many came up in an earlier attempt, and the exam warns before you start when the pool is under
+   twice the count, because a remembered answer can look like knowledge. If the app closes or is
+   stopped during an exam, it picks up where you were when you open the exam again; the time has
+   kept running, and if it ran out the exam is handed in then. The topic
+   page charts your exam scores. A screen reader hears the time left every five minutes and at one
+   minute, 30 and 10 seconds.
+6. A practice task shows its instructions and "done when" line. Marking it done asks for an
    evidence link, or a note when there is nothing to link to; then **Add to portfolio** makes it
    a portfolio project in one tap.
 
@@ -242,7 +318,8 @@ change are kept when the plan comes again.
 2. **Rate yourself** on four checks, each **No**, **Partly** or **Yes** (0, 1 or 2): situation
    clear, your own actions, the result, and linked back to the criterion. **Save this attempt**
    keeps the score (out of 8) on the topic and the drill. Under 5 of 8 flags the drill as weak.
-   Delete any attempt from **Past attempts**.
+   Delete any attempt from **Past attempts**. Scores are shown on the plan's 1–5 rubric scale
+   too (below).
 3. **Scenario questions** ("What would you do if…") open the scenario frame: what you would
    check first, how you would stay within your role, when you would escalate, and how you would
    write it down or hand it over. It is saved with the attempt. Switch it on for any drill.
@@ -265,6 +342,72 @@ change are kept when the plan comes again.
 Your stories, scores and feedback logs stay on this device, or travel only through your own
 sync. Nothing is sent anywhere else.
 
+**The 1–5 rubric scale.** Every drill score (your four checks, an AI score placed on the drill
+scale, or Udyoga's score scaled to 8) is shown out of 5 as `round(score / 8 × 4) + 1`, halves
+rounded up: 0/8 is 1/5, 1–2 are 2/5, 3–4 are 3/5, 5–6 are 4/5 and 7–8 are 5/5. A weak drill
+(under 5/8) is never above 3/5. Only the display changes; scores are still stored out of 8.
+
+#### Capstone
+
+When a plan sets a capstone, it shows as a card on the course page and on its topic page.
+
+1. **Start capstone.** The page lists the drills and the panel each is asked by. Tap **Start
+   capstone**: the drills come one after another in one sitting, with one clock for the whole
+   sitting. The clock never stops you; going over the time is noted.
+2. **Answer each drill** out loud and rate yourself on the four checks, or tap **Answer with
+   the interviewer**: it opens on that drill's panel and level, and its score counts once it is
+   saved on the drill. **Skip this drill** is allowed, but then the sitting does not pass.
+3. **The result**: each drill out of 5, the average, the lowest score, and pass or fail. A
+   sitting passes when every drill was answered, the average reaches the capstone's `average`
+   and no drill is under its `minimum`. The passes in a row show as "1 of 2 passes in a row"; a
+   sitting that does not pass starts the count again. Once the count is reached, the capstone is
+   done.
+
+Sittings are kept as results on the capstone (no database change), and each drill answered in
+one is also an ordinary attempt on that drill, so Job readiness counts it.
+
+#### Stress test
+
+A plan's `scenario` item shows as a card under **Check yourself** on its topic page, and on the
+course page, with its last result.
+
+1. **The brief.** The situation, the table's size, the actions and the rubric. Rows that could do
+   harm are not marked: finding them is part of the test.
+2. **Start the stress test.** A countdown that never pauses, even if you leave or the app is
+   killed (the work in progress is kept on this device, never synced, and picks up from the
+   original start). Each row is a card, so the table never scrolls sideways at large text: pick
+   one action and add a one-line reason if you like. **Hand in** early, or it is handed in at
+   zero.
+3. **The checks.** High-risk rows left without an action come first, in red with a warning icon,
+   with the model answer. Then each row the plan gave an expected action: yours, the expected
+   one, matched or different, and the model answer. Then the count per action and the time used.
+4. **Rate yourself** on four checks, 0–2 each (risks first, sensible priorities, reasons
+   recorded, met the rubric): a score out of 8, shown on the 1–5 rubric scale.
+
+The item is done once an attempt leaves no high-risk row untouched and you rate it at least 5/8
+(4/5). Attempts are kept as results on the item with a detail of kind "scenario" (no database
+change) and listed under **Past attempts**.
+
+#### Framework self-assessment
+
+When a plan carries a `framework`, the goal page shows a card with its name.
+
+1. **Open it.** A "Draft structure — check final wording" banner shows while the plan marks the
+   framework as a draft.
+2. **Pick your target stage.** Each standard shows what it looks like at that stage.
+3. **Rate yourself** on each standard, 0–4: 0 Not yet, 1 Starting, 2 Developing, 3 Secure,
+   4 Strong. Add a note if you like. Each rating is dated; rate again later and the page shows
+   the change ("Up 2 since 1 Oct 2026") and the history.
+4. **Evidence** is your Udyoga stories tagged with that standard in Udyoga's story bank (they
+   arrive with Udyoga's plan).
+5. **Work on next** lists each gap, a standard rated 1 or less or with no story yet, with the
+   topics that teach it.
+
+A gap makes the job readiness rows its standard names weak. A self-rating never marks a row
+covered on its own. Ratings are yours alone: there is no 360 feedback and nothing is shared.
+Ratings are kept as results with a detail of kind "framework-rating" and sync like other
+results; they are not counted as tests (no database change).
+
 #### Mock interview
 
 The interviewer is the same one Udyoga uses. It runs on your device.
@@ -272,7 +415,11 @@ The interviewer is the same one Udyoga uses. It runs on your device.
 1. **Open it.** On a drill, tap **Practise with the interviewer**. Or on **Before the interview**,
    tap **Start a mock interview**: your weak drills are picked first (up to six).
 2. **Choose the panel.** Pick the panel's manner, the level, the scale it is scored on (NHS
-   values, Civil Service, and others) and how long a silence ends an answer.
+   values, Civil Service, and others) and how long a silence ends an answer. The **Challenging**
+   panel is firm: it challenges claims, asks for evidence and interrupts politely at levels 4
+   and 5, and is never rude or personal. Its follow-ups only quote what you said. Start it at
+   level 1 or 2 for a safe rehearsal first. A drill whose plan sets a panel or level opens on
+   them.
 3. **Download the speech models, once.** Speaking needs the interviewer voice (Kokoro), a speech
    detector and the transcriber (Moonshine). Each one downloads only when you tap it. The screen
    shows the size and licence first. On a desktop the models are in one folder shared with
@@ -287,6 +434,10 @@ The interviewer is the same one Udyoga uses. It runs on your device.
    - **Dispute this score** checks the quote and the criterion again. Disagreeing alone never
      changes a score. To raise it, answer again.
    - Without an AI: rate yourself on the four drill checks.
+   - Each answer shows its score on the 1–5 rubric scale.
+   - After a **Challenging** panel, each spoken answer shows how you held up: pace, pauses,
+     fillers, time before you started and length, for the answer and each reply, beside the usual
+     ranges. This is information only, never a score.
    - There is one strength and one fix per answer. There is never a single readiness percentage.
 6. **Use the results.** Scores and ratings are saved on the drills, so Job readiness counts them.
    **Add the fix to review** makes a flashcard. **Save as a story** drafts a story bank entry.

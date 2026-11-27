@@ -14,6 +14,7 @@ import '../domain/interview.dart';
 import '../domain/readiness.dart';
 import 'common.dart';
 import 'dialogs.dart';
+import 'framework_page.dart';
 import 'interview_pages.dart';
 import 'quiz_page.dart';
 import 'topic_page.dart';
@@ -289,6 +290,7 @@ IconData _evidenceIcon(EvidenceKind k) => switch (k) {
   EvidenceKind.portfolio => Icons.work_outline,
   EvidenceKind.skill => Icons.trending_up,
   EvidenceKind.cv => Icons.description_outlined,
+  EvidenceKind.framework => Icons.assessment_outlined,
 };
 
 class _Row extends ConsumerWidget {
@@ -311,6 +313,8 @@ class _Row extends ConsumerWidget {
       case EvidenceKind.skill:
         final k = await (db.select(db.learnSkills)..where((x) => x.id.equals(e.id))).getSingleOrNull();
         if (k != null && context.mounted) await skillDialog(context, ref, skill: k);
+      case EvidenceKind.framework:
+        await openFramework(context, v.program.id);
       case EvidenceKind.cv:
         break;
     }

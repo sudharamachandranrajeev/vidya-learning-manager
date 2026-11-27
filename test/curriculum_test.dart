@@ -111,7 +111,28 @@ Good luck!''');
       final topic = p.courses.single.topics.single;
       expect(topic.criteria, ['c1']);
       expect(p.criteria.single.essential, isTrue);
-      expect(topic.items.map((i) => i.type), ['video', 'practice task', 'quiz', 'interview drill']);
+      expect(topic.items.map((i) => i.type), [
+        'video',
+        'practice task',
+        'scenario',
+        'quiz',
+        'interview drill',
+        'interview drill',
+        'capstone',
+      ]);
+      // A5: the stress test's table, with its high-risk row.
+      expect(jsonDecode(topic.items[2].content), containsPair('columns', hasLength(4)));
+      expect(jsonDecode(topic.items[2].content)['rows'][0], containsPair('risk', 'high'));
+      // A3: the challenging drill's panel and level, and the capstone on both drills.
+      expect(jsonDecode(topic.items[5].content), containsPair('persona', 'challenging'));
+      expect(jsonDecode(topic.items[5].content), containsPair('ladder', 2));
+      expect(jsonDecode(topic.items[6].content), {
+        'drills': ['d1', 'd2'],
+        'average': 4.0,
+        'minimum': 3,
+        'passesInRow': 2,
+        'minutes': 45,
+      });
       expect(topic.items.first.url, 'https://…');
       expect(topic.items[1].content, contains('doneWhen'));
       expect(curriculumPrompt, contains('"version": $curriculumVersion'));

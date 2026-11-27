@@ -5,11 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
 import '../db/database.dart';
+import '../domain/capstone.dart' show capstoneType;
+import '../domain/scenario.dart' show scenarioType;
 import '../domain/interview.dart';
+import '../domain/exam.dart';
 import '../domain/next_up.dart';
 import '../domain/quiz.dart';
 import '../domain/resources.dart';
 import '../domain/study_items.dart';
+import 'capstone_page.dart';
+import 'scenario_page.dart';
+import 'charts.dart';
 import 'common.dart';
 import 'dialogs.dart';
 import 'interview_pages.dart';
@@ -43,6 +49,9 @@ typedef TopicView = ({
 
   /// Each interview drill's practice so far (by item id).
   Map<String, DrillEvidence> drills,
+
+  /// The topic's exam attempts, oldest first (empty for a practice quiz).
+  List<Assessment> exams,
 });
 
 final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) async {
@@ -106,6 +115,7 @@ final topicViewProvider = FutureProvider.family<TopicView?, String>((ref, id) as
     ],
     inPortfolio: {for (final p in portfolio) p.id.substring(0, p.id.length - '.portfolio'.length)},
     drills: drills,
+    exams: examAttempts(tests, id),
   );
 });
 
@@ -136,7 +146,7 @@ Future<void> tickTopic(
         Text(
           [
             if (open > 0) '$open required ${open == 1 ? 'item is' : 'items are'} not done yet.',
-            if (quiz) 'The quiz is not passed yet ($passPercent% or more).',
+            if (quiz) 'The quiz is not passed yet (${topicPassPercent(items)}% or more).',
             'Say in a few words why this topic is done, for when you look back.',
           ].join(' '),
         ),
@@ -266,6 +276,8 @@ class TopicPage extends ConsumerWidget {
                         quizPercent: v.quizPercent,
                         evidence: v.drills,
                         programId: v.course?.programId,
+                        exams: v.exams,
+                        today: v.today,
                       ),
                       if (v.retired.isNotEmpty) _Retired(v.retired),
                     ],
@@ -335,7 +347,7 @@ class _Header extends ConsumerWidget {
                     if (required > 0) '$requiredDone of $required required items done.',
                     if (hasQuiz)
                       quizPending(v.items, v.quizPercent)
-                          ? 'Quiz: $passPercent% or more to earn it.'
+                          ? 'Quiz: ${topicPassPercent(v.items)}% or more to earn it.'
                           : 'Quiz passed.',
                   ].join(' '),
             style: text.bodyMedium,
@@ -601,7 +613,12 @@ Future<void> itemDialog(BuildContext context, WidgetRef ref, String topicId, {St
     context,
     title: item == null ? 'Add item' : 'Edit item',
     fields: (setState) => [
-      Choice(label: 'Type', value: type, options: itemTypes, onChanged: (v) => setState(() => type = v)),
+      Choice(
+        label: 'Type',
+        value: type,
+        options: addableItemTypes,
+        onChanged: (v) => setState(() => type = v),
+      ),
       if (type != 'note')
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -802,11 +819,17 @@ class _CheckYourself extends ConsumerWidget {
     this.quizPercent,
     this.evidence = const {},
     this.programId,
+    this.exams = const [],
+    this.today = '',
   });
   final String topicId;
   final List<StudyItem> items;
   final List<Criterion> criteria;
   final int? quizPercent;
+
+  /// The exam attempts so far, oldest first, and today, for the lock.
+  final List<Assessment> exams;
+  final String today;
 
   /// Each drill's practice so far.
   final Map<String, DrillEvidence> evidence;
@@ -817,6 +840,7 @@ class _CheckYourself extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final quiz = topicQuiz(items);
+    final exam = quiz == null ? null : examRules(quiz);
     final drills = [
       for (final i in items)
         if (i.type == 'interview drill') i,
@@ -836,7 +860,9 @@ class _CheckYourself extends ConsumerWidget {
                 onPressed: () => openQuizEditor(context, topicId),
               ),
             ),
-          ] else ...[
+          ] else if (exam != null)
+            _ExamCard(quiz, exam, exams, today: today, quizPercent: quizPercent)
+          else ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.quiz_outlined),
@@ -864,6 +890,14 @@ class _CheckYourself extends ConsumerWidget {
                 ),
               ],
             ),
+          ],
+          for (final c in items.where((i) => i.type == capstoneType)) ...[
+            const SizedBox(height: 12),
+            CapstoneCard(c.id, key: Key('capstone-${c.id}')),
+          ],
+          for (final c in items.where((i) => i.type == scenarioType)) ...[
+            const SizedBox(height: 12),
+            ScenarioCard(c.id, key: Key('scenario-${c.id}')),
           ],
           const SizedBox(height: 12),
           Text(
@@ -919,6 +953,88 @@ class _CheckYourself extends ConsumerWidget {
   }
 }
 
+/// A quiz the plan made a timed exam: its rules, the retake lock, the
+/// attempts so far as a chart, and buttons to start it or practise it
+/// (practice is never counted as an attempt).
+class _ExamCard extends StatelessWidget {
+  const _ExamCard(this.quiz, this.rules, this.attempts, {required this.today, this.quizPercent});
+  final StudyItem quiz;
+  final ExamRules rules;
+  final List<Assessment> attempts;
+  final String today;
+  final int? quizPercent;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final next = examNextDay(attempts, rules);
+    final locked = examLocked(next, today);
+    final results = [for (final a in attempts) ?ExamResult.of(a)];
+    final last = results.lastOrNull;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.timer_outlined),
+          title: Text(examTitle(quiz)),
+          subtitle: Text(
+            [
+              '${quizLength(quiz)} questions in ${minutesText(rules.minutes)}',
+              'pass mark ${rules.passPercent}%',
+              if (last == null)
+                'not taken yet'
+              else
+                'last attempt ${last.percent}% (${last.passed ? 'passed' : 'not passed'})',
+            ].join(' · '),
+          ),
+        ),
+        if (locked)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text('Next exam attempt from ${niceDate(next!)}.', style: t.bodyMedium),
+          ),
+        if (results.isNotEmpty) ...[
+          Text('Exam history', style: t.labelLarge),
+          const SizedBox(height: 4),
+          Semantics(
+            label: 'Exam scores, oldest first: ${[for (final r in results) '${r.percent}%'].join(', ')}',
+            excludeSemantics: true,
+            child: BarChart(
+              values: [for (final r in results) r.percent],
+              labels: [for (final a in attempts.where((a) => ExamResult.of(a) != null)) _shortDay(a.day)],
+              unit: '%',
+              height: 80,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (!locked)
+              FilledButton.icon(
+                icon: const Icon(Icons.play_arrow),
+                label: Text(last == null ? 'Start the exam' : 'Take the exam again'),
+                onPressed: () => openQuiz(context, quiz),
+              ),
+            OutlinedButton(
+              onPressed: () => openQuiz(context, quiz, practice: true),
+              child: Text(locked ? 'Practise anyway (not counted)' : 'Practise (not counted)'),
+            ),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Edit questions'),
+              onPressed: () => openQuizEditor(context, quiz.topicId),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 /// Items a plan sent again without: kept with what the learner did on them,
 /// not counted. Each can be put back in use.
 class _Retired extends ConsumerWidget {
@@ -946,3 +1062,8 @@ class _Retired extends ConsumerWidget {
     ),
   );
 }
+
+/// "27/11" for 2026-11-27: short enough for a chart label.
+String _shortDay(String day) => day.length >= 10
+    ? '${int.tryParse(day.substring(8, 10)) ?? 0}/${int.tryParse(day.substring(5, 7)) ?? 0}'
+    : day;

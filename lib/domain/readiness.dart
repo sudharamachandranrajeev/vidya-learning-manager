@@ -28,6 +28,10 @@
 ///   and any `covered` or `status` field a plan might carry are ignored,
 ///   and a piece of evidence marked [Evidence.ai] is listed but never
 ///   counts as strong. Only the learner's own results do.
+/// * **Self-ratings never cover.** A framework self-rating (framework.dart)
+///   that names a criterion is listed as evidence: a gap (rated 1 or less,
+///   or with no story) makes the row weak, any other rating only lifts it
+///   from missing to weak.
 ///
 /// Readiness is shown as counts ("9 of 12 essential covered, 2 weak, 1
 /// missing"), never as one percentage. Weak and missing rows also go back
@@ -40,8 +44,9 @@ import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 import 'book.dart';
+import 'framework.dart';
 import 'interview.dart';
-import 'quiz.dart' show percentOf;
+import 'quiz.dart' show isQuizResult, percentOf;
 import 'study_items.dart';
 
 /// Evidence older than this many days no longer covers a criterion.
@@ -67,7 +72,7 @@ enum ReadinessStatus {
 }
 
 /// What a piece of evidence is.
-enum EvidenceKind { topic, quiz, task, drill, story, portfolio, skill, cv }
+enum EvidenceKind { topic, quiz, task, drill, story, portfolio, skill, cv, framework }
 
 /// How a piece of evidence counts, before its age is looked at.
 enum EvidenceWeight {
@@ -130,6 +135,7 @@ enum WeakReason {
   planned('Only planned so far'),
   lowQuiz('Latest quiz under 70%'),
   lowDrill('Latest drill under 5/8'),
+  selfGap('Self-assessment gap'),
   unchecked('Not checked yet'),
   old('Only old evidence (over $freshDays days)');
 
@@ -173,7 +179,8 @@ class ReadinessRow {
       if (e.weight != EvidenceWeight.info) e,
   ];
   if (counted.isEmpty) return (status: ReadinessStatus.missing, reasons: const []);
-  bool strongAt(Evidence e) => !e.ai && e.weight == EvidenceWeight.strong;
+  // A self-rating is the learner's view, not checked work: never strong.
+  bool strongAt(Evidence e) => !e.ai && e.kind != EvidenceKind.framework && e.weight == EvidenceWeight.strong;
   if (counted.any((e) => strongAt(e) && e.freshOn(today))) {
     return (status: ReadinessStatus.covered, reasons: const []);
   }
@@ -198,6 +205,8 @@ class ReadinessRow {
     if (counted.any((e) => e.kind == EvidenceKind.quiz && e.weight == EvidenceWeight.low)) WeakReason.lowQuiz,
     if (counted.any((e) => e.kind == EvidenceKind.drill && e.weight == EvidenceWeight.low))
       WeakReason.lowDrill,
+    if (counted.any((e) => e.kind == EvidenceKind.framework && e.weight == EvidenceWeight.low))
+      WeakReason.selfGap,
     if (counted.any((e) => strongAt(e)) || pairDay != null) WeakReason.old,
   };
   if (reasons.isEmpty) reasons.add(WeakReason.unchecked);
@@ -371,13 +380,13 @@ class Readiness {
 /// The latest quiz result on a topic: percent and day.
 typedef QuizResult = ({int percent, String day});
 
-/// The latest quiz result per topic id. Drill attempts (rows with a
-/// detail) are not quizzes.
+/// The latest quiz result per topic id (practice quizzes and exam
+/// attempts). Drill attempts are not quizzes.
 Map<String, QuizResult> latestQuizzes(Iterable<Assessment> tests) {
   final latest = <String, Assessment>{};
   for (final a in tests) {
     final t = a.topicId;
-    if (t == null || a.deleted || a.detail.isNotEmpty) continue;
+    if (t == null || a.deleted || !isQuizResult(a)) continue;
     final had = latest[t];
     if (had == null || a.day.compareTo(had.day) > 0 || (a.day == had.day && a.hlc.compareTo(had.hlc) > 0)) {
       latest[t] = a;
@@ -420,6 +429,7 @@ Readiness assessReadiness({
   required List<Skill> skills,
   required String today,
   String? interviewDate,
+  Map<String, List<Evidence>> framework = const {},
 }) {
   final topicById = {for (final t in topics) t.id: t};
   final itemsOf = <String, List<StudyItem>>{};
@@ -562,6 +572,9 @@ Readiness assessReadiness({
         ),
       );
     }
+    // Self-ratings from the program's framework: never strong (see
+    // framework.dart), so they cannot cover a row on their own.
+    ev.addAll(framework[c.ref] ?? const []);
     if (c.shown == true) {
       ev.add(
         const Evidence(
@@ -640,6 +653,10 @@ extension JobReadiness on LearningBook {
       skills: await (db.select(db.learnSkills)..where((k) => k.deleted.not())).get(),
       today: today,
       interviewDate: await interviewDate(programId),
+      framework: switch (await frameworkView(programId)) {
+        final v? => frameworkReadiness(v),
+        null => const {},
+      },
     );
   }
 

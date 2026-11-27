@@ -80,7 +80,7 @@ String _score(num s) => s % 1 == 0 ? '${s.toInt()}' : s.toStringAsFixed(1);
 /// A drill's practice so far, in a line: last score here, Udyoga's score,
 /// and the weak flag.
 String drillEvidenceText(DrillEvidence e) => [
-  if (e.own != null) 'Last here ${e.own}/$drillMax (${niceDate(e.ownDay)})',
+  if (e.own != null) 'Last here ${rubricText(e.own!)} (${niceDate(e.ownDay)})',
   if (e.own != null && e.ownNote.isNotEmpty) e.ownNote,
   if (e.udyoga case final u?) 'Udyoga ${u.text} (${niceDate(u.day)})',
   if (e.asked && e.udyoga == null) 'sent to Udyoga',
@@ -193,8 +193,8 @@ class _DrillPageState extends ConsumerState<DrillPage> {
     notify(
       context,
       attempt.weak
-          ? 'Saved: ${attempt.score}/$drillMax. Flagged weak, so it comes first before the interview.'
-          : 'Saved: ${attempt.score}/$drillMax.',
+          ? 'Saved: ${attempt.of5}/5. Flagged weak, so it comes first before the interview.'
+          : 'Saved: ${attempt.of5}/5.',
     );
   }
 
@@ -375,7 +375,7 @@ class _DrillPageState extends ConsumerState<DrillPage> {
             Text(
               score == null
                   ? 'Score: rate all four checks.'
-                  : 'Score: $score/$drillMax${drillWeak(score) ? ' (weak, under $drillWeakBelow)' : ''}',
+                  : 'Score: ${rubricText(score)} ($score/$drillMax)${drillWeak(score) ? ' · weak' : ''}',
               style: text.titleSmall,
             ),
             const SizedBox(height: 8),
@@ -446,6 +446,8 @@ class _AttemptTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final d = DrillAttempt.parse(a.detail);
+    // Drill attempts are out of 8; anything else is scaled to 8 first.
+    final of8 = a.max <= 0 ? 0 : a.score * drillMax / a.max;
     final lines = [
       if (d != null && d.seconds > 0) 'Spoke for ${_secondsText(d.seconds)}',
       if (d != null && !d.frame.isEmpty)
@@ -456,7 +458,8 @@ class _AttemptTile extends ConsumerWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(
-        '${_score(a.score)}/${_score(a.max)} · ${niceDate(a.day)}${drillWeak(a.score) ? ' · weak' : ''}',
+        '${rubricText(of8)} (${_score(a.score)}/${_score(a.max)}) · ${niceDate(a.day)}'
+        '${drillWeak(of8) ? ' · weak' : ''}',
       ),
       subtitle: lines.isEmpty ? null : Text(lines.join('\n')),
       trailing: IconButton(

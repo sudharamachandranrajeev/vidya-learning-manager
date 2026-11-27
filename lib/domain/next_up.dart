@@ -94,9 +94,7 @@ NextUp? nextUp({
       final req = openRequired(its).firstOrNull;
       if (req != null) return pick(req, NextReason.required);
       if (quizPending(its, quizPercents[t.id])) return pick(topicQuiz(its), NextReason.quiz);
-      final other = its
-          .where((i) => i.done == null && i.type != 'interview drill' && i.type != 'quiz')
-          .firstOrNull;
+      final other = its.where((i) => i.done == null && !checkTypes.contains(i.type)).firstOrNull;
       if (other != null) return pick(other, NextReason.optional);
       return pick(null, NextReason.topic);
     }

@@ -24,9 +24,14 @@ class QuizQuestion {
     this.own = false,
     this.ai = false,
     this.replaces = '',
+    this.topic = '',
   });
 
   final String question, kind, answer, explain;
+
+  /// The topic this question tests, for an exam's per-topic breakdown: a
+  /// topic title in the same course, or '' for the quiz's own topic.
+  final String topic;
   final List<String> options;
 
   /// Written or changed by the learner. Own questions stay when the plan
@@ -63,6 +68,7 @@ class QuizQuestion {
       own: j['own'] == true,
       ai: j['ai'] == true,
       replaces: s('replaces'),
+      topic: s('topic'),
     );
   }
 
@@ -75,6 +81,7 @@ class QuizQuestion {
     if (own) 'own': true,
     if (ai) 'ai': true,
     if (replaces.isNotEmpty) 'replaces': replaces,
+    if (topic.isNotEmpty) 'topic': topic,
   };
 
   QuizQuestion copyWith({bool? own, String? replaces}) => QuizQuestion(
@@ -86,6 +93,7 @@ class QuizQuestion {
     own: own ?? this.own,
     ai: ai,
     replaces: replaces ?? this.replaces,
+    topic: topic,
   );
 }
 
@@ -118,16 +126,33 @@ List<String> _dropped(Map<String, Object?> c) => [
     if (d is String && d.isNotEmpty) d,
 ];
 
-/// A quiz item's content JSON for [questions] and the plan questions the
-/// learner [dropped].
-String quizContent(List<QuizQuestion> questions, {List<String> dropped = const []}) => jsonEncode({
+/// A quiz item's content JSON for [questions], the plan questions the
+/// learner [dropped] and the plan's [exam] rules (see exam.dart), if any.
+String quizContent(
+  List<QuizQuestion> questions, {
+  List<String> dropped = const [],
+  Map<String, Object?>? exam,
+}) => jsonEncode({
   'questions': [for (final q in questions) q.toJson()],
   if (dropped.isNotEmpty) 'dropped': dropped,
+  'exam': ?exam,
 });
+
+/// The exam rules a quiz content JSON carries, as stored, or null.
+Map<String, Object?>? quizExamJson(String content) {
+  if (content.isEmpty) return null;
+  try {
+    final j = jsonDecode(content);
+    return j is Map && j['exam'] is Map ? Map<String, Object?>.from(j['exam'] as Map) : null;
+  } on FormatException {
+    return null;
+  }
+}
 
 /// A plan's quiz content laid over what the item holds now: the plan's
 /// questions (less those the learner deleted or rewrote), then the
-/// learner's own and AI questions as they are.
+/// learner's own and AI questions as they are. The exam rules are the
+/// plan's: a plan sent again without them makes it a practice quiz again.
 String mergeQuizContent(String planContent, String knownContent) {
   Map<String, Object?> read(String s) {
     if (s.isEmpty) return const {};
@@ -154,7 +179,7 @@ String mergeQuizContent(String planContent, String knownContent) {
     for (final q in _questions(read(planContent)))
       if (!hidden.contains(q.key)) q,
   ];
-  return quizContent([...plan, ...kept], dropped: dropped);
+  return quizContent([...plan, ...kept], dropped: dropped, exam: quizExamJson(planContent));
 }
 
 /// The stable ref of the review card a missed question becomes. The same
@@ -172,14 +197,33 @@ bool autoCorrect(QuizQuestion q, String given) =>
 /// A score as a whole percent.
 int percentOf(num score, num max) => max <= 0 ? 0 : (score * 100 / max).round();
 
+/// The `kind` of an assessment detail that is a timed exam attempt.
+const examKind = 'exam';
+
+/// Whether an assessment's detail is an exam attempt's (see exam.dart).
+bool isExamDetail(String detail) {
+  if (detail.isEmpty) return false;
+  try {
+    final j = jsonDecode(detail);
+    return j is Map && j['kind'] == examKind;
+  } on FormatException {
+    return false;
+  }
+}
+
+/// Whether a result is a quiz's: a practice quiz (no detail) or an exam
+/// attempt. Interview drill attempts are not.
+bool isQuizResult(Assessment a) => a.detail.isEmpty || isExamDetail(a.detail);
+
 /// The latest quiz result for each topic, as a percent, from the recorded
-/// tests (the newest day wins; on one day, the last written). Interview
-/// drill attempts (rows with a detail) are not quizzes and are left out.
+/// tests (the newest day wins; on one day, the last written). Practice
+/// quizzes and exam attempts both count; interview drill attempts are left
+/// out.
 Map<String, int> lastQuizPercents(Iterable<Assessment> tests) {
   final latest = <String, Assessment>{};
   for (final a in tests) {
     final t = a.topicId;
-    if (t == null || a.deleted || a.detail.isNotEmpty) continue;
+    if (t == null || a.deleted || !isQuizResult(a)) continue;
     final had = latest[t];
     if (had == null || a.day.compareTo(had.day) > 0 || (a.day == had.day && a.hlc.compareTo(had.hlc) > 0)) {
       latest[t] = a;
