@@ -6,6 +6,7 @@ import 'package:brahma_core/brahma_core.dart';
 import 'capstone.dart';
 import 'cloze.dart';
 import 'exam.dart';
+import 'framework.dart';
 import 'interview.dart' show drillPersonas;
 import 'journey.dart';
 import 'scenario.dart';
@@ -105,8 +106,12 @@ class CurriculumPlan {
     this.role = '',
     this.criteria = const [],
     this.journey,
+    this.framework,
   });
   final String title, goal, part;
+
+  /// The framework to self-assess against (format 3), null when none.
+  final Framework? framework;
 
   /// The job journey (format 3), null when the plan has none.
   final Journey? journey;
@@ -400,6 +405,12 @@ CurriculumPlan parseCurriculum(String text) {
   ];
 
   final journey = j['journey'] == null ? null : parseJourney(j['journey']);
+  // A framework on the program, else the first one a course carries.
+  var framework = Framework.fromJson(j['framework'] ?? program['framework']);
+  for (final c in _list(j['courses'], _maxCourses, 'courses')) {
+    if (framework != null) break;
+    if (c is Map) framework = Framework.fromJson(c['framework']);
+  }
 
   if (courses.isEmpty && cards.isEmpty && notes.isEmpty && journey == null) {
     throw const FormatException('The plan has no courses, cards or notes.');
@@ -416,6 +427,7 @@ CurriculumPlan parseCurriculum(String text) {
     role: _str(j['role'] ?? program['role'], _maxTitle),
     criteria: criteria,
     journey: journey,
+    framework: framework,
   );
 }
 
@@ -663,6 +675,15 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
     "targetDate": "yyyy-mm-dd"
   },
   "criteria": [{ "id": "c1", "text": "Something the goal or job asks for", "essential": true }],
+  "framework": {
+    "id": "nhs_lmf",
+    "name": "Framework name",
+    "status": "draft",
+    "stages": [{ "id": "1", "name": "First stage" }, { "id": "2", "name": "Next stage" }],
+    "targetStage": "1",
+    "areas": [{ "id": "self", "title": "Area name" }],
+    "standards": [{ "id": "self_safety", "area": "self", "title": "Standard title", "descriptors": { "1": "What it looks like at stage 1", "2": "At stage 2" }, "criteria": ["c1"], "topics": ["Topic title"] }]
+  },
   "journey": {
     "role": "Job title (only when the goal is one job)",
     "employer": "Employer's name",
@@ -725,6 +746,7 @@ RULES:
 - "exam" is only for a topic whose quiz is a timed mock exam (for example a course's final topic, "Mock exam"); leave it out for ordinary quizzes. "minutes" is 1–300, "passPercent" 1–100 (the real exam's pass mark if known), "retakeDays" 0–60 (days to wait before the next attempt counts), "shuffle" true or false, "count" 1–100 (how many questions each attempt draws; give a pool of at least twice that many so attempts differ, and leave it out to ask them all). An exam's quiz may hold up to 100 questions; other quizzes at most 20. In an exam, give each question a "topic": the title of the topic in the same course that it tests, so the results show which topics to study first.
 - A drill may set "persona": the interview panel that asks it, one of friendly, neutral, probing, quiet or challenging (firm: challenges claims, asks for evidence, interrupts politely, never rude), and "ladder": its difficulty from 1 (rehearsal) to 5 (tough). Use "challenging" for stress tests and cross-examination, and start it at ladder 1 or 2 so the first practice is a safe rehearsal. Leave both out to let me choose.
 - "capstone" is only for a final test of several interview drills taken in one sitting; put it on a topic, or on a course to cover drills from all its topics. "drills" lists the drills' "id"s from the same course (give those drills an "id"); "average" is the lowest average to pass on a 1–5 scale (1.0–5.0), "minimum" the lowest single drill score allowed (1–5), "passesInRow" how many sittings in a row must pass (1–10), "minutes" the time for the whole sitting (5–300). Leave it out otherwise.
+- "framework" is only for a goal judged against a published framework of standards (a leadership or competency framework); leave it out otherwise. At most 6 "stages" and 40 "standards"; each descriptor up to 1000 characters, written in your own words (never copy the framework's text). "status" is "final" only when you know the published final wording, else "draft". "targetStage" is the stage I am aiming for. A standard's "criteria" names criterion ids it supports and "topics" names topics (titles) that teach it. Use these ids so my tagged interview stories match: NHS Leadership and Management Framework "nhs_lmf" (standards self_safety, self_communicating, self_accountability, people_environment, people_performance, people_resources, care_outcomes, care_improvement, care_collaboration); Healthcare Leadership Model "nhs_hlm" (shared_purpose, leading_with_care, evaluating_information, connecting_service, sharing_vision, engaging_team, holding_to_account, developing_capability, influencing_results); NHS Constitution values "nhs_values" (working_together, respect_dignity, quality_of_care, compassion, improving_lives, everyone_counts). I rate myself; nothing is shared.
 - "criteria" lists what the goal asks for (for a job: the essential and desirable criteria); each topic's "criteria" names the ids it works towards. Leave both out if there are none.
 - "journey" is only for a goal that is one job; leave it out otherwise. "sector" is one of: nhs, university, private, civil-service, other. A stage "id" is one of: decide, research, contact, apply, follow-up, prepare, interview-day, after, offer, checks, joining, first-90-days, grow. Vidya fills in every stage you leave out from its own dated guides, so add only what is special to this job. A line with no "source" is shown as general advice; never invent a source or a date.
 - Plain JSON: double quotes, no comments, no trailing commas, \\n for line breaks inside text.

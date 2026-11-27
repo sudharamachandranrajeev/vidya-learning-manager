@@ -6,6 +6,7 @@ import 'achievements.dart';
 import 'curriculum.dart';
 import 'exam.dart';
 import 'export.dart';
+import 'framework.dart';
 import 'import.dart';
 import 'journey_book.dart';
 import 'quiz.dart';
@@ -699,7 +700,10 @@ class LearningBook {
     courses: await (db.select(db.learnCourses)..where((r) => r.deleted.not())).get(),
     topics: await (db.select(db.learnTopics)..where((r) => r.deleted.not())).get(),
     items: await (db.select(db.learnItems)..where((r) => r.deleted.not())).get(),
-    tests: await (db.select(db.learnAssessments)..where((r) => r.deleted.not())).get(),
+    tests: [
+      for (final a in await (db.select(db.learnAssessments)..where((r) => r.deleted.not())).get())
+        if (!isFrameworkRating(a)) a,
+    ],
     sessions: await (db.select(db.learnSessions)..where((r) => r.deleted.not())).get(),
     notes: await (db.select(db.learnNotes)..where((r) => r.deleted.not())).get(),
   );
@@ -1028,6 +1032,7 @@ class LearningBook {
       }
       final criteria = await _savePlanCriteria(pid, plan.criteria);
       if (plan.journey case final j?) await saveJourney(pid, j, now: today);
+      if (plan.framework case final f?) await saveFramework(pid, f);
 
       final noteTitles = {
         for (final n in await (db.select(db.learnNotes)..where((n) => n.deleted.not())).get())
@@ -1237,7 +1242,11 @@ class LearningBook {
       courses: await (db.select(db.learnCourses)..where((r) => r.deleted.not())).get(),
       topics: await (db.select(db.learnTopics)..where((r) => r.deleted.not())).get(),
       sessions: await (db.select(db.learnSessions)..where((r) => r.deleted.not())).get(),
-      assessments: await (db.select(db.learnAssessments)..where((r) => r.deleted.not())).get(),
+      // Self-ratings are not tests: they earn nothing and skew no average.
+      assessments: [
+        for (final a in await (db.select(db.learnAssessments)..where((r) => r.deleted.not())).get())
+          if (!isFrameworkRating(a)) a,
+      ],
       skills: await (db.select(db.learnSkills)..where((r) => r.deleted.not())).get(),
       portfolio: await (db.select(db.learnPortfolio)..where((r) => r.deleted.not())).get(),
       // Topic notes made from a plan earn nothing until the learner writes.
