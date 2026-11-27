@@ -211,6 +211,17 @@ Plans made before topic pages (format 1) still import. Format 2 adds, all option
 - for the plan, `criteria`: `{ "id", "text", "essential", "kind", "source", "shown" }`, and a
   `role`; each topic lists the criteria it works towards in its own `criteria` (ids).
 
+Format 3 adds, also optional (older plans import unchanged):
+
+- per topic, `exam`: `{ "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true }`
+  makes the topic's quiz a timed exam. `minutes` is 1–300 (1.5 a question when left out),
+  `passPercent` 1–100 (70), `retakeDays` 0–60 (0: no wait), `shuffle` true or false (false).
+  Values outside a range are held to it. The quiz may also be written as
+  `"quiz": { "questions": [ … ], "exam": { … } }`.
+- per quiz question, `topic`: the title of the topic in the same course it tests (or that
+  topic's `id`, when the plan gives topics one), for the exam's per-topic breakdown. A name
+  that matches no topic is kept as written.
+
 An item the plan stops sending is set aside on its topic page (**No longer in the plan**), not
 deleted, and no longer counts; items you had done stay as they are. Quiz questions you add or
 change are kept when the plan comes again.
@@ -226,8 +237,20 @@ change are kept when the plan comes again.
 3. **Edit questions** adds your own. If you connected an AI for **Ask AI**, **Write questions
    with AI** adds a few, labelled AI and editable; only the topic and item titles are sent.
 4. A topic is earned when its required items are done and, if it has a quiz, your last score was
-   70% or more. You can still tick it off earlier with a short note.
-5. A practice task shows its instructions and "done when" line. Marking it done asks for an
+   70% or more (or the exam's own pass mark). You can still tick it off earlier with a short note.
+5. **Exams.** When the plan made a topic's quiz an exam, the topic page shows **Start the exam**
+   with its time and pass mark. The timer does not pause, even if you leave the app, and you see
+   no answers until you hand in; when time runs out the exam is handed in by itself. Typed answers
+   that do not match, and cards, you mark yourself after the timer stops. The report card shows
+   your score, pass or fail, the time taken, how many you answered, a score per topic, the topics
+   to **study these first**, and every answer with its explanation. Missed questions become
+   flashcards, as in a quiz. If the plan sets a wait between attempts, the topic and course pages
+   show the date of the next one; **Practise anyway (not counted)** runs the questions as an
+   ordinary quiz that saves no score. A warning says when the question pool is small or questions
+   came up in an earlier attempt, because a remembered answer can look like knowledge. The topic
+   page charts your exam scores. A screen reader hears the time left every five minutes and at one
+   minute, 30 and 10 seconds.
+6. A practice task shows its instructions and "done when" line. Marking it done asks for an
    evidence link, or a note when there is nothing to link to; then **Add to portfolio** makes it
    a portfolio project in one tap.
 
