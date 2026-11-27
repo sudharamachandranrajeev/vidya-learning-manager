@@ -23,6 +23,7 @@ import '../domain/interview.dart' show drillMax, drillScore, rubricOf5;
 import '../domain/scenario.dart';
 import 'common.dart';
 import 'quiz_page.dart' show ExamCountdown, examClockProvider;
+import 'markdown.dart';
 import 'zen.dart';
 
 Future<void> openScenario(BuildContext context, String itemId) =>
@@ -398,7 +399,7 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
     return [
       Text('Stress test', style: t.headlineSmall),
       const SizedBox(height: 8),
-      if (s.brief.isNotEmpty) SectionCard(title: 'The brief', child: SelectableText(s.brief)),
+      if (s.brief.isNotEmpty) SectionCard(title: 'The brief', child: MarkdownText(s.brief)),
       Text(
         '${s.rows.length} ${s.rows.length == 1 ? 'row' : 'rows'} in ${s.minutes} minutes. For each row, choose '
         'one of: ${s.actions.map(actionLabel).join(', ')}, and add a reason if you like.',
@@ -410,7 +411,7 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
       ),
       if (s.rubric.isNotEmpty) ...[
         const SizedBox(height: 12),
-        SectionCard(title: 'What good work looks like', child: SelectableText(s.rubric)),
+        SectionCard(title: 'What good work looks like', child: MarkdownText(s.rubric)),
       ],
       const SizedBox(height: 12),
       Align(
@@ -634,7 +635,7 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
           children: [
             if (s.rubric.isNotEmpty) ...[
               Text('The rubric', style: t.titleSmall),
-              SelectableText(s.rubric),
+              MarkdownText(s.rubric),
               const SizedBox(height: 12),
             ],
             for (final (k, (_, label, help)) in scenarioChecks.indexed) ...[

@@ -303,7 +303,11 @@ change are kept when the plan comes again.
    kept running, and if it ran out the exam is handed in then. The topic
    page charts your exam scores. A screen reader hears the time left every five minutes and at one
    minute, 30 and 10 seconds.
-6. A practice task shows its instructions and "done when" line. Marking it done asks for an
+6. Plan text is written in Markdown: topic details, notes (such as an exam's rules), briefs and
+   rubrics show headings, lists, bold, tables and code. A wide table scrolls sideways on its own.
+   A link shows its address and opens only after you tap **Open**; pictures are never
+   downloaded, their description shows instead.
+7. A practice task shows its instructions and "done when" line. Marking it done asks for an
    evidence link, or a note when there is nothing to link to; then **Add to portfolio** makes it
    a portfolio project in one tap.
 

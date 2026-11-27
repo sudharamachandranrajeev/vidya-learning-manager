@@ -6,6 +6,7 @@ import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/study_items.dart';
 import 'common.dart';
+import 'markdown.dart';
 import 'zen.dart';
 
 Future<void> noteEditor(BuildContext context, WidgetRef ref, {Note? note}) =>
@@ -144,6 +145,10 @@ class _NoteEditorState extends ConsumerState<_NoteEditor> {
   late final _body = TextEditingController(text: widget.note?.body ?? '');
   late final _tags = TextEditingController(text: widget.note?.tags ?? '');
 
+  /// A saved note with words in it opens for reading, its body rendered
+  /// as Markdown; Edit turns it into the form.
+  late var _reading = widget.note != null && widget.note!.body.trim().isNotEmpty;
+
   @override
   void dispose() {
     _title.dispose();
@@ -182,7 +187,10 @@ class _NoteEditorState extends ConsumerState<_NoteEditor> {
                 if (context.mounted) Navigator.pop(context);
               },
             ),
-          TextButton(onPressed: _save, child: const Text('Save')),
+          if (_reading)
+            TextButton(onPressed: () => setState(() => _reading = false), child: const Text('Edit'))
+          else
+            TextButton(onPressed: _save, child: const Text('Save')),
         ],
       ),
       body: ListView(
@@ -191,17 +199,46 @@ class _NoteEditorState extends ConsumerState<_NoteEditor> {
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 800),
-              child: Column(
-                children: [
-                  Field(_title, 'Title', autofocus: widget.note == null),
-                  Field(_tags, 'Tags', hint: 'Comma-separated'),
-                  Field(_body, 'Note', lines: 12),
-                ],
-              ),
+              child: _reading
+                  ? _NoteReader(widget.note!)
+                  : Column(
+                      children: [
+                        Field(_title, 'Title', autofocus: widget.note == null),
+                        Field(_tags, 'Tags', hint: 'Comma-separated'),
+                        Field(_body, 'Note', lines: 12),
+                      ],
+                    ),
             ),
           ),
         ],
       ),
     ),
   );
+}
+
+/// A saved note to read: its title, tags and body as Markdown.
+class _NoteReader extends StatelessWidget {
+  const _NoteReader(this.note);
+  final Note note;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final tags = [
+      for (final x in note.tags.split(','))
+        if (x.trim().isNotEmpty) x.trim(),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(note.title, style: t.headlineSmall),
+        if (tags.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text('#${tags.join(' #')}', style: t.labelMedium),
+        ],
+        const SizedBox(height: 12),
+        MarkdownText(note.body),
+      ],
+    );
+  }
 }

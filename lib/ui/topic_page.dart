@@ -21,6 +21,7 @@ import 'dialogs.dart';
 import 'interview_pages.dart';
 import 'quiz_page.dart';
 import 'resource_search.dart';
+import 'markdown.dart';
 import 'zen.dart';
 
 /// Everything one topic page shows, read in one go.
@@ -539,7 +540,10 @@ Future<void> _setDone(BuildContext context, WidgetRef ref, StudyItem i, bool don
       action: 'Done',
       fields: (_) => [
         if (doneWhen is String && doneWhen.isNotEmpty)
-          Padding(padding: const EdgeInsets.only(bottom: 12), child: Text('Done when: $doneWhen')),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: MarkdownText('**Done when:** $doneWhen'),
+          ),
         Field(evidence, 'Evidence link', autofocus: true, hint: 'Where the work is'),
         Field(note, 'Or a short note on what you did', lines: 2),
       ],
@@ -747,7 +751,7 @@ class _MyNotes extends ConsumerWidget {
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
-                SelectableText(n.body.isEmpty ? 'Empty note.' : n.body),
+                n.body.trim().isEmpty ? const Text('Empty note.') : MarkdownText(n.body),
               ],
             ),
     );

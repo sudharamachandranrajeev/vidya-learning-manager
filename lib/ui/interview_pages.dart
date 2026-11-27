@@ -17,6 +17,7 @@ import '../domain/study_items.dart';
 import 'common.dart';
 import 'interview_debrief_page.dart' show PastRounds;
 import 'spoken_interview_page.dart';
+import 'markdown.dart';
 import 'zen.dart';
 
 /// Said on the self-rated drill: it records nothing.
@@ -259,7 +260,8 @@ class _DrillPageState extends ConsumerState<DrillPage> {
       ),
       if (rubric is String && rubric.isNotEmpty) ...[
         const SizedBox(height: 4),
-        Text('What a good answer covers: $rubric', style: text.bodyMedium),
+        Text('What a good answer covers:', style: text.bodyMedium),
+        MarkdownText(rubric, style: text.bodyMedium),
       ],
       const SizedBox(height: 4),
       Text(
