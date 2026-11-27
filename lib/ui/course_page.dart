@@ -10,6 +10,7 @@ import '../domain/quiz.dart';
 import '../domain/stats.dart';
 import '../domain/study_items.dart' show topicQuiz;
 import 'capstone_page.dart';
+import 'scenario_page.dart';
 import 'charts.dart';
 import 'common.dart';
 import 'dialogs.dart';
@@ -177,6 +178,26 @@ class CoursePage extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               for (final c in caps) CapstoneCard(c.id, key: Key('course-capstone-${c.id}')),
+                            ],
+                          ),
+                        ),
+                      if ([
+                            for (final i in items)
+                              if (i.type == 'scenario' &&
+                                  i.retired.isEmpty &&
+                                  topics.any((tp) => tp.id == i.topicId))
+                                i,
+                          ]
+                          case final tests when tests.isNotEmpty)
+                        SectionCard(
+                          title: tests.length == 1 ? 'Stress test' : 'Stress tests',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (final (k, c) in tests.indexed) ...[
+                                if (k > 0) const SizedBox(height: 12),
+                                ScenarioCard(c.id, key: Key('course-scenario-${c.id}')),
+                              ],
                             ],
                           ),
                         ),

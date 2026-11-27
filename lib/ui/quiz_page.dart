@@ -714,7 +714,7 @@ class _ExamPageState extends ConsumerState<ExamPage> {
           body: SafeArea(
             child: Column(
               children: [
-                if (running) _Countdown(left: _left, limit: _limit),
+                if (running) ExamCountdown(left: _left, limit: _limit),
                 Expanded(
                   child: ListView(
                     padding: EdgeInsets.fromLTRB(16, 8, 16, 32 + MediaQuery.paddingOf(context).bottom),
@@ -1031,9 +1031,10 @@ class _ExamPageState extends ConsumerState<ExamPage> {
 
 /// The time left, large and plain: no animation (so reduced motion is
 /// kept), and read by a screen reader only when it is focused; the page
-/// announces it at set points instead of every second.
-class _Countdown extends StatelessWidget {
-  const _Countdown({required this.left, required this.limit});
+/// announces it at set points instead of every second. Shared by exams
+/// and stress tests.
+class ExamCountdown extends StatelessWidget {
+  const ExamCountdown({super.key, required this.left, required this.limit});
   final int left, limit;
 
   @override

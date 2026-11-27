@@ -18,16 +18,17 @@ const itemTypes = {
   'interview drill': 'Interview drill',
   'note': 'Note',
   'capstone': 'Capstone',
+  'scenario': 'Stress test',
 };
 
 /// Types listed under "Check yourself" rather than with the other items.
-const checkTypes = {'quiz', 'interview drill', 'capstone'};
+const checkTypes = {'quiz', 'interview drill', 'capstone', 'scenario'};
 
 /// Types a learner can add by hand: a capstone comes only from a plan,
-/// with its rules.
+/// with its rules, and a stress test only from a plan, with its table.
 Map<String, String> get addableItemTypes => {
   for (final e in itemTypes.entries)
-    if (e.key != 'capstone') e.key: e.value,
+    if (e.key != 'capstone' && e.key != 'scenario') e.key: e.value,
 };
 
 /// Types that have a place to stop and come back to.
@@ -50,6 +51,7 @@ String itemTypeOf(String raw) {
     'mooc' || 'class' || 'module' => 'course',
     'youtube' || 'podcast' || 'lecture' => 'video',
     'test' || 'self test' => 'quiz',
+    'stress test' || 'stress' || 'in tray' || 'in tray exercise' || 'triage' => 'scenario',
     _ => '',
   };
 }

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/capstone.dart' show capstoneType;
+import '../domain/scenario.dart' show scenarioType;
 import '../domain/interview.dart';
 import '../domain/exam.dart';
 import '../domain/next_up.dart';
@@ -13,6 +14,7 @@ import '../domain/quiz.dart';
 import '../domain/resources.dart';
 import '../domain/study_items.dart';
 import 'capstone_page.dart';
+import 'scenario_page.dart';
 import 'charts.dart';
 import 'common.dart';
 import 'dialogs.dart';
@@ -892,6 +894,10 @@ class _CheckYourself extends ConsumerWidget {
           for (final c in items.where((i) => i.type == capstoneType)) ...[
             const SizedBox(height: 12),
             CapstoneCard(c.id, key: Key('capstone-${c.id}')),
+          ],
+          for (final c in items.where((i) => i.type == scenarioType)) ...[
+            const SizedBox(height: 12),
+            ScenarioCard(c.id, key: Key('scenario-${c.id}')),
           ],
           const SizedBox(height: 12),
           Text(
