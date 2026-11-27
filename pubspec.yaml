@@ -19,7 +19,7 @@ dependencies:
     git:
       url: https://github.com/sudharamachandranrajeev/pariksha-interview-kit.git
       path: packages/ui_kit
-      ref: v0.4.0
+      ref: v0.5.0
   # The spoken interviewer shared with Udyoga: Kokoro voice, Moonshine
   # transcripts, probes, personas, verified-quote scoring and the camera
   # setup check. Speech models are downloaded only when the learner asks.
@@ -28,7 +28,7 @@ dependencies:
     git:
       url: https://github.com/sudharamachandranrajeev/pariksha-interview-kit.git
       path: packages/interview_engine
-      ref: v0.4.0
+      ref: v0.5.0
   drift: ^2.35.2
   # libmpv is opened with dlopen only when a take is played (lib/ui/mpv_loader.dart).
   ffi: ^2.2.0
