@@ -658,7 +658,7 @@ BeforeInterview planBeforeInterview({
     for (final d in drillsFor[c.id] ?? const <StudyItem>[]) {
       final s = evidence[d.id]?.latest;
       if (s == null) continue;
-      lines.add('Drill ${_outOf8(s)}/8: ${d.title}');
+      lines.add('Drill ${rubricText(s)} (${_outOf8(s)}/8): ${d.title}');
     }
     for (final t in topics) {
       if (!criteriaRefs(t).contains(c.ref)) continue;

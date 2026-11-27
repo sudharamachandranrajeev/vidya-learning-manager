@@ -96,7 +96,7 @@ void main() {
 
     // Open the covered row: its drill evidence.
     await app.tap(find.textContaining('Explain a new clinical system'));
-    expect(find.textContaining('Drill 6/8 on'), findsOneWidget);
+    expect(find.textContaining('Drill 4/5 (6/8) on'), findsOneWidget);
     expect(tester.takeException(), isNull);
     // The AI-sourced row lists the CV flag but stays weak.
     await app.tap(find.text('Teaching qualification'));

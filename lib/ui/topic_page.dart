@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:brahma_core/brahma_core.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
@@ -21,6 +23,7 @@ import 'dialogs.dart';
 import 'interview_pages.dart';
 import 'quiz_page.dart';
 import 'resource_search.dart';
+import 'markdown.dart';
 import 'zen.dart';
 
 /// Everything one topic page shows, read in one go.
@@ -539,7 +542,10 @@ Future<void> _setDone(BuildContext context, WidgetRef ref, StudyItem i, bool don
       action: 'Done',
       fields: (_) => [
         if (doneWhen is String && doneWhen.isNotEmpty)
-          Padding(padding: const EdgeInsets.only(bottom: 12), child: Text('Done when: $doneWhen')),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: MarkdownText('**Done when:** $doneWhen'),
+          ),
         Field(evidence, 'Evidence link', autofocus: true, hint: 'Where the work is'),
         Field(note, 'Or a short note on what you did', lines: 2),
       ],
@@ -747,7 +753,7 @@ class _MyNotes extends ConsumerWidget {
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                   ),
-                SelectableText(n.body.isEmpty ? 'Empty note.' : n.body),
+                n.body.trim().isEmpty ? const Text('Empty note.') : MarkdownText(n.body),
               ],
             ),
     );
@@ -956,7 +962,7 @@ class _CheckYourself extends ConsumerWidget {
 /// A quiz the plan made a timed exam: its rules, the retake lock, the
 /// attempts so far as a chart, and buttons to start it or practise it
 /// (practice is never counted as an attempt).
-class _ExamCard extends StatelessWidget {
+class _ExamCard extends ConsumerWidget {
   const _ExamCard(this.quiz, this.rules, this.attempts, {required this.today, this.quizPercent});
   final StudyItem quiz;
   final ExamRules rules;
@@ -965,8 +971,9 @@ class _ExamCard extends StatelessWidget {
   final int? quizPercent;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context).textTheme;
+    final open = ref.watch(examProgressProvider(quiz.id)).value;
     final next = examNextDay(attempts, rules);
     final locked = examLocked(next, today);
     final results = [for (final a in attempts) ?ExamResult.of(a)];
@@ -1013,11 +1020,16 @@ class _ExamCard extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            if (!locked)
+            if (open != null)
+              _ResumeExam(quiz, rules, open)
+            else if (!locked)
               FilledButton.icon(
                 icon: const Icon(Icons.play_arrow),
                 label: Text(last == null ? 'Start the exam' : 'Take the exam again'),
-                onPressed: () => openQuiz(context, quiz),
+                onPressed: () async {
+                  await openQuiz(context, quiz);
+                  ref.invalidate(examProgressProvider(quiz.id));
+                },
               ),
             OutlinedButton(
               onPressed: () => openQuiz(context, quiz, practice: true),
@@ -1033,6 +1045,50 @@ class _ExamCard extends StatelessWidget {
       ],
     );
   }
+}
+
+/// "Resume exam (12:30 left)" for an attempt in progress on this device,
+/// counting down each second while the time runs.
+class _ResumeExam extends ConsumerStatefulWidget {
+  const _ResumeExam(this.quiz, this.rules, this.progress);
+  final StudyItem quiz;
+  final ExamRules rules;
+  final ExamProgress progress;
+
+  @override
+  ConsumerState<_ResumeExam> createState() => _ResumeExamState();
+}
+
+class _ResumeExamState extends ConsumerState<_ResumeExam> {
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final left = examSecondsLeft(widget.progress, widget.rules, ref.read(examClockProvider)());
+      setState(() {});
+      if (left == 0) _tick?.cancel();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FilledButton.icon(
+    key: const Key('resume-exam'),
+    icon: const Icon(Icons.play_arrow),
+    label: Text(resumeExamText(widget.progress, widget.rules, ref.read(examClockProvider)())),
+    onPressed: () async {
+      await openQuiz(context, widget.quiz);
+      ref.invalidate(examProgressProvider(widget.quiz.id));
+    },
+  );
 }
 
 /// Items a plan sent again without: kept with what the learner did on them,

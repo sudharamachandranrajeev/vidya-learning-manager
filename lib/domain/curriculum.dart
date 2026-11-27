@@ -107,8 +107,13 @@ class CurriculumPlan {
     this.criteria = const [],
     this.journey,
     this.framework,
+    this.stories = const [],
   });
   final String title, goal, part;
+
+  /// The story cards that carry framework `tags` (and `happened`), kept so
+  /// a plan imported from a file evidences its framework as Udyoga's do.
+  final List<TaggedStory> stories;
 
   /// The framework to self-assess against (format 3), null when none.
   final Framework? framework;
@@ -428,6 +433,7 @@ CurriculumPlan parseCurriculum(String text) {
     criteria: criteria,
     journey: journey,
     framework: framework,
+    stories: taggedStoriesInCards(j['cards']),
   );
 }
 
@@ -717,7 +723,7 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
           "items": [
             { "type": "video", "title": "Resource name", "url": "https://…", "source": "Site, channel or publisher", "licence": "Optional, e.g. CC BY", "minutes": 20, "required": true },
             { "type": "practice task", "title": "What to do", "instructions": "How to do it", "doneWhen": "What finished looks like", "minutes": 30, "required": true },
-            { "type": "scenario", "id": "st1", "title": "Stress test name", "minutes": 20, "brief": "The situation and the task, in Markdown", "columns": ["Item", "Detail", "Waited", "Flags"], "rows": [{ "cells": ["A1", "Made-up detail", "3 weeks", "urgent"], "risk": "high", "expect": "escalate", "why": "Model answer" }], "actions": ["act", "escalate", "leave", "note"], "rubric": "What good work looks like", "criteria": ["c1"] }
+            { "type": "scenario", "id": "st1", "title": "Stress test name", "minutes": 20, "brief": "The situation and the task, in Markdown", "columns": ["Item", "Detail", "Waited", "Flags"], "rows": [{ "cells": ["A1", "Made-up detail", "3 weeks", "urgent"], "risk": "high", "expect": "escalate", "why": "Model answer" }], "actions": ["act", "escalate", "leave", "note"], "rubric": "What good work looks like", "criteria": ["c1"], "retakeDays": 7 }
           ],
           "quiz": [
             { "question": "A question", "kind": "choice", "options": ["One", "Two", "Three"], "answer": "Two", "topic": "Topic title" },
@@ -741,7 +747,7 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
 RULES:
 - "kind" is one of: course, book, certification, degree, project, practice.
 - An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note, scenario. Give links and titles only; never copy a course's text.
-- A "scenario" item is a timed stress test: a made-up table (a workqueue, an inbox, a list of jobs) where I pick an action for each row against a clock that never pauses. Only invent fictional data; never use real people's details. "minutes" is 5–180; at most 8 "columns" and 60 "rows" (each cell up to 200 characters); "actions" lists 2–8 choices (act, escalate, leave, note when left out). Mark rows that would do harm if missed "risk": "high" (or medium, low); "expect" is the action a good answer takes and "why" a one-line model answer, both optional. "rubric" says what good work looks like. Use it where the goal involves triage, prioritising or an in-tray exercise; leave it out otherwise.
+- A "scenario" item is a timed stress test: a made-up table (a workqueue, an inbox, a list of jobs) where I pick an action for each row against a clock that never pauses. Only invent fictional data; never use real people's details. "minutes" is 5–180; at most 8 "columns" and 60 "rows" (each cell up to 200 characters); "actions" lists 2–8 choices (act, escalate, leave, note when left out). Mark rows that would do harm if missed "risk": "high" (or medium, low); "expect" is the action a good answer takes and "why" a one-line model answer, both optional. "rubric" says what good work looks like. "retakeDays" 0–60 (optional, as for an exam) is the days to wait before the next attempt counts. Use it where the goal involves triage, prioritising or an in-tray exercise; leave it out otherwise.
 - A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card. Add a one-sentence "explain" where it helps.
 - "exam" is only for a topic whose quiz is a timed mock exam (for example a course's final topic, "Mock exam"); leave it out for ordinary quizzes. "minutes" is 1–300, "passPercent" 1–100 (the real exam's pass mark if known), "retakeDays" 0–60 (days to wait before the next attempt counts), "shuffle" true or false, "count" 1–100 (how many questions each attempt draws; give a pool of at least twice that many so attempts differ, and leave it out to ask them all). An exam's quiz may hold up to 100 questions; other quizzes at most 20. In an exam, give each question a "topic": the title of the topic in the same course that it tests, so the results show which topics to study first.
 - A drill may set "persona": the interview panel that asks it, one of friendly, neutral, probing, quiet or challenging (firm: challenges claims, asks for evidence, interrupts politely, never rude), and "ladder": its difficulty from 1 (rehearsal) to 5 (tough). Use "challenging" for stress tests and cross-examination, and start it at ladder 1 or 2 so the first practice is a safe rehearsal. Leave both out to let me choose.

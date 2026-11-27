@@ -65,6 +65,12 @@ final capstoneViewProvider = FutureProvider.family<CapstoneView?, String>((ref, 
   );
 });
 
+/// A capstone's unfinished sitting on this device, or null.
+final capstoneProgressProvider = FutureProvider.family<CapstoneProgress?, String>((ref, id) async {
+  final db = ref.watch(sessionProvider).db;
+  return CapstoneProgress.parse(await db.localSetting(capstoneProgressKey(id)));
+});
+
 String _clock(int seconds) => '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
 
 /// The panel a drill is asked by, in words.
@@ -87,6 +93,7 @@ class CapstoneCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final v = ref.watch(capstoneViewProvider(itemId)).value;
     if (v == null) return const SizedBox.shrink();
+    final open = ref.watch(capstoneProgressProvider(itemId)).value;
     final t = Theme.of(context).textTheme;
     final streak = capstoneStreak([for (final (_, s) in v.sittings) s]);
     final last = v.sittings.lastOrNull?.$2;
@@ -109,6 +116,7 @@ class CapstoneCard extends ConsumerWidget {
         Text(
           [
             streakText(streak, v.rules),
+            if (open != null) 'a sitting is under way, ${open.summary(DateTime.now())}',
             if (last != null)
               'last sitting ${last.average.toStringAsFixed(1)}/5, ${last.passed ? 'passed' : 'not passed'}',
           ].join(' · '),
@@ -120,8 +128,19 @@ class CapstoneCard extends ConsumerWidget {
           alignment: Alignment.centerLeft,
           child: FilledButton.tonalIcon(
             icon: const Icon(Icons.flag_outlined),
-            label: Text(v.sittings.isEmpty ? 'Start capstone' : 'Open capstone'),
-            onPressed: v.drills.isEmpty ? null : () => openCapstone(context, itemId),
+            label: Text(
+              open != null
+                  ? 'Resume capstone'
+                  : v.sittings.isEmpty
+                  ? 'Start capstone'
+                  : 'Open capstone',
+            ),
+            onPressed: v.drills.isEmpty
+                ? null
+                : () async {
+                    await openCapstone(context, itemId);
+                    ref.invalidate(capstoneProgressProvider(itemId));
+                  },
           ),
         ),
       ],
@@ -164,8 +183,38 @@ class _CapstonePageState extends ConsumerState<CapstonePage> {
     super.dispose();
   }
 
-  void _start(CapstoneView v) {
+  String get _key => capstoneProgressKey(widget.itemId);
+
+  /// Keeps the sitting so far on this device (see [CapstoneProgress]), or
+  /// clears it when [clear].
+  Future<void> _persist({bool clear = false}) async {
+    final db = ref.read(sessionProvider).db;
+    final start = _started;
+    await db.setLocalSetting(
+      _key,
+      clear || start == null
+          ? ''
+          : CapstoneProgress(
+              start: start,
+              drills: [for (final d in _drills) d.id],
+              index: _index,
+              results: [..._results],
+              before: {for (final MapEntry(:key, :value) in _before.entries) key: value.toList()},
+            ).encode(),
+    );
+    ref.invalidate(capstoneProgressProvider(widget.itemId));
+  }
+
+  void _run() {
     _tick?.cancel();
+    _seconds = DateTime.now().difference(_started!).inSeconds;
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      final start = _started;
+      if (mounted && start != null) setState(() => _seconds = DateTime.now().difference(start).inSeconds);
+    });
+  }
+
+  void _start(CapstoneView v) {
     setState(() {
       _started = DateTime.now();
       _seconds = 0;
@@ -180,9 +229,33 @@ class _CapstonePageState extends ConsumerState<CapstonePage> {
           for (final d in v.drills) d.id: {for (final a in v.attempts[d.id] ?? const []) a.id},
         });
     });
-    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _seconds = DateTime.now().difference(_started!).inSeconds);
+    _run();
+    _persist();
+  }
+
+  /// Picks up a saved sitting: its drills still in the capstone, the
+  /// answers so far and the clock still running from its start.
+  void _resume(CapstoneView v, CapstoneProgress p) {
+    final byId = {for (final d in v.drills) d.id: d};
+    final drills = [for (final id in p.drills) ?byId[id]];
+    if (drills.isEmpty) {
+      _persist(clear: true);
+      return;
+    }
+    setState(() {
+      _started = p.start;
+      _drills = drills;
+      _results
+        ..clear()
+        ..addAll(p.results.where((r) => byId.containsKey(r.id)).take(drills.length - 1));
+      _index = _results.length.clamp(0, drills.length - 1);
+      _done = null;
+      _checks.fillRange(0, _checks.length, null);
+      _before
+        ..clear()
+        ..addAll({for (final d in drills) d.id: (p.before[d.id] ?? const []).toSet()});
     });
+    _run();
   }
 
   /// The drill's newest attempt saved during the sitting (from the
@@ -228,12 +301,14 @@ class _CapstonePageState extends ConsumerState<CapstonePage> {
         _index++;
         _busy = false;
       });
+      await _persist();
       return;
     }
     _tick?.cancel();
     final seconds = DateTime.now().difference(_started!).inSeconds;
     final sitting = CapstoneSitting(drills: [..._results], rules: v.rules, seconds: seconds);
     await ref.mutate((s) => s.book.recordCapstone(v.item, sitting, today: today()));
+    await _persist(clear: true);
     final all = await ref.read(sessionProvider).book.capstoneSittings(v.item.id);
     if (!mounted) return;
     setState(() {
@@ -253,20 +328,11 @@ class _CapstonePageState extends ConsumerState<CapstonePage> {
         if (v == null) {
           return const Scaffold(body: Center(child: Text('This capstone is no longer in the plan.')));
         }
+        // Leaving mid-sitting keeps it on this device, to resume later.
         return PopScope(
-          canPop: _started == null,
-          onPopInvokedWithResult: (popped, _) async {
-            if (popped) return;
-            if (await askSure(
-                  context,
-                  'Leave the capstone?',
-                  'This sitting is not saved. Drills already rated stay saved on the drills.',
-                  action: 'Leave',
-                ) &&
-                context.mounted) {
-              _tick?.cancel();
-              setState(() => _started = null);
-              Navigator.of(context).pop();
+          onPopInvokedWithResult: (popped, _) {
+            if (popped && _started != null && _done == null) {
+              notify(context, 'Sitting kept on this device. Open the capstone to resume it.');
             }
           },
           child: Scaffold(
@@ -326,11 +392,44 @@ class _CapstonePageState extends ConsumerState<CapstonePage> {
           ],
         ),
       ),
-      FilledButton.icon(
-        icon: const Icon(Icons.play_arrow),
-        label: const Text('Start capstone'),
-        onPressed: v.drills.isEmpty ? null : () => _start(v),
-      ),
+      if (ref.watch(capstoneProgressProvider(widget.itemId)).value case final p?) ...[
+        Text(
+          'You have a sitting under way: ${p.summary(DateTime.now())}. The clock kept running.',
+          key: const Key('capstone-resume-note'),
+          style: t.bodyMedium,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Resume sitting'),
+              onPressed: () => _resume(v, p),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (await askSure(
+                      context,
+                      'Start again?',
+                      'The sitting under way is dropped. Drills already rated stay saved on the drills.',
+                      action: 'Start again',
+                    ) &&
+                    mounted) {
+                  _start(v);
+                }
+              },
+              child: const Text('Start again'),
+            ),
+          ],
+        ),
+      ] else
+        FilledButton.icon(
+          icon: const Icon(Icons.play_arrow),
+          label: const Text('Start capstone'),
+          onPressed: v.drills.isEmpty ? null : () => _start(v),
+        ),
       if (v.sittings.isNotEmpty) ...[
         const SizedBox(height: 12),
         SectionCard(

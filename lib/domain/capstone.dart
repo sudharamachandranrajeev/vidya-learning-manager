@@ -334,3 +334,85 @@ extension Capstones on LearningBook {
         return id;
       });
 }
+
+// ---- an unfinished sitting ----
+
+/// The local setting that holds a capstone's [CapstoneProgress].
+String capstoneProgressKey(String itemId) => 'capstone.progress.$itemId';
+
+/// A sitting started but not finished, kept in this device's local
+/// settings (never synced) like an exam in progress, so leaving the page
+/// or closing the app loses nothing. The clock keeps running from [start].
+class CapstoneProgress {
+  const CapstoneProgress({
+    required this.start,
+    required this.drills,
+    this.index = 0,
+    this.results = const [],
+    this.before = const {},
+  });
+
+  final DateTime start;
+
+  /// The drills' row ids, fixed when the sitting started, and the one being
+  /// answered.
+  final List<String> drills;
+  final int index;
+
+  /// The drills already answered or skipped, in order.
+  final List<CapstoneDrill> results;
+
+  /// The attempt ids each drill had before the sitting (a newer one came
+  /// from the interviewer during it).
+  final Map<String, List<String>> before;
+
+  String encode() => jsonEncode({
+    'start': start.toUtc().toIso8601String(),
+    'drills': drills,
+    'index': index,
+    'results': [for (final r in results) r.toJson()],
+    'before': before,
+  });
+
+  /// Reads a saved sitting, or null when there is none or it is unreadable.
+  static CapstoneProgress? parse(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    Object? j;
+    try {
+      j = jsonDecode(raw);
+    } on FormatException {
+      return null;
+    }
+    if (j is! Map || j['start'] is! String || j['drills'] is! List) return null;
+    final start = DateTime.tryParse(j['start'] as String);
+    final drills = [
+      for (final d in j['drills'] as List)
+        if (d is String && d.isNotEmpty) d,
+    ];
+    if (start == null || drills.isEmpty) return null;
+    final results = [
+      for (final r in j['results'] is List ? j['results'] as List : const []) ?CapstoneDrill.fromJson(r),
+    ];
+    return CapstoneProgress(
+      start: start.toLocal(),
+      drills: drills,
+      index: (j['index'] is int ? j['index'] as int : results.length).clamp(0, drills.length - 1),
+      results: results.take(drills.length).toList(),
+      before: {
+        if (j['before'] case final Map b)
+          for (final MapEntry(:key, :value) in b.entries)
+            if (key is String && value is List)
+              key: [
+                for (final x in value)
+                  if (x is String) x,
+              ],
+      },
+    );
+  }
+
+  /// "Drill 2 of 3 · 12:30 so far".
+  String summary(DateTime now) {
+    final s = now.difference(start).inSeconds.clamp(0, 1 << 31);
+    return 'drill ${index + 1} of ${drills.length} · ${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')} so far';
+  }
+}

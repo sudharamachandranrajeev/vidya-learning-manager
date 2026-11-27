@@ -10,6 +10,7 @@ import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/framework.dart';
 import '../domain/interview.dart';
+import 'charts.dart';
 import 'topic_page.dart';
 import 'zen.dart';
 
@@ -241,11 +242,30 @@ class _Standard extends ConsumerWidget {
             style: text.bodyMedium,
           ),
           if (l != null && l.rating.note.isNotEmpty) Text(l.rating.note, style: text.bodySmall),
-          if (s.history.length > 1)
+          if (s.history.length > 1) ...[
+            const SizedBox(height: 4),
+            // The trend of the last ratings (0–4), oldest first; a screen
+            // reader hears the same history as words.
+            Semantics(
+              key: Key('framework-trend-${s.standard.id}'),
+              label:
+                  'Ratings over time, oldest first: '
+                  '${[for (final h in trendWindow(s.history)) '${niceDate(h.day)} ${h.rating.rating} of $ratingMax'].join(', ')}',
+              excludeSemantics: true,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: Sparkline(
+                  [for (final h in trendWindow(s.history)) h.rating.rating.toDouble()],
+                  max: ratingMax.toDouble(),
+                  height: 48,
+                ),
+              ),
+            ),
             Text(
               'History: ${[for (final h in s.history) '${niceDate(h.day)} ${h.rating.rating}'].join(', ')}',
               style: text.bodySmall,
             ),
+          ],
           Text(
             s.evidence.isEmpty
                 ? 'No story tagged with this yet. Tag one in Udyoga\'s story bank.'

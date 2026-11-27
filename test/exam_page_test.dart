@@ -198,7 +198,9 @@ void main() {
       await app.tapText('Pottery certificate');
       await app.tap(find.text('Wheel work').last);
       await app.tap(find.text('Mock exam').last);
-      await app.tapText('Start the exam');
+      // With an attempt under way, the topic page offers to resume it.
+      final resume = find.byKey(const Key('resume-exam'));
+      await (resume.evaluate().isEmpty ? app.tapText('Start the exam') : app.tap(resume));
     }
 
     await openExam();

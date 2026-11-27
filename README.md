@@ -241,14 +241,16 @@ Format 3 adds, also optional (older plans import unchanged):
     "brief": "Markdown text", "columns": ["Item", "Specialty", "Weeks waited", "Flags"],
     "rows": [{ "cells": ["T001", "ENT", "34", "urgent referral"], "risk": "high",
                "expect": "escalate", "why": "optional model answer" }],
-    "actions": ["act", "escalate", "leave", "note"], "rubric": "text", "criteria": ["c1"] }
+    "actions": ["act", "escalate", "leave", "note"], "rubric": "text", "criteria": ["c1"],
+    "retakeDays": 7 }
   ```
 
   `columns` and `rows` are needed: at most 8 columns and 60 rows (the rest are left out), each
   cell up to 200 characters; a row may be written as a bare list of cells. `minutes` is 5–180
   (20 when left out). `actions` takes 2–8 names (act, escalate, leave, note when left out).
-  `risk` is high, medium or low and `expect` one of the actions; anything else is left out. A
-  scenario with no column or no row is left out. Use made-up data only.
+  `risk` is high, medium or low and `expect` one of the actions; anything else is left out.
+  `retakeDays` 0–60 (optional, 0 when left out) is the wait before the next attempt counts, as
+  for an exam. A scenario with no column or no row is left out. Use made-up data only.
 - per program (or on one course), a `framework` to rate yourself against:
 
   ```json
@@ -300,10 +302,15 @@ change are kept when the plan comes again.
    many came up in an earlier attempt, and the exam warns before you start when the pool is under
    twice the count, because a remembered answer can look like knowledge. If the app closes or is
    stopped during an exam, it picks up where you were when you open the exam again; the time has
-   kept running, and if it ran out the exam is handed in then. The topic
+   kept running, and if it ran out the exam is handed in then. While an attempt is under way the
+   topic page shows **Resume exam (12:30 left)** instead of Start. The topic
    page charts your exam scores. A screen reader hears the time left every five minutes and at one
    minute, 30 and 10 seconds.
-6. A practice task shows its instructions and "done when" line. Marking it done asks for an
+6. Plan text is written in Markdown: topic details, notes (such as an exam's rules), briefs and
+   rubrics show headings, lists, bold, tables and code. A wide table scrolls sideways on its own.
+   A link shows its address and opens only after you tap **Open**; pictures are never
+   downloaded, their description shows instead.
+7. A practice task shows its instructions and "done when" line. Marking it done asks for an
    evidence link, or a note when there is nothing to link to; then **Add to portfolio** makes it
    a portfolio project in one tap.
 
@@ -363,6 +370,10 @@ When a plan sets a capstone, it shows as a card on the course page and on its to
    sitting that does not pass starts the count again. Once the count is reached, the capstone is
    done.
 
+A sitting under way is kept on this device (never synced), like an exam: leave the page or close
+the app and the capstone card shows **Resume capstone**; **Resume sitting** carries on at the
+drill you were on, with the clock still running from the start, and **Start again** drops it.
+
 Sittings are kept as results on the capstone (no database change), and each drill answered in
 one is also an ordinary attempt on that drill, so Job readiness counts it.
 
@@ -385,7 +396,9 @@ course page, with its last result.
    recorded, met the rubric): a score out of 8, shown on the 1–5 rubric scale.
 
 The item is done once an attempt leaves no high-risk row untouched and you rate it at least 5/8
-(4/5). Attempts are kept as results on the item with a detail of kind "scenario" (no database
+(4/5). If the plan sets `retakeDays`, the next counted attempt waits that many days after the last
+one; the date shows on the card and the brief, and **Practise anyway (not counted)** runs it
+without saving anything. Attempts are kept as results on the item with a detail of kind "scenario" (no database
 change) and listed under **Past attempts**.
 
 #### Framework self-assessment
@@ -397,9 +410,12 @@ When a plan carries a `framework`, the goal page shows a card with its name.
 2. **Pick your target stage.** Each standard shows what it looks like at that stage.
 3. **Rate yourself** on each standard, 0–4: 0 Not yet, 1 Starting, 2 Developing, 3 Secure,
    4 Strong. Add a note if you like. Each rating is dated; rate again later and the page shows
-   the change ("Up 2 since 1 Oct 2026") and the history.
-4. **Evidence** is your Udyoga stories tagged with that standard in Udyoga's story bank (they
-   arrive with Udyoga's plan).
+   the change ("Up 2 since 1 Oct 2026"), a small line chart of your last 12 ratings (a screen
+   reader reads them out as dates and numbers) and the history.
+4. **Evidence** is your Udyoga stories tagged with that standard in Udyoga's story bank. They
+   arrive with Udyoga's plan, or in a plan file you import: story `cards` keep their `tags` and
+   `happened` day either way. A whole plan imported again replaces the stories it brought; one
+   part of a long plan adds to them.
 5. **Work on next** lists each gap, a standard rated 1 or less or with no story yet, with the
    topics that teach it.
 
@@ -475,11 +491,18 @@ to that moment. On Android the setup tips may pause while recording if the camer
 How a row is judged:
 
 - **Covered**: at least one strong piece of your own work from the last 60 days: a done topic
-  whose latest quiz is 70% or more, a practice task done with evidence, a drill whose latest
-  score is 5 of 8 or more, or a linked story together with a done topic.
-- **Weak**: there is evidence, but only old work (over 60 days), a latest quiz under 70%, a
-  latest drill under 5 of 8, only planned items, or work not checked yet (a topic ticked
-  without a quiz, a story, a portfolio item or a skill rating on their own).
+  whose latest quiz is 70% or more (or whose latest exam passed on its own pass mark), a practice
+  task done with evidence, a drill whose latest score is 4/5 or more (5 of 8), or a linked story
+  together with a done topic.
+- **Weak**: there is evidence, but only old work (over 60 days), a latest quiz or exam under the
+  pass mark, a latest drill under 4/5, a stress test or capstone not passed (a stress test with a
+  high-risk row left untouched counts as not passed), only planned items, only self-rated passes
+  (a passed stress test or capstone counts, but never covers a row on its own), or work not
+  checked yet (a topic ticked without a quiz, a story, a portfolio item or a skill rating on
+  their own).
+- **Evidence** lists each exam, stress test (for the criteria its `criteria` name) and capstone
+  (for the criteria its drills test) with its date. Drill scores read out of 5, with the score
+  out of 8 beside them ("Drill 4/5 (6/8)"), here and in Before the interview.
 - **Missing**: nothing at all is linked to it.
 - **AI never marks a row covered.** A criterion's AI source, Udyoga's "your CV shows this" flag
   and any status a plan sends are ignored. Only your own results count.

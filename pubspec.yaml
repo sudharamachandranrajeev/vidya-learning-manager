@@ -56,6 +56,12 @@ dependencies:
   path_provider: ^2.1.6
   timezone: ^0.11.2
   url_launcher: ^6.3.2
+  # Plan text (notes, topic details, briefs, rubrics) shown as Markdown.
+  # flutter_markdown_plus (BSD-3-Clause) is the maintained fork of the
+  # discontinued flutter_markdown; package:markdown (BSD-3-Clause) parses.
+  # Images are never fetched and links open only after a confirm.
+  flutter_markdown_plus: ^1.0.12
+  markdown: ^7.3.1
 
 dev_dependencies:
   flutter_test:
