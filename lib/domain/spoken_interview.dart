@@ -79,6 +79,27 @@ String interviewAiNote(HelpAiSetup setup, {required bool offline}) {
       'coverage of each criterion and your self-rating all work on this device.';
 }
 
+// ---- the panel ----
+
+/// What the panel choice says about [p], in one line. The challenging
+/// panel gets Vidya's own line.
+String personaAbout(ie.Persona p) => p.kind == ie.PersonaKind.challenging ? challengingAbout : p.about;
+
+const challengingAbout = 'Firm panel: challenges claims, asks for evidence, interrupts politely. Never rude.';
+
+/// Said beside the challenging panel above level 2.
+const safeRehearsalNote = 'Safe rehearsal first: start at level 1 or 2, then step up.';
+
+/// The panel and level a drill's plan set, read for the engine: null for
+/// what the plan left out.
+({ie.PersonaKind? persona, int? level}) drillPreset(StudyItem drill) => (
+  persona: switch (drillPersona(drill)) {
+    '' => null,
+    final p => ie.PersonaKind.values.firstWhere((k) => k.name == p, orElse: () => ie.PersonaKind.neutral),
+  },
+  level: drillLadder(drill),
+);
+
 // ---- questions ----
 
 /// The prefix of a stand-in criterion for a drill tagged with no program
@@ -121,6 +142,39 @@ List<Map<String, Object?>> roundCriteria(List<Criterion> criteria, List<ie.Engin
 
 // ---- a saved round ----
 
+/// One delivery reading kept with a round: what was measured, its value,
+/// the usual range and where the value sits. Information only.
+class RoundDelivery {
+  const RoundDelivery({required this.label, required this.value, this.usual = '', this.place = 'within'});
+
+  /// From the engine's reading.
+  RoundDelivery.of(ie.RangeReading r)
+    : this(label: r.label, value: r.value, usual: r.usual, place: r.place.name);
+
+  final String label, value, usual;
+
+  /// "within", "below" or "above" the usual range.
+  final String place;
+
+  String get placeText => switch (place) {
+    'below' => 'below the usual range',
+    'above' => 'above the usual range',
+    _ => 'in the usual range',
+  };
+
+  Map<String, String> toJson() => {'label': label, 'value': value, 'usual': usual, 'place': place};
+
+  static RoundDelivery? fromJson(Object? j) {
+    if (j is! Map || j['label'] is! String || j['value'] is! String) return null;
+    return RoundDelivery(
+      label: j['label'] as String,
+      value: j['value'] as String,
+      usual: j['usual'] is String ? j['usual'] as String : '',
+      place: j['place'] is String ? j['place'] as String : 'within',
+    );
+  }
+}
+
 /// A round read back from its row.
 class SavedRound {
   SavedRound(this.row);
@@ -134,6 +188,22 @@ class SavedRound {
 
   /// Typed round (no speech models used).
   bool get typed => _settings['typed'] == true;
+
+  /// The panel the round was asked by.
+  ie.PersonaKind get persona => settings.persona;
+
+  /// How each answer was delivered, by question: the answer's readings,
+  /// then each follow-up's (see [RoundDelivery]). Kept for a challenging
+  /// round only, as ranges, never a score (rule 5). Empty for a typed
+  /// answer, which has no timing.
+  late final Map<int, List<List<RoundDelivery>>> deliveries = {
+    for (final e in _map(_settings['deliveries']).entries)
+      if (int.tryParse(e.key) case final i? when e.value is List)
+        i: [
+          for (final take in e.value as List)
+            [for (final r in take is List ? take : const []) ?RoundDelivery.fromJson(r)],
+        ],
+  };
 
   late final List<ie.EngineQuestion> questions = [
     for (final q in _list(row.questions))
@@ -319,6 +389,23 @@ extension SpokenRounds on LearningBook {
     final answers = {..._map(r.answers), '$index': text};
     await save(db.learnRounds, r.copyWith(answers: jsonEncode(answers)), id);
   });
+
+  /// Keeps question [index]'s delivery readings with the round (answer
+  /// first, then each follow-up), replacing what was kept for it. Only the
+  /// ranges as text; never audio, never a score.
+  Future<void> saveRoundDeliveries(String id, int index, List<List<RoundDelivery>> takes) =>
+      db.transaction(() async {
+        final r = await _roundRow(id);
+        if (r == null) return;
+        final settings = {..._map(r.settings)};
+        settings['deliveries'] = {
+          ..._map(settings['deliveries']),
+          '$index': [
+            for (final t in takes) [for (final d in t) d.toJson()],
+          ],
+        };
+        await save(db.learnRounds, r.copyWith(settings: jsonEncode(settings)), id);
+      });
 
   Future<void> finishRound(String id, {required String now}) async {
     final r = await _roundRow(id);

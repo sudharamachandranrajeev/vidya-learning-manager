@@ -9,6 +9,7 @@ import '../domain/exam.dart';
 import '../domain/quiz.dart';
 import '../domain/stats.dart';
 import '../domain/study_items.dart' show topicQuiz;
+import 'capstone_page.dart';
 import 'charts.dart';
 import 'common.dart';
 import 'dialogs.dart';
@@ -165,6 +166,20 @@ class CoursePage extends ConsumerWidget {
                                 ],
                               ),
                       ),
+                      if ([
+                            for (final i in items)
+                              if (i.type == 'capstone' && topics.any((tp) => tp.id == i.topicId)) i,
+                          ]
+                          case final caps when caps.isNotEmpty)
+                        SectionCard(
+                          title: caps.length == 1 ? 'Capstone' : 'Capstones',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              for (final c in caps) CapstoneCard(c.id, key: Key('course-capstone-${c.id}')),
+                            ],
+                          ),
+                        ),
                       SectionCard(
                         title: 'Tests',
                         trailing: IconButton(

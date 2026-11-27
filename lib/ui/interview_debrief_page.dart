@@ -512,6 +512,21 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
               child: QuotedLine(strengthQuote, key: Key('strength-quote-$i'), takes: _takes(r)),
             ),
           if (fix.isNotEmpty) Text('Fix: ${ie.oneFix(fix)}'),
+          if (low != null)
+            Text(
+              'Rubric: ${low.of5}/5 (${low.score}/$drillMax on the drill scale)',
+              key: Key('rubric-$i'),
+              style: t.titleSmall,
+            )
+          else if (checks.every((c) => c != null))
+            Text(
+              'Your rating: ${rubricText(drillScore([for (final c in checks) c!]))} '
+              '(${drillScore([for (final c in checks) c!])}/$drillMax)',
+              key: Key('rubric-$i'),
+              style: t.titleSmall,
+            ),
+          if (r.persona == ie.PersonaKind.challenging && (r.deliveries[i]?.isNotEmpty ?? false))
+            _Deliveries(r.deliveries[i]!, key: Key('deliveries-$i')),
           if (expected != null) _Expectations(expected, takes: _takes(r), key: Key('expectations-$i')),
           const SizedBox(height: 8),
           Wrap(
@@ -582,6 +597,36 @@ class _InterviewDebriefPageState extends ConsumerState<InterviewDebriefPage> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// How an answer to a challenging panel was delivered: each take's
+/// readings beside the usual range. Information only, never a score.
+class _Deliveries extends StatelessWidget {
+  const _Deliveries(this.takes, {super.key});
+  final List<List<RoundDelivery>> takes;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      title: const Text('How you held up (delivery)'),
+      childrenPadding: const EdgeInsets.only(bottom: 8),
+      expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Measured on this device while the panel challenged you. Ranges most listeners find easy, for '
+          'information only: not a score, and not part of any score.',
+          style: t.bodySmall,
+        ),
+        for (final (k, take) in takes.indexed) ...[
+          const SizedBox(height: 8),
+          Text(k == 0 ? 'Your answer' : 'Reply to follow-up $k', style: t.titleSmall),
+          for (final d in take) Text('${d.label}: ${d.value} · ${d.placeText}'),
+        ],
+      ],
     );
   }
 }

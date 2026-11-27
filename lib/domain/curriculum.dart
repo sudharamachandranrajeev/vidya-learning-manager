@@ -3,8 +3,10 @@ import 'dart:math';
 
 import 'package:brahma_core/brahma_core.dart';
 
+import 'capstone.dart';
 import 'cloze.dart';
 import 'exam.dart';
+import 'interview.dart' show drillPersonas;
 import 'journey.dart';
 import 'study_items.dart';
 
@@ -269,6 +271,9 @@ CurriculumPlan parseCurriculum(String text) {
       final id = tp is Map ? _str(tp['id'], 200) : '';
       if (id.isNotEmpty) topicNames.putIfAbsent(id.toLowerCase(), () => t);
     }
+    // Capstones name drills anywhere in the course, so they are read once
+    // every topic's drills are known.
+    final capstones = <int, Object?>{};
     for (final tp in rawTopics) {
       final topic = tp is Map ? tp : {'title': tp};
       final tt = _str(topic['title'], _maxTitle);
@@ -278,6 +283,7 @@ CurriculumPlan parseCurriculum(String text) {
       if (allItems > _maxAllItems) {
         throw const FormatException('Too many study items; the most is $_maxAllItems in one plan.');
       }
+      if (topic['capstone'] != null) capstones[topics.length] = topic['capstone'];
       topics.add(
         PlanTopic(
           tt,
@@ -294,6 +300,44 @@ CurriculumPlan parseCurriculum(String text) {
           ],
         ),
       );
+    }
+    if (c['capstone'] != null && topics.isNotEmpty) capstones[-1] = c['capstone'];
+    if (capstones.isNotEmpty) {
+      // A drill is named by its `id`, or by its question.
+      final drillRefs = <String, String>{
+        for (final t in topics)
+          for (final i in t.items)
+            if (i.type == 'interview drill') ...{
+              i.ref.toLowerCase(): i.ref,
+              (jsonDecode(i.content)['question'] as String).toLowerCase(): i.ref,
+            },
+      };
+      for (final MapEntry(key: k, value: raw) in capstones.entries) {
+        final rules = planCapstone(raw, drillRefs, course: k < 0);
+        if (rules == null) continue;
+        final at = k < 0 ? topics.length - 1 : k;
+        final t = topics[at];
+        if (++allItems > _maxAllItems) {
+          throw const FormatException('Too many study items; the most is $_maxAllItems in one plan.');
+        }
+        topics[at] = PlanTopic(
+          t.title,
+          minutes: t.minutes,
+          details: t.details,
+          resources: t.resources,
+          criteria: t.criteria,
+          items: [
+            ...t.items,
+            PlanItem(
+              type: capstoneType,
+              title: 'Capstone: ${k < 0 ? name : t.title}',
+              ref: k < 0 ? 'capstone|course' : 'capstone',
+              minutes: rules.minutes ?? 0,
+              content: jsonEncode(rules.toJson()),
+            ),
+          ],
+        );
+      }
     }
     final kind = _str(c['kind'], 20).toLowerCase();
     final start = c['startWeek'] is num ? _int(c['startWeek'], 0, 0, 520) : null;
@@ -393,6 +437,8 @@ List<PlanItem> _items(Map topic, String topicTitle, [Map<String, String> topicNa
     final title = _str(x['title'], _maxTitle).isNotEmpty ? _str(x['title'], _maxTitle) : url;
     if (title.isEmpty) continue;
     var type = itemTypeOf(_str(x['type'], 40));
+    // A capstone comes only from a `capstone` block, with its rules.
+    if (type == capstoneType) type = '';
     if (type.isEmpty) type = url.isEmpty ? 'note' : linkTypeOf(url);
     final extra = {
       for (final k in ['instructions', 'doneWhen'])
@@ -442,10 +488,17 @@ List<PlanItem> _items(Map topic, String topicTitle, [Map<String, String> topicNa
     final m = d is Map ? d : {'question': d};
     final question = _str(m['question'] ?? m['title'], _maxText);
     if (question.isEmpty) continue;
+    // `persona` and `ladder` (format 3) preselect the interviewer's panel
+    // and level for this drill; an unknown panel or a level that is not a
+    // number is left out, a number out of range held to 1–5.
+    final persona = _str(m['persona'], 40).toLowerCase();
+    final ladder = m['ladder'];
     final extra = {
       'question': question,
       for (final k in ['criterion', 'rubric', 'story'])
         if (_str(m[k], _maxText) case final v when v.isNotEmpty) k: v,
+      if (drillPersonas.contains(persona)) 'persona': persona,
+      if (ladder is num || int.tryParse('${ladder ?? ''}') != null) 'ladder': _int(ladder, 1, 1, 5),
     };
     final id = _str(m['id'], 200);
     add(
@@ -640,7 +693,11 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
             { "question": "A question", "kind": "short", "answer": "The answer" }
           ],
           "exam": { "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true, "count": 15 },
-          "drills": [{ "question": "An interview question on this topic", "criterion": "c1" }]
+          "drills": [
+            { "id": "d1", "question": "An interview question on this topic", "criterion": "c1" },
+            { "id": "d2", "question": "A question a tough panel would press on", "criterion": "c1", "persona": "challenging", "ladder": 2 }
+          ],
+          "capstone": { "drills": ["d1", "d2"], "average": 4.0, "minimum": 3, "passesInRow": 2, "minutes": 45 }
         }
       ]
     }
@@ -655,6 +712,8 @@ RULES:
 - An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note. Give links and titles only; never copy a course's text.
 - A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card. Add a one-sentence "explain" where it helps.
 - "exam" is only for a topic whose quiz is a timed mock exam (for example a course's final topic, "Mock exam"); leave it out for ordinary quizzes. "minutes" is 1–300, "passPercent" 1–100 (the real exam's pass mark if known), "retakeDays" 0–60 (days to wait before the next attempt counts), "shuffle" true or false, "count" 1–100 (how many questions each attempt draws; give a pool of at least twice that many so attempts differ, and leave it out to ask them all). An exam's quiz may hold up to 100 questions; other quizzes at most 20. In an exam, give each question a "topic": the title of the topic in the same course that it tests, so the results show which topics to study first.
+- A drill may set "persona": the interview panel that asks it, one of friendly, neutral, probing, quiet or challenging (firm: challenges claims, asks for evidence, interrupts politely, never rude), and "ladder": its difficulty from 1 (rehearsal) to 5 (tough). Use "challenging" for stress tests and cross-examination, and start it at ladder 1 or 2 so the first practice is a safe rehearsal. Leave both out to let me choose.
+- "capstone" is only for a final test of several interview drills taken in one sitting; put it on a topic, or on a course to cover drills from all its topics. "drills" lists the drills' "id"s from the same course (give those drills an "id"); "average" is the lowest average to pass on a 1–5 scale (1.0–5.0), "minimum" the lowest single drill score allowed (1–5), "passesInRow" how many sittings in a row must pass (1–10), "minutes" the time for the whole sitting (5–300). Leave it out otherwise.
 - "criteria" lists what the goal asks for (for a job: the essential and desirable criteria); each topic's "criteria" names the ids it works towards. Leave both out if there are none.
 - "journey" is only for a goal that is one job; leave it out otherwise. "sector" is one of: nhs, university, private, civil-service, other. A stage "id" is one of: decide, research, contact, apply, follow-up, prepare, interview-day, after, offer, checks, joining, first-90-days, grow. Vidya fills in every stage you leave out from its own dated guides, so add only what is special to this job. A line with no "source" is shown as general advice; never invent a source or a date.
 - Plain JSON: double quotes, no comments, no trailing commas, \\n for line breaks inside text.

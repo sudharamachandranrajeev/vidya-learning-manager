@@ -17,10 +17,18 @@ const itemTypes = {
   'quiz': 'Quiz',
   'interview drill': 'Interview drill',
   'note': 'Note',
+  'capstone': 'Capstone',
 };
 
 /// Types listed under "Check yourself" rather than with the other items.
-const checkTypes = {'quiz', 'interview drill'};
+const checkTypes = {'quiz', 'interview drill', 'capstone'};
+
+/// Types a learner can add by hand: a capstone comes only from a plan,
+/// with its rules.
+Map<String, String> get addableItemTypes => {
+  for (final e in itemTypes.entries)
+    if (e.key != 'capstone') e.key: e.value,
+};
 
 /// Types that have a place to stop and come back to.
 const stoppableTypes = {'video', 'book'};

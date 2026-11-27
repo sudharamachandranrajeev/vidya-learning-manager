@@ -50,6 +50,16 @@ int drillScore(List<int> checks) => checks.take(drillChecks.length).fold(0, (a, 
 /// Whether a score out of 8 is weak.
 bool drillWeak(num outOf8) => outOf8 < drillWeakBelow;
 
+/// A drill score (0–8: the self-rating, an AI score placed on the drill
+/// scale, or Udyoga's score scaled to 8) on the plan's 1–5 rubric scale:
+/// `round(score / 8 × 4) + 1`, halves rounded up. So 0 is 1/5, 1–2 are
+/// 2/5, 3–4 are 3/5, 5–6 are 4/5 and 7–8 are 5/5; a weak drill (under 5/8)
+/// is always 3/5 or less. Only shown; stored scores stay out of 8.
+int rubricOf5(num outOf8) => (outOf8.clamp(0, drillMax) / drillMax * 4).round() + 1;
+
+/// "4/5".
+String rubricText(num outOf8) => '${rubricOf5(outOf8)}/5';
+
 // ---- scenario frame ----
 
 /// A guided answer for a scenario question ("What would you do if…"): what
@@ -121,6 +131,23 @@ String drillQuestion(StudyItem drill) => switch (itemContent(drill)['question'])
   _ => drill.title,
 };
 
+/// The panels a plan may set on a drill (`persona`, format 3): the
+/// interview engine's persona names.
+const drillPersonas = {'friendly', 'neutral', 'probing', 'quiet', 'challenging'};
+
+/// The panel the plan set for [drill] ("challenging"), '' when none. The
+/// interviewer starts on it; the learner can still change it.
+String drillPersona(StudyItem drill) => switch (itemContent(drill)['persona']) {
+  final String p when drillPersonas.contains(p) => p,
+  _ => '',
+};
+
+/// The interviewer level (1–5) the plan set for [drill], or null.
+int? drillLadder(StudyItem drill) => switch (itemContent(drill)['ladder']) {
+  final int l when l >= 1 && l <= 5 => l,
+  _ => null,
+};
+
 // ---- one attempt ----
 
 /// One practice of a drill: the four check ratings, the seconds used, the
@@ -171,6 +198,9 @@ class DrillAttempt {
   bool get aiScored => outOf8 != null;
   int get score => outOf8?.clamp(0, drillMax) ?? drillScore(checks);
   bool get weak => drillWeak(score);
+
+  /// The score on the 1–5 rubric scale ([rubricOf5]).
+  int get of5 => rubricOf5(score);
 
   /// The detail JSON. `kind` marks it as a drill attempt.
   String encode() => jsonEncode({

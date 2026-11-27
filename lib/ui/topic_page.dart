@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
 import '../db/database.dart';
+import '../domain/capstone.dart' show capstoneType;
 import '../domain/interview.dart';
 import '../domain/exam.dart';
 import '../domain/next_up.dart';
 import '../domain/quiz.dart';
 import '../domain/resources.dart';
 import '../domain/study_items.dart';
+import 'capstone_page.dart';
 import 'charts.dart';
 import 'common.dart';
 import 'dialogs.dart';
@@ -609,7 +611,12 @@ Future<void> itemDialog(BuildContext context, WidgetRef ref, String topicId, {St
     context,
     title: item == null ? 'Add item' : 'Edit item',
     fields: (setState) => [
-      Choice(label: 'Type', value: type, options: itemTypes, onChanged: (v) => setState(() => type = v)),
+      Choice(
+        label: 'Type',
+        value: type,
+        options: addableItemTypes,
+        onChanged: (v) => setState(() => type = v),
+      ),
       if (type != 'note')
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -881,6 +888,10 @@ class _CheckYourself extends ConsumerWidget {
                 ),
               ],
             ),
+          ],
+          for (final c in items.where((i) => i.type == capstoneType)) ...[
+            const SizedBox(height: 12),
+            CapstoneCard(c.id, key: Key('capstone-${c.id}')),
           ],
           const SizedBox(height: 12),
           Text(

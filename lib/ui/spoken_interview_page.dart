@@ -150,6 +150,30 @@ class SpokenInterviewPage extends ConsumerStatefulWidget {
 class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
   Set<String>? _picked;
   RoundSettings _settings = const RoundSettings();
+
+  /// The panel and level the drill's plan set (format 3), used until the
+  /// learner changes them; never saved as the learner's own settings.
+  PersonaKind? _presetPersona;
+  int? _presetLevel;
+  bool _presetRead = false;
+
+  /// The settings the round uses: the learner's, with the drill's preset.
+  RoundSettings get _round0 => _settings.copyWith(
+    persona: _presetPersona ?? _settings.persona,
+    level: _presetLevel ?? _settings.level,
+  );
+
+  /// Reads the opened drill's preset once its row is in.
+  void _readPreset(InterviewSetup s) {
+    if (_presetRead) return;
+    _presetRead = true;
+    final drill = s.drills.where((d) => d.id == widget.itemId).firstOrNull;
+    if (drill == null) return;
+    final p = drillPreset(drill);
+    _presetPersona = p.persona;
+    _presetLevel = p.level;
+  }
+
   String _framework = 'private';
   List<SpeechModel>? _missing;
   final _progress = <String, double>{};
@@ -325,7 +349,7 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
     final drills = _chosen(s);
     if (drills.isEmpty) return notify(context, 'Pick at least one drill.');
     final offline = _offline;
-    final settings = _settings;
+    final settings = _round0;
     setState(() {
       _opening = true;
       _openingStep = 'Getting ready…';
@@ -351,9 +375,11 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
       if (brain != null) {
         if (mounted) setState(() => _openingStep = 'Planning the follow-ups…');
         try {
-          final fromAi = await brain
-              .planRound(role: s.role, questions: questions)
-              .timeout(const Duration(seconds: 120));
+          // The challenging panel's tone limits go to the AI too.
+          final asked = brain is PromptedInterviewBrain
+              ? brain.planRound(role: s.role, questions: questions, persona: settings.persona)
+              : brain.planRound(role: s.role, questions: questions);
+          final fromAi = await asked.timeout(const Duration(seconds: 120));
           plans = mergePlans(questions, fromAi);
           source = 'Follow-ups planned by your AI';
         } on Object catch (e) {
@@ -385,8 +411,11 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
           for (final q in questions) q.question,
           for (final p in plans) ...p.probes.map((x) => x.text),
           for (final list in builtInProbes.values) ...list,
+          if (persona.challenges)
+            for (final list in builtInChallengeProbes.values) ...list,
           ...persona.acknowledgements,
           persona.probeLead,
+          persona.interruption,
           interruptLine,
         ]);
         takes = await e.takes(roundId);
@@ -419,6 +448,10 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
         return;
       }
       _sub = round.changes.listen((_) {
+        if (persona.kind == PersonaKind.challenging &&
+            (round.phase == RoundPhase.review || round.phase == RoundPhase.finished)) {
+          _keepDeliveries(round, roundId);
+        }
         if (round.phase == RoundPhase.finished) {
           if (_coach.on) unawaited(_coach.turnOff());
           unawaited(
@@ -445,6 +478,21 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
       if (mounted) setState(() => _opening = false);
     }
   }
+
+  /// Keeps each answered question's delivery ranges with the round, for
+  /// the debrief of a challenging round. Ranges only, never a score.
+  void _keepDeliveries(SpokenRound round, String roundId) {
+    for (final (i, st) in round.states.indexed) {
+      final takes = [
+        for (final d in st.deliveries) [for (final x in d.readings) RoundDelivery.of(x)],
+      ];
+      if (takes.isEmpty || _kept[i] == takes.length) continue;
+      _kept[i] = takes.length;
+      unawaited(ref.read(sessionProvider).book.saveRoundDeliveries(roundId, i, takes));
+    }
+  }
+
+  final _kept = <int, int>{};
 
   @override
   Widget build(BuildContext context) {
@@ -486,6 +534,7 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
   // ---- before the round ----
 
   List<Widget> _setup(InterviewSetup s, bool offline) {
+    _readPreset(s);
     final text = Theme.of(context).textTheme;
     final picked = _picked ?? _defaultPick(s);
     final setup = ref.watch(helpAiProvider).value ?? const HelpAiSetup();
@@ -513,8 +562,7 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
                 subtitle: Text(
                   [
                     if (drillCriterionText(d, s.criteria) case final c when c.isNotEmpty) 'Tests: $c',
-                    if (s.evidence[d.id] case final e? when e.practised)
-                      'last ${e.latest!.round()}/$drillMax',
+                    if (s.evidence[d.id] case final e? when e.practised) 'last ${rubricText(e.latest!)}',
                     if (s.evidence[d.id]?.weak ?? false) 'weak',
                   ].join(' · '),
                 ),
@@ -543,7 +591,8 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
   }
 
   Widget _settingsCard(HelpAiSetup setup, bool offline) {
-    final r = _settings;
+    final r = _round0;
+    final preset = _presetPersona != null || _presetLevel != null;
     final persona = Persona.of(r.persona);
     final level = Ladder.of(r.level);
     final fw = Framework.of(_framework);
@@ -558,18 +607,27 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
             label: 'Panel',
             value: r.persona,
             options: {for (final p in personas.values) p.kind: p.label},
-            onChanged: (v) => _save(settings: r.copyWith(persona: v)),
+            onChanged: (v) {
+              _presetPersona = null;
+              _save(settings: _settings.copyWith(persona: v));
+            },
           ),
-          Text(persona.about, style: muted),
+          Text(personaAbout(persona), style: muted),
           if (persona.silenceNote.isNotEmpty) Text(persona.silenceNote, style: muted),
           const SizedBox(height: 12),
           Choice<int>(
             label: 'Level',
             value: r.level,
             options: {for (final l in ladder) l.level: '${l.level} · ${l.label}'},
-            onChanged: (v) => _save(settings: r.copyWith(level: v)),
+            onChanged: (v) {
+              _presetLevel = null;
+              _save(settings: _settings.copyWith(level: v));
+            },
           ),
           Text(level.about, style: muted),
+          if (persona.kind == PersonaKind.challenging)
+            Text(safeRehearsalNote, key: const Key('safe-rehearsal'), style: muted),
+          if (preset) Text('Set by the plan for this drill. You can change it.', style: muted),
           const SizedBox(height: 12),
           Choice<String>(
             label: 'Scored on',
@@ -588,7 +646,7 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
             label: '${r.endSilence.inSeconds} s',
             semanticFormatterCallback: (v) => '${v.round()} seconds of silence',
             onChanged: (v) => _save(
-              settings: r.copyWith(endSilence: Duration(seconds: v.round())),
+              settings: _settings.copyWith(endSilence: Duration(seconds: v.round())),
             ),
           ),
           Text('Shorter pauses to think never end your answer. You can always press Done.', style: muted),
@@ -614,7 +672,7 @@ class _SpokenInterviewPageState extends ConsumerState<SpokenInterviewPage> {
                 'leaves out. Off: built-in follow-ups.',
               ),
               value: r.aiPlan,
-              onChanged: (v) => _save(settings: r.copyWith(aiPlan: v)),
+              onChanged: (v) => _save(settings: _settings.copyWith(aiPlan: v)),
             ),
           const SizedBox(height: 4),
           Text(interviewAiNote(setup, offline: offline), style: muted),
