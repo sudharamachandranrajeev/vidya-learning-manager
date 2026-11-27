@@ -434,18 +434,38 @@ class _ExamPageState extends ConsumerState<ExamPage> {
   ExamResult? _result;
   var _cards = 0;
 
-  /// The "seen before" warning as it stood when the attempt began.
-  ({bool smallPool, int repeats})? _seenAtStart;
+  /// How much of the attempt came up before, as it stood when it began.
+  ({bool smallPool, int repeats, int asked})? _seenAtStart;
   String? _error;
 
+  /// Whether a saved, unfinished attempt has been looked for yet.
+  var _checked = false;
+  Timer? _persistSoon;
+
   int get _limit => _rules.minutes * 60;
-  DateTime _now() => ref.read(examClockProvider)();
+  DateTime _now() => _clock();
+
+  // Read once, so the attempt can still be saved while the page closes.
+  late final DateTime Function() _clock;
+  late final AppDatabase _db;
   int get _elapsed => _start == null ? _seconds : _now().difference(_start!).inSeconds;
   int get _left => (_limit - _elapsed).clamp(0, _limit);
 
   @override
+  void initState() {
+    super.initState();
+    _clock = ref.read(examClockProvider);
+    _db = ref.read(sessionProvider).db;
+    _restore();
+  }
+
+  @override
   void dispose() {
     _tick?.cancel();
+    if (_persistSoon?.isActive ?? false) {
+      _persistSoon!.cancel();
+      _persist();
+    }
     for (final c in _typed) {
       c.dispose();
     }
@@ -457,19 +477,103 @@ class _ExamPageState extends ConsumerState<ExamPage> {
     SemanticsService.sendAnnouncement(View.of(context), text, Directionality.of(context));
   }
 
+  String get _progressKey => examProgressKey(widget.quiz.id);
+
+  /// Picks up an attempt the app was closed or killed in: the time has
+  /// kept running from its start, so it may be handed in at once.
+  Future<void> _restore() async {
+    final db = _db;
+    final saved = ExamProgress.parse(await db.localSetting(_progressKey));
+    final m = saved?.against(_pool);
+    if (saved == null || m == null) {
+      if (saved != null) await db.setLocalSetting(_progressKey, '');
+      if (mounted) setState(() => _checked = true);
+      return;
+    }
+    final attempts = await ref.read(examAttemptsProvider(widget.quiz.topicId).future);
+    if (!mounted) return;
+    _setUp([for (final k in m.order) _pool[k]], attempts, given: m.given);
+    _index = saved.index.clamp(0, _shown.length - 1);
+    _start = saved.start;
+    _checked = true;
+    if (saved.handedIn != null) {
+      _start = null;
+      _seconds = saved.handedIn!.clamp(0, _limit);
+      _timedOut = saved.timedOut;
+      _markAuto();
+      return;
+    }
+    setState(() => _phase = _ExamPhase.running);
+    if (_left <= 0) {
+      _announce('Time ran out while you were away. Your exam has been handed in.');
+      _handIn(timedOut: true);
+      return;
+    }
+    _lastLeft = _left;
+    _announce('Exam resumed. ${timeLeftText(_left)}.');
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
+  }
+
+  void _setUp(List<QuizQuestion> shown, List<Assessment> attempts, {List<String>? given}) {
+    final earlier = [for (final a in attempts) ?ExamResult.of(a)];
+    _shown = shown;
+    _seenAtStart = seenBefore(
+      pool: _pool.length,
+      rules: _rules,
+      asking: [for (final q in shown) questionId(q)],
+      earlier: earlier,
+    );
+    _given = given != null ? List.of(given) : List.filled(shown.length, '');
+    _typed = [
+      for (final (k, q) in shown.indexed)
+        TextEditingController(text: q.kind == 'choice' ? '' : _given[k])..addListener(_persistLater),
+    ];
+    _marks = List.filled(shown.length, null);
+    _index = 0;
+  }
+
+  /// What is given so far, read from the fields.
+  List<String> get _answers => [
+    for (var k = 0; k < _shown.length; k++) _shown[k].kind == 'choice' ? _given[k] : _typed[k].text.trim(),
+  ];
+
+  /// Saves the unfinished attempt on this device (see [ExamProgress]).
+  Future<void> _persist() async {
+    final start = _start;
+    if (_shown.isEmpty || (start == null && _phase != _ExamPhase.marking)) return;
+    final p = ExamProgress(
+      start: start ?? _now().subtract(Duration(seconds: _seconds)),
+      asked: [for (final q in _shown) questionId(q)],
+      given: _answers,
+      index: _index,
+      handedIn: _phase == _ExamPhase.marking ? _seconds : null,
+      timedOut: _timedOut,
+    );
+    await _db.setLocalSetting(_progressKey, p.encode());
+  }
+
+  /// Typing saves after a short pause rather than on every key.
+  void _persistLater() {
+    if (_phase != _ExamPhase.running) return;
+    _persistSoon?.cancel();
+    _persistSoon = Timer(const Duration(milliseconds: 600), _persist);
+  }
+
+  void _go(int index) {
+    setState(() => _index = index);
+    _persist();
+  }
+
   void _begin(List<Assessment> attempts) {
-    final order = examOrder(_pool.length, shuffle: _rules.shuffle);
+    final earlier = [for (final a in attempts) ?ExamResult.of(a)];
+    final order = pickExamQuestions(_pool, _rules, earlier: earlier);
     setState(() {
-      _shown = [for (final k in order) _pool[k]];
-      _seenAtStart = _seen(attempts);
-      _given = List.filled(_shown.length, '');
-      _typed = [for (final _ in _shown) TextEditingController()];
-      _marks = List.filled(_shown.length, null);
-      _index = 0;
+      _setUp([for (final k in order) _pool[k]], attempts);
       _start = _now();
       _lastLeft = _limit;
       _phase = _ExamPhase.running;
     });
+    _persist();
     _announce('Exam started. ${timeLeftText(_limit)}. The timer does not pause.');
     // The clock, not the ticks, is the measure: a slow frame or a paused
     // app loses nothing, and the time keeps running while away.
@@ -495,12 +599,19 @@ class _ExamPageState extends ConsumerState<ExamPage> {
   void _handIn({bool timedOut = false}) {
     if (_phase != _ExamPhase.running) return;
     _tick?.cancel();
+    _persistSoon?.cancel();
     _seconds = _elapsed.clamp(0, _limit);
     _start = null;
     _timedOut = timedOut;
+    _markAuto();
+  }
+
+  /// Marks what can be marked; the rest waits for the learner.
+  void _markAuto() {
+    final answers = _answers;
     for (var k = 0; k < _shown.length; k++) {
       final q = _shown[k];
-      final given = q.kind == 'choice' ? _given[k] : _typed[k].text.trim();
+      final given = answers[k];
       _given[k] = given;
       _marks[k] = given.isEmpty
           ? false
@@ -516,6 +627,7 @@ class _ExamPageState extends ConsumerState<ExamPage> {
     ];
     if (_toMark.isNotEmpty) {
       setState(() => _phase = _ExamPhase.marking);
+      _persist();
     } else {
       _save();
     }
@@ -554,6 +666,7 @@ class _ExamPageState extends ConsumerState<ExamPage> {
       final r = await ref.mutate(
         (s) => s.book.recordExam(widget.quiz, _shown, right, result, today: today()),
       );
+      await _db.setLocalSetting(_progressKey, '');
       if (!mounted) return;
       setState(() {
         _result = result;
@@ -615,7 +728,7 @@ class _ExamPageState extends ConsumerState<ExamPage> {
                               ? const Text('This exam has no questions yet.')
                               : switch (_phase) {
                                   _ExamPhase.intro =>
-                                    attempts == null
+                                    attempts == null || !_checked
                                         ? const Center(child: CircularProgressIndicator())
                                         : _intro(context, attempts),
                                   _ExamPhase.running => _question(context),
@@ -636,18 +749,13 @@ class _ExamPageState extends ConsumerState<ExamPage> {
     );
   }
 
-  ({bool smallPool, int repeats})? _seen(List<Assessment> attempts) => seenBefore(
-    pool: _pool.length,
-    shown: _shown.isEmpty ? _pool.length : _shown.length,
-    asking: [for (final q in _shown.isEmpty ? _pool : _shown) questionId(q)],
-    earlier: [for (final a in attempts) ?ExamResult.of(a)],
-  );
-
   Widget _intro(BuildContext context, List<Assessment> attempts) {
     final t = Theme.of(context).textTheme;
     final next = examNextDay(attempts, _rules);
     final locked = examLocked(next, today());
-    final seen = _seen(attempts);
+    final warn = smallPoolText(
+      seenBefore(pool: _pool.length, rules: _rules, asking: const [], earlier: const []),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -672,7 +780,7 @@ class _ExamPageState extends ConsumerState<ExamPage> {
             '${_rules.retakeDays == 1 ? 'day' : 'days'} later.',
           ),
         ],
-        if (seen != null) ...[const SizedBox(height: 12), _Banner(Icons.history, seenBeforeText(seen))],
+        if (warn != null) ...[const SizedBox(height: 12), _Banner(Icons.history, warn)],
         const SizedBox(height: 16),
         if (locked) ...[
           _Banner(
@@ -734,7 +842,10 @@ class _ExamPageState extends ConsumerState<ExamPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     side: _given[_index] == o ? BorderSide(color: scheme.primary, width: 2) : null,
                   ),
-                  onPressed: () => setState(() => _given[_index] = o),
+                  onPressed: () {
+                    setState(() => _given[_index] = o);
+                    _persist();
+                  },
                   child: Row(
                     children: [
                       Icon(_given[_index] == o ? Icons.radio_button_checked : Icons.radio_button_unchecked),
@@ -763,12 +874,11 @@ class _ExamPageState extends ConsumerState<ExamPage> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            if (_index > 0)
-              OutlinedButton(onPressed: () => setState(() => _index--), child: const Text('Back')),
+            if (_index > 0) OutlinedButton(onPressed: () => _go(_index - 1), child: const Text('Back')),
             if (last)
               FilledButton(onPressed: _confirmHandIn, child: const Text('Hand in'))
             else
-              FilledButton(onPressed: () => setState(() => _index++), child: const Text('Next')),
+              FilledButton(onPressed: () => _go(_index + 1), child: const Text('Next')),
           ],
         ),
       ],
@@ -851,7 +961,10 @@ class _ExamPageState extends ConsumerState<ExamPage> {
           ].join(' '),
         ),
         if (next != null) ...[const SizedBox(height: 8), Text('Next attempt from ${niceDate(next)}.')],
-        if (seen != null) ...[const SizedBox(height: 12), _Banner(Icons.history, seenBeforeText(seen))],
+        if (seen != null) ...[
+          const SizedBox(height: 12),
+          _Banner(Icons.history, [seenBeforeText(seen), ?smallPoolText(seen)].join(' ')),
+        ],
         if (r.topics.length > 1 || first.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text('By topic', style: t.titleMedium),

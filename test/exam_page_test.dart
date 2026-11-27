@@ -70,9 +70,9 @@ void main() {
       expect(find.text('Practise (not counted)'), findsOneWidget);
       await app.tapText('Start the exam');
 
-      // The rules first, with the small-pool warning.
+      // The rules first; without a count there is no seen-before warning.
       expect(find.text('Timed exam'), findsOneWidget);
-      expect(find.textContaining('small question pool'), findsOneWidget);
+      expect(find.textContaining('small question pool'), findsNothing, reason: 'every question is asked');
       await app.tapText('Start the exam');
 
       expect(find.text('Question 1 of 3'), findsOneWidget);
@@ -183,6 +183,55 @@ void main() {
     expect(find.text('Question 1 of 3'), findsOneWidget);
     expect(find.bySemanticsLabel('Time left: 1 minute left'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await app.close();
+  });
+
+  testWidgets('closing the app mid-exam keeps the attempt: it resumes with the time still running', (
+    tester,
+  ) async {
+    var now = DateTime(2026, 11, 27, 9);
+    final app = AppHarness(tester)..phone();
+    await app.open(seed: seedExam);
+    Future<void> openExam() async {
+      await app.run(overrides: [examClockProvider.overrideWithValue(() => now)]);
+      await app.go('Learn');
+      await app.tapText('Pottery certificate');
+      await app.tap(find.text('Wheel work').last);
+      await app.tap(find.text('Mock exam').last);
+      await app.tapText('Start the exam');
+    }
+
+    await openExam();
+    await app.tapText('Start the exam');
+    await app.tapText('Left');
+    await app.tapText('Next');
+    await app.enter('Your answer', 'the clay');
+    await app.settle(); // the typed answer is saved after a short pause
+
+    // The app is killed; 20 seconds pass; it is opened again.
+    await tester.pumpWidget(const SizedBox());
+    now = now.add(const Duration(seconds: 20));
+    await openExam();
+    expect(find.text('Question 2 of 3'), findsOneWidget, reason: 'straight back to where it was');
+    expect(find.widgetWithText(TextField, 'the clay'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'Time left: (39|40) seconds left')), findsOneWidget);
+
+    // Killed again, and away past the end: handed in on reopening.
+    await tester.pumpWidget(const SizedBox());
+    now = now.add(const Duration(minutes: 5));
+    await openExam();
+    expect(find.text('67% · Passed'), findsOneWidget);
+    expect(find.textContaining('(time ran out)'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.runAsync(() async {
+      expect(await app.book.db.select(app.book.db.learnAssessments).get(), hasLength(1));
+      expect(
+        await app.book.db.localSetting(
+          'exam.progress.${(await app.book.db.select(app.book.db.learnItems).get()).firstWhere((i) => i.type == 'quiz').id}',
+        ),
+        '',
+      );
+    });
     await app.close();
   });
 }

@@ -49,6 +49,8 @@ Map<String, Object?> examPlan({Object? exam = const {}, int version = 3}) => {
 
 PlanItem quizOf(CurriculumPlan p) => p.courses.single.topics.last.items.single;
 
+int quizLength2(CurriculumPlan p) => ((jsonDecode(quizOf(p).content) as Map)['questions'] as List).length;
+
 Assessment row(String day, {String detail = '', String topic = 't', String hlc = 'a', double score = 1}) =>
     Assessment(
       id: '$day$hlc',
@@ -103,6 +105,34 @@ void main() {
       expect(rules({}), const ExamRules(minutes: 6, passPercent: 70), reason: '1.5 min a question, 70%');
     });
 
+    test('count is read and held to 1–100; the time defaults to 1.5 minutes a question drawn', () {
+      ExamRules rules(Map<String, Object?> e) => ExamRules.fromJson(
+        jsonDecode(quizOf(parseCurriculum(jsonEncode(examPlan(exam: e)))).content)['exam'],
+      );
+      expect(rules({'count': 2}), const ExamRules(minutes: 3, count: 2));
+      expect(rules({'count': 0}).count, 1);
+      expect(rules({'count': 500}).count, 100);
+      expect(rules({'count': 'many'}).count, isNull);
+      expect(rules({}).count, isNull);
+    });
+
+    test('an exam topic may hold 100 questions; a practice quiz still 20', () {
+      List<Map<String, Object>> qs(int n) => [
+        for (var i = 0; i < n; i++) {'question': 'Q$i?', 'answer': 'a'},
+      ];
+      Map<String, Object?> withQuiz(int n, {bool exam = true}) {
+        final p = examPlan(exam: exam ? {'minutes': 60} : null);
+        final topics = ((p['courses'] as List).single as Map)['topics'] as List;
+        (topics.last as Map)['quiz'] = qs(n);
+        return p;
+      }
+
+      expect(quizLength2(parseCurriculum(jsonEncode(withQuiz(100)))), 100);
+      expect(() => parseCurriculum(jsonEncode(withQuiz(101))), throwsA(isA<FormatException>()));
+      expect(() => parseCurriculum(jsonEncode(withQuiz(21, exam: false))), throwsA(isA<FormatException>()));
+      expect(quizLength2(parseCurriculum(jsonEncode(withQuiz(20, exam: false)))), 20);
+    });
+
     test('a quiz given as an object with questions and exam is read too', () {
       final plan = examPlan(exam: null);
       final topic = ((plan['courses'] as List).single as Map)['topics'] as List;
@@ -136,6 +166,8 @@ void main() {
 
     test('the prompt teaches the exam block and question topics', () {
       expect(curriculumPrompt, contains('"exam": { "minutes": 20, "passPercent": 70, "retakeDays": 7'));
+      expect(curriculumPrompt, contains('"count" 1–100'));
+      expect(curriculumPrompt, contains('up to 100 for a topic with an "exam"'));
       expect(curriculumPrompt, contains('"topic": "Topic title"'));
       expect(curriculumPrompt, contains('"retakeDays" 0–60'));
     });
@@ -302,31 +334,105 @@ void main() {
     });
   });
 
-  group('seen before', () {
-    test('a pool no more than twice the questions asked is small', () {
-      final s = seenBefore(pool: 8, shown: 4, asking: const ['a'], earlier: const []);
-      expect(s, (smallPool: true, repeats: 0));
-      expect(seenBefore(pool: 9, shown: 4, asking: const ['a'], earlier: const []), isNull);
-      expect(seenBeforeText(s!), contains('small question pool'));
+  group('seen before and drawing questions', () {
+    List<QuizQuestion> pool(int n) => [
+      for (var i = 0; i < n; i++) QuizQuestion(question: 'Q$i?', answer: 'a'),
+    ];
+    ExamResult attempt(List<QuizQuestion> asked) => scoreExam(
+      shown: asked,
+      right: List.filled(asked.length, true),
+      attempted: List.filled(asked.length, true),
+      seconds: 1,
+      rules: const ExamRules(minutes: 1),
+      topicTitle: 'T',
+    );
+
+    test('without count every question is asked and nothing is said', () {
+      expect(
+        seenBefore(pool: 4, rules: const ExamRules(minutes: 1), asking: const ['a'], earlier: const []),
+        isNull,
+      );
+      expect(pickExamQuestions(pool(4), const ExamRules(minutes: 1)), [0, 1, 2, 3]);
     });
 
-    test('questions asked in an earlier attempt are counted', () {
-      final earlier = scoreExam(
-        shown: [q1, q2],
-        right: [true, true],
-        attempted: [true, true],
-        seconds: 1,
-        rules: const ExamRules(minutes: 1),
-        topicTitle: 'T',
-      );
-      final s = seenBefore(
+    test('a pool under twice the count is small; the share seen before is counted', () {
+      const rules = ExamRules(minutes: 5, count: 4);
+      expect(seenBefore(pool: 8, rules: rules, asking: const [], earlier: const [])!.smallPool, isFalse);
+      final s = seenBefore(pool: 7, rules: rules, asking: const [], earlier: const []);
+      expect(s!.smallPool, isTrue);
+      expect(smallPoolText(s), contains('small question pool'));
+      final earlier = attempt([q1, q2]);
+      final r = seenBefore(
         pool: 30,
-        shown: 3,
-        asking: [questionId(q1), questionId(q3), questionId(q2)],
+        rules: rules,
+        asking: [questionId(q1), questionId(q3), questionId(q2), questionId(q4)],
         earlier: [earlier],
+      )!;
+      expect(r, (smallPool: false, repeats: 2, asked: 4));
+      expect(seenBeforeText(r), startsWith('2 of 4 questions (50%) were asked in an earlier attempt'));
+      expect(smallPoolText(r), isNull);
+      expect(seenBeforeText((smallPool: false, repeats: 0, asked: 4)), contains('new'));
+    });
+
+    test('count draws unasked questions first, then those asked longest ago', () {
+      final p = pool(6);
+      const rules = ExamRules(minutes: 5, count: 2);
+      final first = attempt([p[0], p[1]]), second = attempt([p[2], p[3]]);
+      for (var seed = 0; seed < 20; seed++) {
+        expect(pickExamQuestions(p, rules, earlier: [first, second], random: Random(seed)), [4, 5]);
+      }
+      final third = attempt([p[4], p[5]]);
+      expect(pickExamQuestions(p, rules, earlier: [first, second, third]), [
+        0,
+        1,
+      ], reason: 'oldest come back');
+      final mixed = pickExamQuestions(
+        p,
+        const ExamRules(minutes: 5, count: 3),
+        earlier: [first, second, third],
       );
-      expect(s, (smallPool: false, repeats: 2));
-      expect(seenBeforeText(s!), startsWith('2 of these questions were in an earlier attempt.'));
+      expect(mixed.take(3).toSet().containsAll([0, 1]), isTrue);
+      expect(mixed.length, 3);
+      // Shuffle reorders what was drawn; a count over the pool asks all.
+      final shuffled = pickExamQuestions(
+        p,
+        const ExamRules(minutes: 5, count: 6, shuffle: true),
+        random: Random(3),
+      );
+      expect(shuffled.toSet(), {0, 1, 2, 3, 4, 5});
+      expect(pickExamQuestions(p, const ExamRules(minutes: 5, count: 50)), [0, 1, 2, 3, 4, 5]);
+    });
+  });
+
+  group('an unfinished attempt', () {
+    test('round-trips, and maps back to the pool without deleted questions', () {
+      final p = ExamProgress(
+        start: DateTime.utc(2026, 11, 27, 9),
+        asked: [questionId(q2), questionId(q1), 'gone'],
+        given: const ['b', '', 'x'],
+        index: 1,
+      );
+      final back = ExamProgress.parse(p.encode())!;
+      expect((back.start.toUtc(), back.index, back.handedIn), (DateTime.utc(2026, 11, 27, 9), 1, null));
+      expect(back.asked, p.asked);
+      expect(back.given, p.given);
+      final m = back.against([q1, q2, q3])!;
+      expect(m.order, [1, 0]);
+      expect(m.given, ['b', '']);
+      expect(back.against([q3]), isNull);
+      final marking = ExamProgress.parse(
+        ExamProgress(
+          start: DateTime.utc(2026),
+          asked: const ['a'],
+          given: const ['x'],
+          handedIn: 40,
+          timedOut: true,
+        ).encode(),
+      )!;
+      expect((marking.handedIn, marking.timedOut), (40, true));
+      expect(ExamProgress.parse(''), isNull);
+      expect(ExamProgress.parse('{"start": 3}'), isNull);
+      expect(examProgressKey('i1'), 'exam.progress.i1');
     });
   });
 

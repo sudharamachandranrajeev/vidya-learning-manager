@@ -128,7 +128,12 @@ const curriculumFormat = 'vidya-curriculum';
 // Limits keep a runaway or hostile file from flooding the database.
 const _maxCourses = 100, _maxTopics = 300, _maxCards = 5000, _maxNotes = 300, _maxSkills = 200;
 const _maxTitle = 200, _maxText = 4000, _maxBody = 40000;
-const _maxItems = 50, _maxQuiz = 20, _maxDrills = 30, _maxCriteria = 200, _maxAllItems = 5000;
+const _maxItems = 50,
+    _maxQuiz = 20,
+    _maxExamQuiz = 100,
+    _maxDrills = 30,
+    _maxCriteria = 200,
+    _maxAllItems = 5000;
 
 /// The newest plan format this Vidya reads. Format 1 plans (no items,
 /// quiz, drills or criteria) and format 2 plans (no journey) still import.
@@ -412,13 +417,16 @@ List<PlanItem> _items(Map topic, String topicTitle, [Map<String, String> topicNa
   // `quiz` is a list of questions, or (also accepted) an object holding
   // `questions` and `exam`.
   final quiz = topic['quiz'];
+  final rawExam = topic['exam'] ?? (quiz is Map ? quiz['exam'] : null);
+  // An exam may hold a bigger pool than a practice quiz.
   final questions = parseQuizQuestions(
     quiz is Map ? quiz['questions'] : quiz,
     'quiz questions in “$topicTitle”',
     topics: topicNames,
+    max: rawExam is Map ? _maxExamQuiz : _maxQuiz,
   );
   if (questions.isNotEmpty) {
-    final exam = _exam(topic['exam'] ?? (quiz is Map ? quiz['exam'] : null), questions.length);
+    final exam = _exam(rawExam, questions.length);
     add(
       PlanItem(
         type: 'quiz',
@@ -453,24 +461,27 @@ List<PlanItem> _items(Map topic, String topicTitle, [Map<String, String> topicNa
   return out;
 }
 
-/// A topic's `exam` block (format 3): `minutes` 1–300 (1.5 a question when
-/// missing), `passPercent` 1–100 (70 when missing), `retakeDays` 0–60 (0
-/// when missing) and `shuffle`. Out-of-range values are held to the range,
+/// A topic's `exam` block (format 3): `minutes` 1–300 (1.5 a question
+/// asked when missing), `passPercent` 1–100 (70 when missing), `retakeDays`
+/// 0–60 (0 when missing), `shuffle`, and `count` 1–100 (questions drawn per
+/// attempt; all when missing). Out-of-range values are held to the range,
 /// as the plan's other numbers are. Null when there is none.
 ExamRules? _exam(Object? v, int questions) => v is Map ? ExamRules.fromJson(v, questions: questions) : null;
 
 /// Quiz questions from a plan, checked as a topic's quiz is: a question
 /// and an answer each, a choice with two or more options (an index answer
-/// becomes the option), at most [_maxQuiz]. A question's optional `topic`
+/// becomes the option), at most [max] ([_maxQuiz], or [_maxExamQuiz] for
+/// an exam). A question's optional `topic`
 /// is matched against [topics] (lower-case title or id to title) and kept
 /// as written when it matches none. Also used by journey checks.
 List<Map<String, Object>> parseQuizQuestions(
   Object? list,
   String what, {
   Map<String, String> topics = const {},
+  int max = _maxQuiz,
 }) {
   final questions = <Map<String, Object>>[];
-  for (final q in _list(list, _maxQuiz, what)) {
+  for (final q in _list(list, max, what)) {
     if (q is! Map) continue;
     final question = _str(q['question'] ?? q['q'] ?? q['front'], _maxText);
     final options = [
@@ -574,7 +585,7 @@ ABOUT ME (I have filled these in):
 
 WHAT TO MAKE:
 1. A roadmap. Split the goal into courses (modules) in the order I should study them. Give each a startWeek and dueWeek, counted in whole weeks from today (week 0), so the whole plan fits my weekly hours before the deadline and leaves the last weeks for revision and practice tests.
-2. Topics. For every course, list the topics to cover in order. Each topic has minutes of study, details (the key facts, formulas, procedures and common mistakes, 2–6 sentences), and items: what to study or do, in order. Items are real, well-known resources (preferably free; if you are not sure of a web address, leave out the url — never invent links) and at least one practice task. Mark "required": true on the items that must be done before the topic counts as learned. Give 3–10 quiz questions per topic, and interview drills where the goal is a job.
+2. Topics. For every course, list the topics to cover in order. Each topic has minutes of study, details (the key facts, formulas, procedures and common mistakes, 2–6 sentences), and items: what to study or do, in order. Items are real, well-known resources (preferably free; if you are not sure of a web address, leave out the url — never invent links) and at least one practice task. Mark "required": true on the items that must be done before the topic counts as learned. Give 3–10 quiz questions per topic (up to 100 for a topic with an "exam"), and interview drills where the goal is a job.
 3. Skills the plan builds, each with a category and a target level from 1 (aware) to 5 (expert).
 4. Flashcards: 10–30 per course, testing the facts and principles in its topics. Write them in your own words; never copy questions from copyrighted books or past papers. Cloze cards are allowed: put {{c1::hidden words}} in the front and leave back empty.
 5. Notes: one titled "Roadmap" with a week-by-week plan in Markdown; for an exam, one titled "Exam day" (format, timing, pass mark, what to bring, rules); add any others that help.
@@ -628,7 +639,7 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
             { "question": "A question", "kind": "choice", "options": ["One", "Two", "Three"], "answer": "Two", "topic": "Topic title" },
             { "question": "A question", "kind": "short", "answer": "The answer" }
           ],
-          "exam": { "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true },
+          "exam": { "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true, "count": 15 },
           "drills": [{ "question": "An interview question on this topic", "criterion": "c1" }]
         }
       ]
@@ -643,7 +654,7 @@ RULES:
 - "kind" is one of: course, book, certification, degree, project, practice.
 - An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note. Give links and titles only; never copy a course's text.
 - A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card. Add a one-sentence "explain" where it helps.
-- "exam" is only for a topic whose quiz is a timed mock exam (for example a course's final topic, "Mock exam"); leave it out for ordinary quizzes. "minutes" is 1–300, "passPercent" 1–100 (the real exam's pass mark if known), "retakeDays" 0–60 (days to wait before the next attempt counts), "shuffle" true or false. In an exam, give each question a "topic": the title of the topic in the same course that it tests, so the results show which topics to study first.
+- "exam" is only for a topic whose quiz is a timed mock exam (for example a course's final topic, "Mock exam"); leave it out for ordinary quizzes. "minutes" is 1–300, "passPercent" 1–100 (the real exam's pass mark if known), "retakeDays" 0–60 (days to wait before the next attempt counts), "shuffle" true or false, "count" 1–100 (how many questions each attempt draws; give a pool of at least twice that many so attempts differ, and leave it out to ask them all). An exam's quiz may hold up to 100 questions; other quizzes at most 20. In an exam, give each question a "topic": the title of the topic in the same course that it tests, so the results show which topics to study first.
 - "criteria" lists what the goal asks for (for a job: the essential and desirable criteria); each topic's "criteria" names the ids it works towards. Leave both out if there are none.
 - "journey" is only for a goal that is one job; leave it out otherwise. "sector" is one of: nhs, university, private, civil-service, other. A stage "id" is one of: decide, research, contact, apply, follow-up, prepare, interview-day, after, offer, checks, joining, first-90-days, grow. Vidya fills in every stage you leave out from its own dated guides, so add only what is special to this job. A line with no "source" is shown as general advice; never invent a source or a date.
 - Plain JSON: double quotes, no comments, no trailing commas, \\n for line breaks inside text.

@@ -213,10 +213,11 @@ Plans made before topic pages (format 1) still import. Format 2 adds, all option
 
 Format 3 adds, also optional (older plans import unchanged):
 
-- per topic, `exam`: `{ "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true }`
-  makes the topic's quiz a timed exam. `minutes` is 1–300 (1.5 a question when left out),
-  `passPercent` 1–100 (70), `retakeDays` 0–60 (0: no wait), `shuffle` true or false (false).
-  Values outside a range are held to it. The quiz may also be written as
+- per topic, `exam`: `{ "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true,
+  "count": 15 }` makes the topic's quiz a timed exam. `minutes` is 1–300 (1.5 a question asked
+  when left out), `passPercent` 1–100 (70), `retakeDays` 0–60 (0: no wait), `shuffle` true or
+  false (false), `count` 1–100 (questions drawn per attempt; all when left out). Values outside a
+  range are held to it. An exam's quiz may hold up to 100 questions; other quizzes up to 20. The quiz may also be written as
   `"quiz": { "questions": [ … ], "exam": { … } }`.
 - per quiz question, `topic`: the title of the topic in the same course it tests (or that
   topic's `id`, when the plan gives topics one), for the exam's per-topic breakdown. A name
@@ -246,8 +247,12 @@ change are kept when the plan comes again.
    to **study these first**, and every answer with its explanation. Missed questions become
    flashcards, as in a quiz. If the plan sets a wait between attempts, the topic and course pages
    show the date of the next one; **Practise anyway (not counted)** runs the questions as an
-   ordinary quiz that saves no score. A warning says when the question pool is small or questions
-   came up in an earlier attempt, because a remembered answer can look like knowledge. The topic
+   ordinary quiz that saves no score. With a `count`, each attempt draws that many questions,
+   ones you have not had in an exam first, then those asked longest ago; the report card says how
+   many came up in an earlier attempt, and the exam warns before you start when the pool is under
+   twice the count, because a remembered answer can look like knowledge. If the app closes or is
+   stopped during an exam, it picks up where you were when you open the exam again; the time has
+   kept running, and if it ran out the exam is handed in then. The topic
    page charts your exam scores. A screen reader hears the time left every five minutes and at one
    minute, 30 and 10 seconds.
 6. A practice task shows its instructions and "done when" line. Marking it done asks for an
