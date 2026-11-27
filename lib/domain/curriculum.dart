@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:brahma_core/brahma_core.dart';
 
 import 'cloze.dart';
+import 'exam.dart';
 import 'journey.dart';
 import 'study_items.dart';
 
@@ -252,11 +253,22 @@ CurriculumPlan parseCurriculum(String text) {
     final name = _str(c['title'], _maxTitle);
     if (name.isEmpty || !seen.add(name.toLowerCase())) continue;
     final topics = <PlanTopic>[];
-    for (final tp in _list(c['topics'], _maxTopics, 'topics in “$name”')) {
+    final rawTopics = _list(c['topics'], _maxTopics, 'topics in “$name”');
+    // A quiz question's `topic` names a topic in the same course, by title
+    // or by the topic's `id`; either becomes the topic's title.
+    final topicNames = <String, String>{};
+    for (final tp in rawTopics) {
+      final t = _str(tp is Map ? tp['title'] : tp, _maxTitle);
+      if (t.isEmpty) continue;
+      topicNames.putIfAbsent(t.toLowerCase(), () => t);
+      final id = tp is Map ? _str(tp['id'], 200) : '';
+      if (id.isNotEmpty) topicNames.putIfAbsent(id.toLowerCase(), () => t);
+    }
+    for (final tp in rawTopics) {
       final topic = tp is Map ? tp : {'title': tp};
       final tt = _str(topic['title'], _maxTitle);
       if (tt.isEmpty) continue;
-      final items = _items(topic, tt);
+      final items = _items(topic, tt, topicNames);
       allItems += items.length;
       if (allItems > _maxAllItems) {
         throw const FormatException('Too many study items; the most is $_maxAllItems in one plan.');
@@ -361,8 +373,9 @@ CurriculumPlan parseCurriculum(String text) {
 String _ref(Object? v) => _str(v, 60).replaceAll(',', ' ');
 
 /// A topic's `items`, `quiz` and `drills` as items, in that order, each
-/// once by its stable ref.
-List<PlanItem> _items(Map topic, String topicTitle) {
+/// once by its stable ref. [topicNames] maps the course's topic titles and
+/// ids (lower case) to their titles, for quiz questions' `topic`.
+List<PlanItem> _items(Map topic, String topicTitle, [Map<String, String> topicNames = const {}]) {
   final out = <PlanItem>[];
   final refs = <String>{};
   void add(PlanItem i) {
@@ -396,15 +409,23 @@ List<PlanItem> _items(Map topic, String topicTitle) {
     );
   }
 
-  final questions = parseQuizQuestions(topic['quiz'], 'quiz questions in “$topicTitle”');
+  // `quiz` is a list of questions, or (also accepted) an object holding
+  // `questions` and `exam`.
+  final quiz = topic['quiz'];
+  final questions = parseQuizQuestions(
+    quiz is Map ? quiz['questions'] : quiz,
+    'quiz questions in “$topicTitle”',
+    topics: topicNames,
+  );
   if (questions.isNotEmpty) {
+    final exam = _exam(topic['exam'] ?? (quiz is Map ? quiz['exam'] : null), questions.length);
     add(
       PlanItem(
         type: 'quiz',
         title: 'Quiz: $topicTitle',
         ref: 'quiz',
-        minutes: (questions.length * 1.5).ceil(),
-        content: jsonEncode({'questions': questions}),
+        minutes: exam?.minutes ?? (questions.length * 1.5).ceil(),
+        content: jsonEncode({'questions': questions, 'exam': ?exam?.toJson()}),
       ),
     );
   }
@@ -432,10 +453,22 @@ List<PlanItem> _items(Map topic, String topicTitle) {
   return out;
 }
 
+/// A topic's `exam` block (format 3): `minutes` 1–300 (1.5 a question when
+/// missing), `passPercent` 1–100 (70 when missing), `retakeDays` 0–60 (0
+/// when missing) and `shuffle`. Out-of-range values are held to the range,
+/// as the plan's other numbers are. Null when there is none.
+ExamRules? _exam(Object? v, int questions) => v is Map ? ExamRules.fromJson(v, questions: questions) : null;
+
 /// Quiz questions from a plan, checked as a topic's quiz is: a question
 /// and an answer each, a choice with two or more options (an index answer
-/// becomes the option), at most [_maxQuiz]. Also used by journey checks.
-List<Map<String, Object>> parseQuizQuestions(Object? list, String what) {
+/// becomes the option), at most [_maxQuiz]. A question's optional `topic`
+/// is matched against [topics] (lower-case title or id to title) and kept
+/// as written when it matches none. Also used by journey checks.
+List<Map<String, Object>> parseQuizQuestions(
+  Object? list,
+  String what, {
+  Map<String, String> topics = const {},
+}) {
   final questions = <Map<String, Object>>[];
   for (final q in _list(list, _maxQuiz, what)) {
     if (q is! Map) continue;
@@ -462,6 +495,7 @@ List<Map<String, Object>> parseQuizQuestions(Object? list, String what) {
       if (kind == 'choice') 'options': options,
       'answer': answer,
       if (_str(q['explain'], _maxText) case final e when e.isNotEmpty) 'explain': e,
+      if (_str(q['topic'], _maxTitle) case final t when t.isNotEmpty) 'topic': topics[t.toLowerCase()] ?? t,
     });
   }
   return questions;
@@ -591,9 +625,10 @@ FORMAT (follow it exactly; leave out any optional field you have nothing for):
             { "type": "practice task", "title": "What to do", "instructions": "How to do it", "doneWhen": "What finished looks like", "minutes": 30, "required": true }
           ],
           "quiz": [
-            { "question": "A question", "kind": "choice", "options": ["One", "Two", "Three"], "answer": "Two" },
+            { "question": "A question", "kind": "choice", "options": ["One", "Two", "Three"], "answer": "Two", "topic": "Topic title" },
             { "question": "A question", "kind": "short", "answer": "The answer" }
           ],
+          "exam": { "minutes": 20, "passPercent": 70, "retakeDays": 7, "shuffle": true },
           "drills": [{ "question": "An interview question on this topic", "criterion": "c1" }]
         }
       ]
@@ -608,6 +643,7 @@ RULES:
 - "kind" is one of: course, book, certification, degree, project, practice.
 - An item's "type" is one of: course, video, article, book, practice task, quiz, interview drill, note. Give links and titles only; never copy a course's text.
 - A quiz question's "kind" is choice (with "options", and "answer" equal to one of them), short or card. Add a one-sentence "explain" where it helps.
+- "exam" is only for a topic whose quiz is a timed mock exam (for example a course's final topic, "Mock exam"); leave it out for ordinary quizzes. "minutes" is 1–300, "passPercent" 1–100 (the real exam's pass mark if known), "retakeDays" 0–60 (days to wait before the next attempt counts), "shuffle" true or false. In an exam, give each question a "topic": the title of the topic in the same course that it tests, so the results show which topics to study first.
 - "criteria" lists what the goal asks for (for a job: the essential and desirable criteria); each topic's "criteria" names the ids it works towards. Leave both out if there are none.
 - "journey" is only for a goal that is one job; leave it out otherwise. "sector" is one of: nhs, university, private, civil-service, other. A stage "id" is one of: decide, research, contact, apply, follow-up, prepare, interview-day, after, offer, checks, joining, first-90-days, grow. Vidya fills in every stage you leave out from its own dated guides, so add only what is special to this job. A line with no "source" is shown as general advice; never invent a source or a date.
 - Plain JSON: double quotes, no comments, no trailing commas, \\n for line breaks inside text.

@@ -41,7 +41,7 @@ import 'package:drift/drift.dart';
 import '../db/database.dart';
 import 'book.dart';
 import 'interview.dart';
-import 'quiz.dart' show percentOf;
+import 'quiz.dart' show isQuizResult, percentOf;
 import 'study_items.dart';
 
 /// Evidence older than this many days no longer covers a criterion.
@@ -371,13 +371,13 @@ class Readiness {
 /// The latest quiz result on a topic: percent and day.
 typedef QuizResult = ({int percent, String day});
 
-/// The latest quiz result per topic id. Drill attempts (rows with a
-/// detail) are not quizzes.
+/// The latest quiz result per topic id (practice quizzes and exam
+/// attempts). Drill attempts are not quizzes.
 Map<String, QuizResult> latestQuizzes(Iterable<Assessment> tests) {
   final latest = <String, Assessment>{};
   for (final a in tests) {
     final t = a.topicId;
-    if (t == null || a.deleted || a.detail.isNotEmpty) continue;
+    if (t == null || a.deleted || !isQuizResult(a)) continue;
     final had = latest[t];
     if (had == null || a.day.compareTo(had.day) > 0 || (a.day == had.day && a.hlc.compareTo(had.hlc) > 0)) {
       latest[t] = a;

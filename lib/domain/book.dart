@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import '../db/database.dart';
 import 'achievements.dart';
 import 'curriculum.dart';
+import 'exam.dart';
 import 'export.dart';
 import 'import.dart';
 import 'journey_book.dart';
@@ -497,9 +498,13 @@ class LearningBook {
                   i.topicId.equals(topicId) & i.deleted.not() & i.type.equals('quiz') & i.retired.equals(''),
             ))
             .get();
-    final content = quizContent(questions, dropped: dropped);
-    final minutes = (questions.length * 1.5).ceil();
     final quiz = items.firstOrNull;
+    // The plan's exam rules stay when the learner edits the questions.
+    final exam = quiz == null ? null : quizExamJson(quiz.content);
+    final content = quizContent(questions, dropped: dropped, exam: exam);
+    final minutes = exam == null
+        ? (questions.length * 1.5).ceil()
+        : ExamRules.fromJson(exam, questions: questions.length).minutes;
     if (quiz != null) {
       await save(db.learnItems, quiz.copyWith(content: content, minutes: minutes), quiz.id);
       return quiz.id;
@@ -518,28 +523,57 @@ class LearningBook {
   /// the learner deleted is not made again, and a later right answer leaves
   /// the card where it is. [right] holds, per question in order, whether it
   /// was answered right. Returns the score and how many cards were added.
+  ///
+  /// With [counted] false (practising a quiz that is an exam, outside an
+  /// exam attempt) only the review cards are made: no result is saved and
+  /// the item is not marked done.
   Future<({int score, int max, int cards})> recordQuiz(
     StudyItem quiz,
     List<bool> right, {
     required String today,
+    bool counted = true,
+  }) => _recordQuiz(quiz, quizQuestions(quiz), right, today: today, counted: counted);
+
+  /// Records a finished exam attempt as [recordQuiz] does a quiz, with
+  /// [result] as the result's detail. [shown] are the questions in the
+  /// order asked and [right] whether each was marked right; missed ones
+  /// become review cards.
+  Future<({int score, int max, int cards})> recordExam(
+    StudyItem quiz,
+    List<QuizQuestion> shown,
+    List<bool> right,
+    ExamResult result, {
+    required String today,
+  }) => _recordQuiz(quiz, shown, right, today: today, detail: result.encode(), title: examTitle(quiz));
+
+  Future<({int score, int max, int cards})> _recordQuiz(
+    StudyItem quiz,
+    List<QuizQuestion> questions,
+    List<bool> right, {
+    required String today,
+    bool counted = true,
+    String detail = '',
+    String? title,
   }) => db.transaction(() async {
-    final questions = quizQuestions(quiz);
     final n = right.length < questions.length ? right.length : questions.length;
     final score = right.take(n).where((x) => x).length;
     final topic = await (db.select(db.learnTopics)..where((t) => t.id.equals(quiz.topicId))).getSingle();
     final course = await (db.select(
       db.learnCourses,
     )..where((c) => c.id.equals(topic.courseId))).getSingleOrNull();
-    await addAssessment(
-      quiz.title,
-      score.toDouble(),
-      n.toDouble(),
-      today: today,
-      courseId: course?.id,
-      topicId: topic.id,
-    );
-    final fresh = await (db.select(db.learnItems)..where((i) => i.id.equals(quiz.id))).getSingle();
-    if (fresh.done != today) await save(db.learnItems, fresh.copyWith(done: Value(today)), quiz.id);
+    if (counted) {
+      await addAssessment(
+        title ?? quiz.title,
+        score.toDouble(),
+        n.toDouble(),
+        today: today,
+        courseId: course?.id,
+        topicId: topic.id,
+        detail: detail,
+      );
+      final fresh = await (db.select(db.learnItems)..where((i) => i.id.equals(quiz.id))).getSingle();
+      if (fresh.done != today) await save(db.learnItems, fresh.copyWith(done: Value(today)), quiz.id);
+    }
     final known = {
       for (final c in await (db.select(db.learnCards)..where((c) => c.ref.like('quiz.${quiz.id}.%'))).get())
         c.ref,
@@ -709,6 +743,7 @@ class LearningBook {
     required String today,
     String? courseId,
     String? topicId,
+    String detail = '',
   }) {
     final id = newId();
     return save(
@@ -721,6 +756,7 @@ class LearningBook {
         day: today,
         score: score,
         max: Value(max),
+        detail: Value(detail),
       ),
       id,
     );
