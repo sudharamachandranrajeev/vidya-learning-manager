@@ -233,6 +233,22 @@ Format 3 adds, also optional (older plans import unchanged):
   there is no capstone. `average` is 1.0–5.0 (4.0 when left out), `minimum` 1–5 (3),
   `passesInRow` 1–10 (1), `minutes` 5–300 (no clock). Values outside a range are held to it. A
   course's capstone is kept on its last topic.
+- per topic item, a stress test of type `scenario` (also read from "stress test" or "in-tray
+  exercise"):
+
+  ```json
+  { "type": "scenario", "id": "st1", "title": "Workqueue triage", "minutes": 20,
+    "brief": "Markdown text", "columns": ["Item", "Specialty", "Weeks waited", "Flags"],
+    "rows": [{ "cells": ["T001", "ENT", "34", "urgent referral"], "risk": "high",
+               "expect": "escalate", "why": "optional model answer" }],
+    "actions": ["act", "escalate", "leave", "note"], "rubric": "text", "criteria": ["c1"] }
+  ```
+
+  `columns` and `rows` are needed: at most 8 columns and 60 rows (the rest are left out), each
+  cell up to 200 characters; a row may be written as a bare list of cells. `minutes` is 5–180
+  (20 when left out). `actions` takes 2–8 names (act, escalate, leave, note when left out).
+  `risk` is high, medium or low and `expect` one of the actions; anything else is left out. A
+  scenario with no column or no row is left out. Use made-up data only.
 
 An item the plan stops sending is set aside on its topic page (**No longer in the plan**), not
 deleted, and no longer counts; items you had done stay as they are. Quiz questions you add or
@@ -328,6 +344,28 @@ When a plan sets a capstone, it shows as a card on the course page and on its to
 
 Sittings are kept as results on the capstone (no database change), and each drill answered in
 one is also an ordinary attempt on that drill, so Job readiness counts it.
+
+#### Stress test
+
+A plan's `scenario` item shows as a card under **Check yourself** on its topic page, and on the
+course page, with its last result.
+
+1. **The brief.** The situation, the table's size, the actions and the rubric. Rows that could do
+   harm are not marked: finding them is part of the test.
+2. **Start the stress test.** A countdown that never pauses, even if you leave or the app is
+   killed (the work in progress is kept on this device, never synced, and picks up from the
+   original start). Each row is a card, so the table never scrolls sideways at large text: pick
+   one action and add a one-line reason if you like. **Hand in** early, or it is handed in at
+   zero.
+3. **The checks.** High-risk rows left without an action come first, in red with a warning icon,
+   with the model answer. Then each row the plan gave an expected action: yours, the expected
+   one, matched or different, and the model answer. Then the count per action and the time used.
+4. **Rate yourself** on four checks, 0–2 each (risks first, sensible priorities, reasons
+   recorded, met the rubric): a score out of 8, shown on the 1–5 rubric scale.
+
+The item is done once an attempt leaves no high-risk row untouched and you rate it at least 5/8
+(4/5). Attempts are kept as results on the item with a detail of kind "scenario" (no database
+change) and listed under **Past attempts**.
 
 #### Mock interview
 
