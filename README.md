@@ -249,6 +249,27 @@ Format 3 adds, also optional (older plans import unchanged):
   (20 when left out). `actions` takes 2–8 names (act, escalate, leave, note when left out).
   `risk` is high, medium or low and `expect` one of the actions; anything else is left out. A
   scenario with no column or no row is left out. Use made-up data only.
+- per program (or on one course), a `framework` to rate yourself against:
+
+  ```json
+  "framework": { "id": "nhs_lmf", "name": "Framework name", "status": "draft",
+    "stages": [{ "id": "1", "name": "New and first-line" }, { "id": "2", "name": "Middle" }],
+    "targetStage": "1", "areas": [{ "id": "self", "title": "Self effectiveness" }],
+    "standards": [{ "id": "self_safety", "area": "self", "title": "Standard title",
+      "descriptors": { "1": "text", "2": "text" }, "criteria": ["c1"], "topics": ["Topic title"] }] }
+  ```
+
+  `id`, `name` and at least one standard with an `id` and `title` are needed. At most 40
+  standards and 6 stages (more is an error, like other lists); a descriptor is cut at 1000
+  characters and one for a stage the framework does not have is left out. `status` is `final`
+  or else `draft`. A `targetStage` the framework does not have becomes its first stage. Use
+  Udyoga's ids so tagged stories match: `nhs_lmf` (self_safety, self_communicating,
+  self_accountability, people_environment, people_performance, people_resources,
+  care_outcomes, care_improvement, care_collaboration), `nhs_hlm` (shared_purpose,
+  leading_with_care, evaluating_information, connecting_service, sharing_vision, engaging_team,
+  holding_to_account, developing_capability, influencing_results) and `nhs_values`
+  (working_together, respect_dignity, quality_of_care, compassion, improving_lives,
+  everyone_counts). Ids compare in lower case with `-` and `_` alike.
 
 An item the plan stops sending is set aside on its topic page (**No longer in the plan**), not
 deleted, and no longer counts; items you had done stay as they are. Quiz questions you add or
@@ -366,6 +387,26 @@ course page, with its last result.
 The item is done once an attempt leaves no high-risk row untouched and you rate it at least 5/8
 (4/5). Attempts are kept as results on the item with a detail of kind "scenario" (no database
 change) and listed under **Past attempts**.
+
+#### Framework self-assessment
+
+When a plan carries a `framework`, the goal page shows a card with its name.
+
+1. **Open it.** A "Draft structure — check final wording" banner shows while the plan marks the
+   framework as a draft.
+2. **Pick your target stage.** Each standard shows what it looks like at that stage.
+3. **Rate yourself** on each standard, 0–4: 0 Not yet, 1 Starting, 2 Developing, 3 Secure,
+   4 Strong. Add a note if you like. Each rating is dated; rate again later and the page shows
+   the change ("Up 2 since 1 Oct 2026") and the history.
+4. **Evidence** is your Udyoga stories tagged with that standard in Udyoga's story bank (they
+   arrive with Udyoga's plan).
+5. **Work on next** lists each gap, a standard rated 1 or less or with no story yet, with the
+   topics that teach it.
+
+A gap makes the job readiness rows its standard names weak. A self-rating never marks a row
+covered on its own. Ratings are yours alone: there is no 360 feedback and nothing is shared.
+Ratings are kept as results with a detail of kind "framework-rating" and sync like other
+results; they are not counted as tests (no database change).
 
 #### Mock interview
 
