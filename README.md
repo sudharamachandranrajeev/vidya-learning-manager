@@ -222,6 +222,17 @@ Format 3 adds, also optional (older plans import unchanged):
 - per quiz question, `topic`: the title of the topic in the same course it tests (or that
   topic's `id`, when the plan gives topics one), for the exam's per-topic breakdown. A name
   that matches no topic is kept as written.
+- per drill, `persona` and `ladder`: `{ "id": "d2", "question": "…", "persona": "challenging",
+  "ladder": 2 }`. `persona` is the panel that asks it (friendly, neutral, probing, quiet or
+  challenging; any other name is left out) and `ladder` its level, 1–5 (held to the range). When
+  you open the drill in the interviewer they are chosen for you; you can still change them, and
+  they are never saved as your own settings.
+- per topic or per course, `capstone`: `{ "drills": ["d1", "d2"], "average": 4.0, "minimum": 3,
+  "passesInRow": 2, "minutes": 45 }`. Only `drills` is needed: drill `id`s (or questions) from
+  the same course, in the order asked, at most 12; unknown ones are left out, and with none left
+  there is no capstone. `average` is 1.0–5.0 (4.0 when left out), `minimum` 1–5 (3),
+  `passesInRow` 1–10 (1), `minutes` 5–300 (no clock). Values outside a range are held to it. A
+  course's capstone is kept on its last topic.
 
 An item the plan stops sending is set aside on its topic page (**No longer in the plan**), not
 deleted, and no longer counts; items you had done stay as they are. Quiz questions you add or
@@ -270,7 +281,8 @@ change are kept when the plan comes again.
 2. **Rate yourself** on four checks, each **No**, **Partly** or **Yes** (0, 1 or 2): situation
    clear, your own actions, the result, and linked back to the criterion. **Save this attempt**
    keeps the score (out of 8) on the topic and the drill. Under 5 of 8 flags the drill as weak.
-   Delete any attempt from **Past attempts**.
+   Delete any attempt from **Past attempts**. Scores are shown on the plan's 1–5 rubric scale
+   too (below).
 3. **Scenario questions** ("What would you do if…") open the scenario frame: what you would
    check first, how you would stay within your role, when you would escalate, and how you would
    write it down or hand it over. It is saved with the attempt. Switch it on for any drill.
@@ -293,6 +305,30 @@ change are kept when the plan comes again.
 Your stories, scores and feedback logs stay on this device, or travel only through your own
 sync. Nothing is sent anywhere else.
 
+**The 1–5 rubric scale.** Every drill score (your four checks, an AI score placed on the drill
+scale, or Udyoga's score scaled to 8) is shown out of 5 as `round(score / 8 × 4) + 1`, halves
+rounded up: 0/8 is 1/5, 1–2 are 2/5, 3–4 are 3/5, 5–6 are 4/5 and 7–8 are 5/5. A weak drill
+(under 5/8) is never above 3/5. Only the display changes; scores are still stored out of 8.
+
+#### Capstone
+
+When a plan sets a capstone, it shows as a card on the course page and on its topic page.
+
+1. **Start capstone.** The page lists the drills and the panel each is asked by. Tap **Start
+   capstone**: the drills come one after another in one sitting, with one clock for the whole
+   sitting. The clock never stops you; going over the time is noted.
+2. **Answer each drill** out loud and rate yourself on the four checks, or tap **Answer with
+   the interviewer**: it opens on that drill's panel and level, and its score counts once it is
+   saved on the drill. **Skip this drill** is allowed, but then the sitting does not pass.
+3. **The result**: each drill out of 5, the average, the lowest score, and pass or fail. A
+   sitting passes when every drill was answered, the average reaches the capstone's `average`
+   and no drill is under its `minimum`. The passes in a row show as "1 of 2 passes in a row"; a
+   sitting that does not pass starts the count again. Once the count is reached, the capstone is
+   done.
+
+Sittings are kept as results on the capstone (no database change), and each drill answered in
+one is also an ordinary attempt on that drill, so Job readiness counts it.
+
 #### Mock interview
 
 The interviewer is the same one Udyoga uses. It runs on your device.
@@ -300,7 +336,11 @@ The interviewer is the same one Udyoga uses. It runs on your device.
 1. **Open it.** On a drill, tap **Practise with the interviewer**. Or on **Before the interview**,
    tap **Start a mock interview**: your weak drills are picked first (up to six).
 2. **Choose the panel.** Pick the panel's manner, the level, the scale it is scored on (NHS
-   values, Civil Service, and others) and how long a silence ends an answer.
+   values, Civil Service, and others) and how long a silence ends an answer. The **Challenging**
+   panel is firm: it challenges claims, asks for evidence and interrupts politely at levels 4
+   and 5, and is never rude or personal. Its follow-ups only quote what you said. Start it at
+   level 1 or 2 for a safe rehearsal first. A drill whose plan sets a panel or level opens on
+   them.
 3. **Download the speech models, once.** Speaking needs the interviewer voice (Kokoro), a speech
    detector and the transcriber (Moonshine). Each one downloads only when you tap it. The screen
    shows the size and licence first. On a desktop the models are in one folder shared with
@@ -315,6 +355,10 @@ The interviewer is the same one Udyoga uses. It runs on your device.
    - **Dispute this score** checks the quote and the criterion again. Disagreeing alone never
      changes a score. To raise it, answer again.
    - Without an AI: rate yourself on the four drill checks.
+   - Each answer shows its score on the 1–5 rubric scale.
+   - After a **Challenging** panel, each spoken answer shows how you held up: pace, pauses,
+     fillers, time before you started and length, for the answer and each reply, beside the usual
+     ranges. This is information only, never a score.
    - There is one strength and one fix per answer. There is never a single readiness percentage.
 6. **Use the results.** Scores and ratings are saved on the drills, so Job readiness counts them.
    **Add the fix to review** makes a flashcard. **Save as a story** drafts a story bank entry.
