@@ -185,9 +185,19 @@ class Meter extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: Text(label, overflow: TextOverflow.ellipsis)),
-            if (trailing != null)
-              Text(trailing!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted(context))),
+            Expanded(flex: 3, child: Text(label, overflow: TextOverflow.ellipsis)),
+            if (trailing != null) ...[
+              const SizedBox(width: 8),
+              // May wrap under large text rather than push the row off screen.
+              Flexible(
+                flex: 2,
+                child: Text(
+                  trailing!,
+                  textAlign: TextAlign.end,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted(context)),
+                ),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 6),
