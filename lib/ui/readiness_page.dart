@@ -13,10 +13,12 @@ import '../db/database.dart';
 import '../domain/interview.dart';
 import '../domain/readiness.dart';
 import 'common.dart';
+import 'capstone_page.dart' show openCapstone;
 import 'dialogs.dart';
 import 'framework_page.dart';
 import 'interview_pages.dart';
 import 'quiz_page.dart';
+import 'scenario_page.dart' show openScenario;
 import 'topic_page.dart';
 import 'zen.dart';
 
@@ -223,9 +225,10 @@ class ReadinessPage extends ConsumerWidget {
                           ),
                       Text(
                         'Covered needs a strong piece of your own work from the last $freshDays days: a done '
-                        'topic with a quiz of 70% or more, a practice task with evidence, a drill of 5/8 or '
-                        'more, or a story with a done topic. Older or lower results count as weak. AI never '
-                        'marks a row covered.',
+                        'topic with a quiz of 70% or more (or its exam passed), a practice task with evidence, '
+                        'a drill of 4/5 or more, or a story with a done topic. Older or lower results count as '
+                        'weak; a passed stress test or capstone is self-rated, so it counts but does not cover '
+                        'a row alone. AI never marks a row covered.',
                         style: text.bodySmall,
                       ),
                     ],
@@ -284,6 +287,9 @@ class _Counts extends StatelessWidget {
 IconData _evidenceIcon(EvidenceKind k) => switch (k) {
   EvidenceKind.topic => Icons.menu_book_outlined,
   EvidenceKind.quiz => Icons.quiz_outlined,
+  EvidenceKind.exam => Icons.timer_outlined,
+  EvidenceKind.scenario => Icons.fact_check_outlined,
+  EvidenceKind.capstone => Icons.workspace_premium_outlined,
   EvidenceKind.task => Icons.build_outlined,
   EvidenceKind.drill => Icons.record_voice_over_outlined,
   EvidenceKind.story => Icons.auto_stories_outlined,
@@ -301,8 +307,12 @@ class _Row extends ConsumerWidget {
   Future<void> _open(BuildContext context, WidgetRef ref, Evidence e) async {
     final db = ref.read(sessionProvider).db;
     switch (e.kind) {
-      case EvidenceKind.topic || EvidenceKind.quiz || EvidenceKind.task:
+      case EvidenceKind.topic || EvidenceKind.quiz || EvidenceKind.exam || EvidenceKind.task:
         await openTopic(context, e.id);
+      case EvidenceKind.scenario:
+        await openScenario(context, e.id);
+      case EvidenceKind.capstone:
+        await openCapstone(context, e.id);
       case EvidenceKind.drill:
         await openDrill(context, e.id);
       case EvidenceKind.story:

@@ -488,11 +488,18 @@ to that moment. On Android the setup tips may pause while recording if the camer
 How a row is judged:
 
 - **Covered**: at least one strong piece of your own work from the last 60 days: a done topic
-  whose latest quiz is 70% or more, a practice task done with evidence, a drill whose latest
-  score is 5 of 8 or more, or a linked story together with a done topic.
-- **Weak**: there is evidence, but only old work (over 60 days), a latest quiz under 70%, a
-  latest drill under 5 of 8, only planned items, or work not checked yet (a topic ticked
-  without a quiz, a story, a portfolio item or a skill rating on their own).
+  whose latest quiz is 70% or more (or whose latest exam passed on its own pass mark), a practice
+  task done with evidence, a drill whose latest score is 4/5 or more (5 of 8), or a linked story
+  together with a done topic.
+- **Weak**: there is evidence, but only old work (over 60 days), a latest quiz or exam under the
+  pass mark, a latest drill under 4/5, a stress test or capstone not passed (a stress test with a
+  high-risk row left untouched counts as not passed), only planned items, only self-rated passes
+  (a passed stress test or capstone counts, but never covers a row on its own), or work not
+  checked yet (a topic ticked without a quiz, a story, a portfolio item or a skill rating on
+  their own).
+- **Evidence** lists each exam, stress test (for the criteria its `criteria` name) and capstone
+  (for the criteria its drills test) with its date. Drill scores read out of 5, with the score
+  out of 8 beside them ("Drill 4/5 (6/8)"), here and in Before the interview.
 - **Missing**: nothing at all is linked to it.
 - **AI never marks a row covered.** A criterion's AI source, Udyoga's "your CV shows this" flag
   and any status a plan sends are ignored. Only your own results count.

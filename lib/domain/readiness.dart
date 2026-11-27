@@ -28,6 +28,14 @@
 ///   and any `covered` or `status` field a plan might carry are ignored,
 ///   and a piece of evidence marked [Evidence.ai] is listed but never
 ///   counts as strong. Only the learner's own results do.
+/// * **Exams, capstones and stress tests** are listed with their dates. A
+///   topic's latest exam counts as its quiz, judged on the exam's own pass
+///   mark. A stress test whose `criteria` name the row counts on its latest
+///   attempt: passed is medium evidence (self-rated, so it lifts the row to
+///   weak but never covers it alone); any high-risk row left untouched, or
+///   a rating under the bar, is low. A capstone counts for the rows its
+///   drills test: passed is medium, not passed low (its drills already
+///   count on their own as drill attempts).
 /// * **Self-ratings never cover.** A framework self-rating (framework.dart)
 ///   that names a criterion is listed as evidence: a gap (rated 1 or less,
 ///   or with no story) makes the row weak, any other rating only lifts it
@@ -44,9 +52,12 @@ import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 import 'book.dart';
+import 'capstone.dart';
+import 'exam.dart' show ExamResult;
 import 'framework.dart';
 import 'interview.dart';
 import 'quiz.dart' show isQuizResult, percentOf;
+import 'scenario.dart';
 import 'study_items.dart';
 
 /// Evidence older than this many days no longer covers a criterion.
@@ -72,7 +83,20 @@ enum ReadinessStatus {
 }
 
 /// What a piece of evidence is.
-enum EvidenceKind { topic, quiz, task, drill, story, portfolio, skill, cv, framework }
+enum EvidenceKind {
+  topic,
+  quiz,
+  exam,
+  task,
+  drill,
+  scenario,
+  capstone,
+  story,
+  portfolio,
+  skill,
+  cv,
+  framework,
+}
 
 /// How a piece of evidence counts, before its age is looked at.
 enum EvidenceWeight {
@@ -82,6 +106,10 @@ enum EvidenceWeight {
   /// Done but not checked: a topic ticked without a quiz, a story, a
   /// portfolio item, a skill rating. Lifts a row from missing to weak.
   unchecked,
+
+  /// A self-rated pass (a stress test or a capstone): more than unchecked
+  /// work, but it never covers a row on its own.
+  medium,
 
   /// A checked result under the bar: a quiz under 70%, a drill under 5/8.
   low,
@@ -134,9 +162,11 @@ int daysBetween(String from, String to) =>
 enum WeakReason {
   planned('Only planned so far'),
   lowQuiz('Latest quiz under 70%'),
-  lowDrill('Latest drill under 5/8'),
+  lowDrill('Latest drill under 4/5'),
+  lowTest('Latest stress test or capstone not passed'),
   selfGap('Self-assessment gap'),
   unchecked('Not checked yet'),
+  selfRated('Only self-rated passes so far'),
   old('Only old evidence (over $freshDays days)');
 
   const WeakReason(this.label);
@@ -165,9 +195,12 @@ class ReadinessRow {
   /// planned items, low scores, unchecked work, old evidence; covered last.
   int get rank => switch (status) {
     ReadinessStatus.missing => 0,
-    ReadinessStatus.covered => 6,
+    ReadinessStatus.covered => WeakReason.values.length + 1,
     ReadinessStatus.weak =>
-      1 + (reasons.isEmpty ? 3 : reasons.map((r) => r.index).reduce((a, b) => a < b ? a : b)),
+      1 +
+          (reasons.isEmpty
+              ? WeakReason.unchecked.index
+              : reasons.map((r) => r.index).reduce((a, b) => a < b ? a : b)),
   };
 }
 
@@ -202,14 +235,27 @@ class ReadinessRow {
   }
   final reasons = <WeakReason>{
     if (counted.every((e) => e.weight == EvidenceWeight.planned)) WeakReason.planned,
-    if (counted.any((e) => e.kind == EvidenceKind.quiz && e.weight == EvidenceWeight.low)) WeakReason.lowQuiz,
+    if (counted.any(
+      (e) => (e.kind == EvidenceKind.quiz || e.kind == EvidenceKind.exam) && e.weight == EvidenceWeight.low,
+    ))
+      WeakReason.lowQuiz,
     if (counted.any((e) => e.kind == EvidenceKind.drill && e.weight == EvidenceWeight.low))
       WeakReason.lowDrill,
+    if (counted.any(
+      (e) =>
+          (e.kind == EvidenceKind.scenario || e.kind == EvidenceKind.capstone) &&
+          e.weight == EvidenceWeight.low,
+    ))
+      WeakReason.lowTest,
     if (counted.any((e) => e.kind == EvidenceKind.framework && e.weight == EvidenceWeight.low))
       WeakReason.selfGap,
     if (counted.any((e) => strongAt(e)) || pairDay != null) WeakReason.old,
   };
-  if (reasons.isEmpty) reasons.add(WeakReason.unchecked);
+  if (reasons.isEmpty) {
+    reasons.add(
+      counted.any((e) => e.weight == EvidenceWeight.medium) ? WeakReason.selfRated : WeakReason.unchecked,
+    );
+  }
   return (
     status: ReadinessStatus.weak,
     reasons: reasons.toList()..sort((a, b) => a.index.compareTo(b.index)),
@@ -262,7 +308,8 @@ ReadinessAction nextActionFor(
   final ev = row.evidence;
   bool stale(Evidence e) => e.weight == EvidenceWeight.strong && !e.freshOn(today);
   for (final e in ev) {
-    if (e.kind == EvidenceKind.quiz && (e.weight == EvidenceWeight.low || stale(e))) {
+    if ((e.kind == EvidenceKind.quiz || e.kind == EvidenceKind.exam) &&
+        (e.weight == EvidenceWeight.low || stale(e))) {
       final q = quizzes[e.id];
       if (q != null) {
         return ReadinessAction(ActionKind.quiz, 'Retake the quiz on ${e.title}', criterion: c, id: q.id);
@@ -276,7 +323,7 @@ ReadinessAction nextActionFor(
   }
   final quizzed = {
     for (final e in ev)
-      if (e.kind == EvidenceKind.quiz) e.id,
+      if (e.kind == EvidenceKind.quiz || e.kind == EvidenceKind.exam) e.id,
   };
   for (final e in ev) {
     if (e.kind == EvidenceKind.topic && !quizzed.contains(e.id) && quizzes[e.id] != null) {
@@ -377,8 +424,9 @@ class Readiness {
 
 // ---- building the rows ----
 
-/// The latest quiz result on a topic: percent and day.
-typedef QuizResult = ({int percent, String day});
+/// The latest quiz result on a topic: percent and day; for an exam
+/// attempt, [exam] is set with whether it passed on the exam's own mark.
+typedef QuizResult = ({int percent, String day, ({bool passed})? exam});
 
 /// The latest quiz result per topic id (practice quizzes and exam
 /// attempts). Drill attempts are not quizzes.
@@ -393,7 +441,15 @@ Map<String, QuizResult> latestQuizzes(Iterable<Assessment> tests) {
     }
   }
   return {
-    for (final e in latest.entries) e.key: (percent: percentOf(e.value.score, e.value.max), day: e.value.day),
+    for (final e in latest.entries)
+      e.key: (
+        percent: percentOf(e.value.score, e.value.max),
+        day: e.value.day,
+        exam: switch (ExamResult.of(e.value)) {
+          final r? => (passed: r.passed),
+          null => null,
+        },
+      ),
   };
 }
 
@@ -408,6 +464,29 @@ bool skillMatches(String skill, String criterion) {
   if (a == b) return true;
   final (short, long) = a.length <= b.length ? (a, b) : (b, a);
   return short.length >= 4 && ' $long '.contains(' $short ');
+}
+
+/// A result kept on an item (a stress-test attempt or a capstone sitting)
+/// with its day.
+typedef Dated<T> = ({String day, T result});
+
+/// The latest result per item id among [tests], read by [parse] (null for
+/// rows of another kind).
+Map<String, Dated<T>> latestOnItems<T>(Iterable<Assessment> tests, T? Function(String detail) parse) {
+  final latest = <String, Assessment>{};
+  final read = <String, T>{};
+  for (final a in tests) {
+    final id = a.itemId;
+    if (id == null || a.deleted) continue;
+    final r = parse(a.detail);
+    if (r == null) continue;
+    final had = latest[id];
+    if (had == null || a.day.compareTo(had.day) > 0 || (a.day == had.day && a.hlc.compareTo(had.hlc) > 0)) {
+      latest[id] = a;
+      read[id] = r;
+    }
+  }
+  return {for (final e in latest.entries) e.key: (day: e.value.day, result: read[e.key] as T)};
 }
 
 String _pct(int p) => '$p%';
@@ -430,6 +509,8 @@ Readiness assessReadiness({
   required String today,
   String? interviewDate,
   Map<String, List<Evidence>> framework = const {},
+  Map<String, Dated<ScenarioAttempt>> scenarios = const {},
+  Map<String, Dated<CapstoneSitting>> capstones = const {},
 }) {
   final topicById = {for (final t in topics) t.id: t};
   final itemsOf = <String, List<StudyItem>>{};
@@ -460,13 +541,15 @@ Readiness assessReadiness({
         ),
       );
       if (q != null) {
-        final pass = q.percent >= passPercent;
+        final pass = q.exam?.passed ?? q.percent >= passPercent;
         ev.add(
           Evidence(
-            kind: EvidenceKind.quiz,
+            kind: q.exam != null ? EvidenceKind.exam : EvidenceKind.quiz,
             title: t.title,
             detail: [
-              'Quiz ${_pct(q.percent)} on ${niceDate(q.day)}',
+              q.exam != null
+                  ? 'Exam ${_pct(q.percent)} (${pass ? 'passed' : 'not passed'}) on ${niceDate(q.day)}'
+                  : 'Quiz ${_pct(q.percent)} on ${niceDate(q.day)}',
               if (pass && doneDay == null) 'topic not done yet',
             ].join(' · '),
             weight: !pass
@@ -519,7 +602,7 @@ Readiness assessReadiness({
           detail: latest == null
               ? (d.asked ? 'Drill sent to Udyoga, no score yet' : 'Drill not practised yet')
               : [
-                  'Drill ${_of8(latest)}/$drillMax on ${niceDate(day)}',
+                  'Drill ${rubricText(latest)} (${_of8(latest)}/$drillMax) on ${niceDate(day)}',
                   if (fromUdyoga) 'scored in Udyoga' else if (d.ownNote.isNotEmpty) d.ownNote,
                 ].join(' · '),
           weight: latest == null
@@ -531,6 +614,27 @@ Readiness assessReadiness({
           id: i.id,
         ),
       );
+    }
+    for (final i in items) {
+      if (i.type != scenarioType) continue;
+      final sc = scenarioOf(i);
+      if (sc == null || !sc.criteria.contains(c.ref)) continue;
+      ev.add(_scenarioEvidence(i, scenarios[i.id]));
+    }
+    for (final i in items) {
+      if (i.type != capstoneType) continue;
+      final rules = capstoneRules(i);
+      final course = topicById[i.topicId]?.courseId;
+      if (rules == null || course == null) continue;
+      final refs = {for (final r in rules.drills) r.toLowerCase()};
+      final tests = items.any(
+        (d) =>
+            d.type == 'interview drill' &&
+            refs.contains(d.ref.toLowerCase()) &&
+            topicById[d.topicId]?.courseId == course &&
+            drillCriteria(d, topicById[d.topicId], criteria).any((x) => x.id == c.id),
+      );
+      if (tests) ev.add(_capstoneEvidence(i, capstones[i.id]));
     }
     for (final s in stories) {
       if (!s.criteria.contains(c.id)) continue;
@@ -597,6 +701,59 @@ Readiness assessReadiness({
   );
 }
 
+/// A stress test as evidence (see the library rules): planned until tried;
+/// then its latest attempt, medium when passed, low otherwise.
+Evidence _scenarioEvidence(StudyItem i, Dated<ScenarioAttempt>? last) {
+  if (last == null) {
+    return Evidence(
+      kind: EvidenceKind.scenario,
+      title: i.title,
+      detail: 'Stress test not tried yet',
+      weight: EvidenceWeight.planned,
+      id: i.id,
+    );
+  }
+  final a = last.result;
+  final untouched = a.findings.untouchedHigh.length;
+  return Evidence(
+    kind: EvidenceKind.scenario,
+    title: i.title,
+    detail: [
+      'Stress test ${a.passed ? 'passed' : 'not passed'} on ${niceDate(last.day)}',
+      'rating ${a.of5}/5',
+      if (untouched > 0) '$untouched high-risk ${untouched == 1 ? 'row' : 'rows'} untouched',
+    ].join(' · '),
+    weight: a.passed ? EvidenceWeight.medium : EvidenceWeight.low,
+    day: last.day,
+    id: i.id,
+  );
+}
+
+/// A capstone as evidence for the rows its drills test: planned until sat;
+/// then its latest sitting, medium when passed, low otherwise.
+Evidence _capstoneEvidence(StudyItem i, Dated<CapstoneSitting>? last) {
+  if (last == null) {
+    return Evidence(
+      kind: EvidenceKind.capstone,
+      title: i.title,
+      detail: 'Capstone not sat yet',
+      weight: EvidenceWeight.planned,
+      id: i.id,
+    );
+  }
+  final s = last.result;
+  return Evidence(
+    kind: EvidenceKind.capstone,
+    title: i.title,
+    detail:
+        'Capstone ${s.passed ? 'passed' : 'not passed'} on ${niceDate(last.day)} · '
+        'average ${s.average.toStringAsFixed(1)}/5, lowest ${s.minimum}/5',
+    weight: s.passed ? EvidenceWeight.medium : EvidenceWeight.low,
+    day: last.day,
+    id: i.id,
+  );
+}
+
 // ---- the report for Udyoga ----
 
 /// The `readiness` list added to a plan's progress report: one entry per
@@ -657,6 +814,8 @@ extension JobReadiness on LearningBook {
         final v? => frameworkReadiness(v),
         null => const {},
       },
+      scenarios: latestOnItems(tests, ScenarioAttempt.parse),
+      capstones: latestOnItems(tests, CapstoneSitting.parse),
     );
   }
 

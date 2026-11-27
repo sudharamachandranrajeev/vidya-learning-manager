@@ -253,7 +253,7 @@ void main() {
       final b = await book.beforeInterview(pid, day: today);
       expect([for (final c in b.weak) c.criterion.ref], ['e3', 'e2']);
       expect([for (final c in b.weak) c.state], [CriterionState.missing, CriterionState.weak]);
-      expect(b.weak[1].evidence.single, startsWith('Drill 3/8:'));
+      expect(b.weak[1].evidence.single, startsWith('Drill 3/5 (3/8):'));
       expect({for (final c in b.covered) c.criterion.ref}, {'e1', 'd1'});
       expect(b.stories.map((s) => s.id), [story]);
       expect(
