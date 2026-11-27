@@ -18,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/providers.dart';
 import '../db/database.dart';
-import '../domain/exam.dart' show clockText, crossedAnnounceMark, timeLeftText;
+import '../domain/exam.dart' show clockText, crossedAnnounceMark, examLocked, timeLeftText;
 import '../domain/interview.dart' show drillMax, drillScore, rubricOf5;
 import '../domain/scenario.dart';
 import 'common.dart';
@@ -65,6 +65,8 @@ class ScenarioCard extends ConsumerWidget {
     final v = ref.watch(scenarioViewProvider(itemId)).value;
     if (v == null) return const SizedBox.shrink();
     final last = v.attempts.lastOrNull?.$2;
+    final next = scenarioNextDay(v.scenario, [for (final (a, _) in v.attempts) a]);
+    final locked = examLocked(next, today());
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -79,6 +81,12 @@ class ScenarioCard extends ConsumerWidget {
           key: Key('scenario-last-$itemId'),
           style: Theme.of(context).textTheme.bodyMedium,
         ),
+        if (locked)
+          Text(
+            'Next counted attempt from ${niceDate(next!)}.',
+            key: Key('scenario-lock-$itemId'),
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerLeft,
@@ -119,6 +127,9 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
   var _lastLeft = 0;
   ScenarioAttempt? _saved;
   String? _error;
+
+  /// A practice run while the retake wait lasts: never saved, never kept.
+  var _practice = false;
 
   /// Whether a saved, unfinished attempt has been looked for yet.
   var _checked = false;
@@ -218,6 +229,7 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
 
   /// Saves the unfinished attempt on this device (see [ScenarioProgress]).
   Future<void> _persist() async {
+    if (_practice) return;
     if (_s == null || (_phase != _Phase.running && _phase != _Phase.rating)) return;
     final p = ScenarioProgress(
       start: _start ?? _clock().subtract(Duration(seconds: _seconds)),
@@ -235,8 +247,9 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
     _persistSoon = Timer(const Duration(milliseconds: 600), _persist);
   }
 
-  void _begin(ScenarioView v) {
+  void _begin(ScenarioView v, {bool practice = false}) {
     setState(() {
+      _practice = practice;
       _setUp(v.scenario);
       _start = _clock();
       _seconds = 0;
@@ -311,6 +324,15 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
   Future<void> _save(ScenarioView v) async {
     if (_checks.any((c) => c == null)) return notify(context, 'Rate all four checks first.');
     final attempt = _attempt();
+    if (_practice) {
+      setState(() {
+        _saved = attempt;
+        _phase = _Phase.done;
+      });
+      _toTop();
+      _announce('Practice, not counted. ${attemptText(attempt)}.');
+      return;
+    }
     setState(() => _phase = _Phase.saving);
     try {
       await ref.mutate((s) => s.book.recordScenario(v.item, attempt, today: today()));
@@ -396,6 +418,7 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
   List<Widget> _intro(ScenarioView v) {
     final t = Theme.of(context).textTheme;
     final s = v.scenario;
+    final next = scenarioNextDay(s, [for (final (a, _) in v.attempts) a]);
     return [
       Text('Stress test', style: t.headlineSmall),
       const SizedBox(height: 8),
@@ -413,15 +436,37 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
         const SizedBox(height: 12),
         SectionCard(title: 'What good work looks like', child: MarkdownText(s.rubric)),
       ],
-      const SizedBox(height: 12),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: FilledButton.icon(
-          icon: const Icon(Icons.play_arrow),
-          label: const Text('Start the stress test'),
-          onPressed: () => _begin(v),
+      if (s.retakeDays > 0) ...[
+        const SizedBox(height: 8),
+        Text(
+          'After an attempt, the next one counts from ${s.retakeDays} '
+          '${s.retakeDays == 1 ? 'day' : 'days'} later.',
         ),
-      ),
+      ],
+      const SizedBox(height: 12),
+      if (examLocked(next, today())) ...[
+        Text(
+          'Next counted attempt from ${niceDate(next!)}. You can practise before then; it is not saved.',
+          key: const Key('scenario-locked'),
+          style: t.bodyMedium,
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: FilledButton.tonal(
+            onPressed: () => _begin(v, practice: true),
+            child: const Text('Practise anyway (not counted)'),
+          ),
+        ),
+      ] else
+        Align(
+          alignment: Alignment.centerLeft,
+          child: FilledButton.icon(
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Start the stress test'),
+            onPressed: () => _begin(v),
+          ),
+        ),
       if (v.attempts.isNotEmpty) ...[
         const SizedBox(height: 12),
         SectionCard(
@@ -674,6 +719,12 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
   }
 
   List<Widget> _done(ScenarioAttempt a) => [
+    if (_practice)
+      Text(
+        'Practice, not counted: nothing was saved.',
+        key: const Key('scenario-practice'),
+        style: Theme.of(context).textTheme.titleSmall,
+      ),
     Align(
       alignment: Alignment.centerLeft,
       child: StatusPill(
@@ -697,6 +748,7 @@ class _ScenarioPageState extends ConsumerState<ScenarioPage> {
       child: FilledButton(
         onPressed: () => setState(() {
           _saved = null;
+          _practice = false;
           _phase = _Phase.intro;
         }),
         child: const Text('Back to the stress test'),

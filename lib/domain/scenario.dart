@@ -22,6 +22,7 @@ import 'package:drift/drift.dart';
 
 import '../db/database.dart';
 import 'book.dart';
+import 'exam.dart' show nextAttemptDay;
 import 'interview.dart' show drillScore, drillWeakBelow, rubricOf5;
 import 'study_items.dart';
 
@@ -69,8 +70,10 @@ class Scenario {
     this.actions = defaultScenarioActions,
     this.rubric = '',
     this.criteria = const [],
+    this.retakeDays = 0,
   });
 
+  static const minRetakeDays = 0, maxRetakeDays = 60;
   static const maxRows = 60, maxColumns = 8, maxCell = 200;
   static const minMinutes = 5, maxMinutes = 180, defaultMinutes = 20;
   static const maxActions = 8, maxAction = 40;
@@ -80,6 +83,10 @@ class Scenario {
   final List<String> columns, actions, criteria;
   final List<ScenarioRow> rows;
   final int minutes;
+
+  /// Days to wait after an attempt before the next counts (0–60; 0 for
+  /// none), as an exam's `retakeDays`.
+  final int retakeDays;
 
   /// The rows marked high risk, by index.
   List<int> get highRows => [
@@ -134,6 +141,7 @@ class Scenario {
     if (rows.isEmpty) return null;
     final time = j['minutes'];
     final mins = time is num ? time : num.tryParse('${time ?? ''}');
+    final wait = j['retakeDays'] is num ? j['retakeDays'] as num : num.tryParse('${j['retakeDays'] ?? ''}');
     return Scenario(
       columns: columns,
       rows: rows,
@@ -145,6 +153,7 @@ class Scenario {
         for (final c in j['criteria'] is List ? j['criteria'] as List : const [])
           if (s(c, 60).replaceAll(',', ' ') case final t when t.isNotEmpty) t,
       ].take(maxCriteria).toList(),
+      retakeDays: wait == null ? 0 : wait.round().clamp(minRetakeDays, maxRetakeDays),
     );
   }
 
@@ -156,11 +165,17 @@ class Scenario {
     'actions': actions,
     if (rubric.isNotEmpty) 'rubric': rubric,
     if (criteria.isNotEmpty) 'criteria': criteria,
+    if (retakeDays > 0) 'retakeDays': retakeDays,
   };
 
   /// "12 rows · 20 min".
   String get summary => '${rows.length} ${rows.length == 1 ? 'row' : 'rows'} · $minutes min';
 }
+
+/// The first day the next stress-test attempt counts, from the attempts'
+/// days and the scenario's `retakeDays`; null when there is no wait.
+String? scenarioNextDay(Scenario s, Iterable<Assessment> attempts) =>
+    nextAttemptDay([for (final a in attempts) a.day], s.retakeDays);
 
 /// The stress test an item holds, or null when it is not one.
 Scenario? scenarioOf(StudyItem i) => i.type == scenarioType ? Scenario.fromJson(itemContent(i)) : null;

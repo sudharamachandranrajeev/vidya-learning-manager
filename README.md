@@ -241,14 +241,16 @@ Format 3 adds, also optional (older plans import unchanged):
     "brief": "Markdown text", "columns": ["Item", "Specialty", "Weeks waited", "Flags"],
     "rows": [{ "cells": ["T001", "ENT", "34", "urgent referral"], "risk": "high",
                "expect": "escalate", "why": "optional model answer" }],
-    "actions": ["act", "escalate", "leave", "note"], "rubric": "text", "criteria": ["c1"] }
+    "actions": ["act", "escalate", "leave", "note"], "rubric": "text", "criteria": ["c1"],
+    "retakeDays": 7 }
   ```
 
   `columns` and `rows` are needed: at most 8 columns and 60 rows (the rest are left out), each
   cell up to 200 characters; a row may be written as a bare list of cells. `minutes` is 5–180
   (20 when left out). `actions` takes 2–8 names (act, escalate, leave, note when left out).
-  `risk` is high, medium or low and `expect` one of the actions; anything else is left out. A
-  scenario with no column or no row is left out. Use made-up data only.
+  `risk` is high, medium or low and `expect` one of the actions; anything else is left out.
+  `retakeDays` 0–60 (optional, 0 when left out) is the wait before the next attempt counts, as
+  for an exam. A scenario with no column or no row is left out. Use made-up data only.
 - per program (or on one course), a `framework` to rate yourself against:
 
   ```json
@@ -300,7 +302,8 @@ change are kept when the plan comes again.
    many came up in an earlier attempt, and the exam warns before you start when the pool is under
    twice the count, because a remembered answer can look like knowledge. If the app closes or is
    stopped during an exam, it picks up where you were when you open the exam again; the time has
-   kept running, and if it ran out the exam is handed in then. The topic
+   kept running, and if it ran out the exam is handed in then. While an attempt is under way the
+   topic page shows **Resume exam (12:30 left)** instead of Start. The topic
    page charts your exam scores. A screen reader hears the time left every five minutes and at one
    minute, 30 and 10 seconds.
 6. Plan text is written in Markdown: topic details, notes (such as an exam's rules), briefs and
@@ -367,6 +370,10 @@ When a plan sets a capstone, it shows as a card on the course page and on its to
    sitting that does not pass starts the count again. Once the count is reached, the capstone is
    done.
 
+A sitting under way is kept on this device (never synced), like an exam: leave the page or close
+the app and the capstone card shows **Resume capstone**; **Resume sitting** carries on at the
+drill you were on, with the clock still running from the start, and **Start again** drops it.
+
 Sittings are kept as results on the capstone (no database change), and each drill answered in
 one is also an ordinary attempt on that drill, so Job readiness counts it.
 
@@ -389,7 +396,9 @@ course page, with its last result.
    recorded, met the rubric): a score out of 8, shown on the 1–5 rubric scale.
 
 The item is done once an attempt leaves no high-risk row untouched and you rate it at least 5/8
-(4/5). Attempts are kept as results on the item with a detail of kind "scenario" (no database
+(4/5). If the plan sets `retakeDays`, the next counted attempt waits that many days after the last
+one; the date shows on the card and the brief, and **Practise anyway (not counted)** runs it
+without saving anything. Attempts are kept as results on the item with a detail of kind "scenario" (no database
 change) and listed under **Past attempts**.
 
 #### Framework self-assessment

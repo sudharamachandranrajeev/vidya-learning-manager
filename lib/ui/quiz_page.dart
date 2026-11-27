@@ -382,6 +382,12 @@ class _Banner extends StatelessWidget {
 /// The clock an exam reads; tests swap it for one they move by hand.
 final examClockProvider = Provider<DateTime Function()>((_) => DateTime.now);
 
+/// A quiz's exam attempt in progress on this device, or null.
+final examProgressProvider = FutureProvider.family<ExamProgress?, String>((ref, quizId) async {
+  final db = ref.watch(sessionProvider).db;
+  return ExamProgress.parse(await db.localSetting(examProgressKey(quizId)));
+});
+
 /// A topic's exam attempts so far, oldest first.
 final examAttemptsProvider = FutureProvider.family<List<Assessment>, String>((ref, topicId) async {
   ref.watch(revisionProvider);

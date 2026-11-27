@@ -285,10 +285,16 @@ List<Assessment> examAttempts(Iterable<Assessment> tests, String topicId) =>
 
 /// The first day the next attempt counts: the last attempt's day plus the
 /// rules' wait. Null when there is no wait or no attempt yet.
-String? examNextDay(List<Assessment> attempts, ExamRules rules) {
-  if (rules.retakeDays == 0 || attempts.isEmpty) return null;
-  final last = attempts.map((a) => a.day).reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
-  return addDays(last, rules.retakeDays);
+String? examNextDay(List<Assessment> attempts, ExamRules rules) =>
+    nextAttemptDay([for (final a in attempts) a.day], rules.retakeDays);
+
+/// The first day a next attempt counts after attempts on [days] with a
+/// wait of [retakeDays]; null when there is no wait or no attempt. Shared
+/// by exams and stress tests.
+String? nextAttemptDay(Iterable<String> days, int retakeDays) {
+  if (retakeDays <= 0 || days.isEmpty) return null;
+  final last = days.reduce((a, b) => a.compareTo(b) >= 0 ? a : b);
+  return addDays(last, retakeDays);
 }
 
 /// Whether an attempt on [today] would be too early.
@@ -442,3 +448,18 @@ class ExamProgress {
 
 /// The local setting that holds a quiz's [ExamProgress].
 String examProgressKey(String quizId) => 'exam.progress.$quizId';
+
+/// Seconds left in a saved attempt at [now]: 0 once it was handed in or
+/// the time ran out.
+int examSecondsLeft(ExamProgress p, ExamRules rules, DateTime now) {
+  final limit = rules.minutes * 60;
+  return p.handedIn != null ? 0 : (limit - now.difference(p.start).inSeconds).clamp(0, limit);
+}
+
+/// The topic page's button for an attempt in progress: "Resume exam (12:30
+/// left)", or what is left to do once the time is up.
+String resumeExamText(ExamProgress p, ExamRules rules, DateTime now) {
+  if (p.handedIn != null) return 'Finish marking the exam';
+  final left = examSecondsLeft(p, rules, now);
+  return left > 0 ? 'Resume exam (${clockText(left)} left)' : 'Resume exam (time is up)';
+}
