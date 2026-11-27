@@ -1033,6 +1033,9 @@ class LearningBook {
       final criteria = await _savePlanCriteria(pid, plan.criteria);
       if (plan.journey case final j?) await saveJourney(pid, j, now: today);
       if (plan.framework case final f?) await saveFramework(pid, f);
+      if (plan.stories.isNotEmpty || plan.cards.isNotEmpty) {
+        await saveTaggedStories(pid, plan.stories, whole: _wholePlan(plan.part));
+      }
 
       final noteTitles = {
         for (final n in await (db.select(db.learnNotes)..where((n) => n.deleted.not())).get())

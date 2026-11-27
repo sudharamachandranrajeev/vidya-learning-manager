@@ -319,6 +319,11 @@ typedef DatedRating = ({String day, FrameworkRating rating});
 int? ratingTrend(List<DatedRating> history) =>
     history.length < 2 ? null : history.last.rating.rating - history[history.length - 2].rating.rating;
 
+/// The ratings a trend chart shows: the last [trendPoints], oldest first.
+const trendPoints = 12;
+List<DatedRating> trendWindow(List<DatedRating> history) =>
+    history.length <= trendPoints ? history : history.sublist(history.length - trendPoints);
+
 /// The trend in words, '' with fewer than two ratings.
 String trendText(List<DatedRating> history) => switch (ratingTrend(history)) {
   null => '',
@@ -345,9 +350,16 @@ List<TaggedStory> taggedStoriesInPlan(String planJson) {
   } on FormatException {
     return const [];
   }
-  if (j is! Map || j['cards'] is! List) return const [];
+  return j is Map ? taggedStoriesInCards(j['cards']) : const [];
+}
+
+/// The tagged stories among a plan's `cards` (see [taggedStoriesInPlan]).
+/// With [titleAsIs] the `front` is the title as written (cards Vidya kept
+/// itself, see [encodeTaggedStories]).
+List<TaggedStory> taggedStoriesInCards(Object? cards, {bool titleAsIs = false}) {
+  if (cards is! List) return const [];
   final out = <TaggedStory>[];
-  for (final c in j['cards'] as List) {
+  for (final c in cards.take(5000)) {
     if (c is! Map || c['tags'] is! List) continue;
     final tags = <StoryTagRef>[
       for (final t in (c['tags'] as List).take(100))
@@ -357,9 +369,9 @@ List<TaggedStory> taggedStoriesInPlan(String planJson) {
     if (tags.isEmpty) continue;
     final front = _str(c['front'], _maxTitle * 2);
     // "Tell your story: Title (competencies)" reads as the title.
-    final title = front
-        .replaceFirst(RegExp(r'^Tell your story:\s*'), '')
-        .replaceFirst(RegExp(r'\s*\([^)]*\)$'), '');
+    final title = titleAsIs
+        ? front
+        : front.replaceFirst(RegExp(r'^Tell your story:\s*'), '').replaceFirst(RegExp(r'\s*\([^)]*\)$'), '');
     final happened = _str(c['happened'], 10);
     out.add((
       ref: _str(c['id'], 200),
@@ -369,6 +381,32 @@ List<TaggedStory> taggedStoriesInPlan(String planJson) {
     ));
   }
   return out;
+}
+
+/// Tagged stories as JSON in the plan's own card shape, so the same reader
+/// takes them back ([decodeTaggedStories]).
+String encodeTaggedStories(List<TaggedStory> stories) => jsonEncode({
+  'cards': [
+    for (final s in stories)
+      {
+        'id': s.ref,
+        'front': s.title,
+        if (s.happened.isNotEmpty) 'happened': s.happened,
+        'tags': [
+          for (final t in s.tags) {'framework': t.framework, 'item': t.item, 'title': t.title},
+        ],
+      },
+  ],
+});
+
+List<TaggedStory> decodeTaggedStories(String json) {
+  if (json.isEmpty) return const [];
+  try {
+    final j = jsonDecode(json);
+    return j is Map ? taggedStoriesInCards(j['cards'], titleAsIs: true) : const [];
+  } on FormatException {
+    return const [];
+  }
 }
 
 /// Whether [tag] names [s] of [f]: the same framework id, and the same
@@ -504,6 +542,11 @@ String frameworkKey(String programId) => 'vidya.framework.$programId';
 /// The synced pref holding the stage the learner rates at.
 String frameworkStageKey(String programId) => 'vidya.frameworkStage.$programId';
 
+/// The synced pref holding the tagged story cards a plan imported for a
+/// program carried (their `tags` and `happened`), so a plan imported from
+/// a file keeps them as one shared by Udyoga does. No database change.
+String storyTagsKey(String programId) => 'vidya.storyTags.$programId';
+
 /// The rating's item id, so a standard's ratings can be read together.
 String frameworkItemId(String programId, String standardId) => 'framework.$programId.${normId(standardId)}';
 
@@ -571,13 +614,37 @@ extension FrameworkBook on LearningBook {
     return id;
   }
 
-  /// The tagged stories Udyoga sent, from every plan it shares.
+  /// Keeps the tagged story cards an imported plan carried for
+  /// [programId]. A whole plan replaces what an earlier one left; one part
+  /// of a long plan adds to it (a story with the same id is replaced).
+  Future<void> saveTaggedStories(String programId, List<TaggedStory> stories, {bool whole = true}) async {
+    final key = storyTagsKey(programId);
+    final before = whole ? const <TaggedStory>[] : decodeTaggedStories(await _pref(key));
+    String id(TaggedStory s) => s.ref.isNotEmpty ? s.ref : s.title;
+    final fresh = {for (final s in stories) id(s)};
+    final next = [
+      for (final s in before)
+        if (!fresh.contains(id(s))) s,
+      ...stories,
+    ];
+    final json = next.isEmpty ? '' : encodeTaggedStories(next);
+    if (await _pref(key) != json) await _setPref(key, json);
+  }
+
+  /// The tagged stories: from every plan Udyoga shares, and from the plans
+  /// imported here (from a file too). Each once, by its card id.
   Future<List<TaggedStory>> taggedStories() async {
     final plans = await (db.select(db.bridgeStudyPlans)..where((p) => p.deleted.not())).get();
+    final kept = await (db.select(
+      db.prefs,
+    )..where((p) => p.deleted.not() & p.id.like('${storyTagsKey('')}%'))).get();
     final seen = <String>{};
     return [
       for (final p in plans)
         for (final s in taggedStoriesInPlan(p.plan))
+          if (seen.add(s.ref.isNotEmpty ? s.ref : s.title)) s,
+      for (final p in kept)
+        for (final s in decodeTaggedStories(p.value))
           if (seen.add(s.ref.isNotEmpty ? s.ref : s.title)) s,
     ];
   }

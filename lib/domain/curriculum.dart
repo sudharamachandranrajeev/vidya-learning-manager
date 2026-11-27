@@ -107,8 +107,13 @@ class CurriculumPlan {
     this.criteria = const [],
     this.journey,
     this.framework,
+    this.stories = const [],
   });
   final String title, goal, part;
+
+  /// The story cards that carry framework `tags` (and `happened`), kept so
+  /// a plan imported from a file evidences its framework as Udyoga's do.
+  final List<TaggedStory> stories;
 
   /// The framework to self-assess against (format 3), null when none.
   final Framework? framework;
@@ -428,6 +433,7 @@ CurriculumPlan parseCurriculum(String text) {
     criteria: criteria,
     journey: journey,
     framework: framework,
+    stories: taggedStoriesInCards(j['cards']),
   );
 }
 

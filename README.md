@@ -410,9 +410,12 @@ When a plan carries a `framework`, the goal page shows a card with its name.
 2. **Pick your target stage.** Each standard shows what it looks like at that stage.
 3. **Rate yourself** on each standard, 0–4: 0 Not yet, 1 Starting, 2 Developing, 3 Secure,
    4 Strong. Add a note if you like. Each rating is dated; rate again later and the page shows
-   the change ("Up 2 since 1 Oct 2026") and the history.
-4. **Evidence** is your Udyoga stories tagged with that standard in Udyoga's story bank (they
-   arrive with Udyoga's plan).
+   the change ("Up 2 since 1 Oct 2026"), a small line chart of your last 12 ratings (a screen
+   reader reads them out as dates and numbers) and the history.
+4. **Evidence** is your Udyoga stories tagged with that standard in Udyoga's story bank. They
+   arrive with Udyoga's plan, or in a plan file you import: story `cards` keep their `tags` and
+   `happened` day either way. A whole plan imported again replaces the stories it brought; one
+   part of a long plan adds to them.
 5. **Work on next** lists each gap, a standard rated 1 or less or with no story yet, with the
    topics that teach it.
 
