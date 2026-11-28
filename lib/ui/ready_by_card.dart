@@ -73,9 +73,13 @@ class ReadyByCard extends ConsumerWidget {
           else ...[
             if (waiting)
               _OutcomePrompt(fit.goal)
-            else if (logged != null && fit.passed)
-              Text('Outcome logged: ${logged.result.label}.', style: t.bodyMedium)
-            else
+            else if (logged != null && fit.passed) ...[
+              Text('Outcome logged: ${logged.result.label}.', style: t.bodyMedium),
+              if (programId != null) ...[
+                const SizedBox(height: 4),
+                Text(calibrationText(logged), style: t.bodyMedium?.copyWith(color: muted(context))),
+              ],
+            ] else
               FitSummary(fit),
           ],
         ],

@@ -22,6 +22,7 @@ import 'package:drift/drift.dart';
 import '../db/database.dart';
 import 'book.dart';
 import 'interview.dart' show InterviewTraining;
+import 'readiness.dart' show JobReadiness, ReadinessSnapshot, inflationText;
 import 'review.dart';
 import 'study_items.dart';
 
@@ -398,6 +399,7 @@ class ReadyByOutcome {
     required this.result,
     this.percent,
     this.note = '',
+    this.readiness,
   });
 
   final String goalId;
@@ -408,6 +410,10 @@ class ReadyByOutcome {
   final int? percent;
   final String note;
 
+  /// What readiness showed when this was logged; null for outcomes logged
+  /// before snapshots were kept, and for goals with no criteria.
+  final ReadinessSnapshot? readiness;
+
   String encode() => jsonEncode({
     'kind': outcomeKind,
     'goal': goalId,
@@ -415,6 +421,7 @@ class ReadyByOutcome {
     'result': result.name,
     'percent': ?percent,
     if (note.isNotEmpty) 'note': note,
+    if (readiness case final r?) 'readiness': r.toJson(),
   });
 
   static ReadyByOutcome? parse(String detail) {
@@ -433,12 +440,37 @@ class ReadyByOutcome {
         result: result,
         percent: p is num ? p.round().clamp(0, 100) : null,
         note: note is String ? note : '',
+        readiness: ReadinessSnapshot.fromJson(j['readiness']),
       );
     } on FormatException {
       return null;
     }
   }
 }
+
+/// Readiness against the real result for [o], in one honest line:
+/// "Readiness said 75% (9 of 12 essential criteria covered), result 68%
+/// (gap -7 points)." Says so plainly when there is no snapshot or no score
+/// to compare, and adds the inflation warning when the snapshot rested on
+/// exam questions seen before.
+String calibrationText(ReadyByOutcome o) {
+  final r = o.readiness;
+  if (r == null) {
+    return 'No snapshot: readiness was not recorded when this outcome was logged'
+        '${o.percent == null ? '.' : ', so the ${o.percent}% result has nothing to compare with.'}';
+  }
+  final said = 'Readiness said ${r.percent}% (${r.countsText})';
+  final line = switch ((o.result, o.percent)) {
+    (OutcomeResult.didNotHappen, _) => '$said; the day did not happen, so there is nothing to compare.',
+    (_, final p?) => '$said, result $p% (gap ${_signed(p - r.percent)} points).',
+    (OutcomeResult.waiting, null) => '$said; the result is not in yet.',
+    (final res, null) => '$said; outcome: ${res.label.toLowerCase()}, with no score to compare.',
+  };
+  final warn = inflationText(r.seen);
+  return warn == null ? line : '$line $warn';
+}
+
+String _signed(int n) => n > 0 ? '+$n' : '$n';
 
 /// Whether [a] records a real outcome (not a quiz or test result).
 bool isOutcomeRecord(Assessment a) => ReadyByOutcome.parse(a.detail) != null;
@@ -507,7 +539,8 @@ extension TimeFitBook on LearningBook {
 
   /// Logs how the real interview or exam went for [goal]'s day. Kept as a
   /// result row whose detail says it is an outcome, so it earns nothing
-  /// and changes no average.
+  /// and changes no average. For a plan with criteria, what readiness
+  /// shows (as of the goal's day, or today when earlier) is kept with it.
   Future<String> logOutcome(
     ReadyBy goal,
     OutcomeResult result, {
@@ -516,12 +549,15 @@ extension TimeFitBook on LearningBook {
     String note = '',
   }) async {
     final id = newId();
+    final asOf = goal.day.compareTo(today) < 0 ? goal.day : today;
+    final snapshot = goal.programId == null ? null : await readinessSnapshot(goal.programId!, today: asOf);
     final o = ReadyByOutcome(
       goalId: goal.id,
       target: goal.day,
       result: result,
       percent: percent?.clamp(0, 100),
       note: note.trim().length > 500 ? note.trim().substring(0, 500) : note.trim(),
+      readiness: snapshot,
     );
     await save(
       db.learnAssessments,
