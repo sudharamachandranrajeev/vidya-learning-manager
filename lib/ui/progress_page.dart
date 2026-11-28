@@ -150,13 +150,21 @@ class _Body extends StatelessWidget {
                     ),
                   ],
                 ),
+                // The total sits above the chart, not beside the title, so it
+                // wraps at large text sizes instead of squeezing the title.
                 SectionCard(
                   title: 'Study time by week',
-                  trailing: Text(
-                    '${minutesText(weeks.fold(0, (a, b) => a + b))} in 8 weeks',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: muted(context)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '${minutesText(weeks.fold(0, (a, b) => a + b))} in 8 weeks',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: muted(context)),
+                      ),
+                      const SizedBox(height: 8),
+                      BarChart(values: weeks, labels: labels, unit: ' min'),
+                    ],
                   ),
-                  child: BarChart(values: weeks, labels: labels, unit: ' min'),
                 ),
                 SectionCard(
                   title: 'Test scores',

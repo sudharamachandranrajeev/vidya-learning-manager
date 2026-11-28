@@ -336,9 +336,7 @@ void main() {
     final voice = FakeVoice();
     await app.run(overrides: [rehearsalVoiceProvider.overrideWith((ref) async => _FakeSource(voice))]);
     await app.go('Review');
-    // The Review page itself overflows at twice the text size with a card due
-    // (found before this change); only the hands-free page is checked here.
-    tester.takeException();
+    expect(tester.takeException(), isNull, reason: 'Review page at twice the text size');
     await app.tapText('Listen hands-free');
     await app.tapText('Start listening');
     await tester.pump(const Duration(seconds: 6));

@@ -80,41 +80,46 @@ class BarChart extends StatelessWidget {
     final top = values.fold<num>(1, math.max);
     final primary = Theme.of(context).colorScheme.primary;
     final t = Theme.of(context).textTheme.labelSmall?.copyWith(color: muted(context));
-    return SizedBox(
-      height: height + 22,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (final (i, v) in values.indexed)
-            Expanded(
-              child: Tooltip(
-                message: '${labels[i]}: $v$unit',
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(end: v / top),
-                      duration: _motion(context, 600),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, f, _) => Container(
-                        height: math.max(4, (height - 4) * f),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: i == (highlight ?? values.length - 1)
-                              ? primary
-                              : primary.withValues(alpha: 0.35),
-                          borderRadius: BorderRadius.circular(6),
+    // The bars keep a fixed height; the label row takes whatever height the
+    // text needs, so large text grows the chart instead of overflowing it.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (i, v) in values.indexed)
+          Expanded(
+            child: Tooltip(
+              message: '${labels[i]}: $v$unit',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    height: height,
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(end: v / top),
+                        duration: _motion(context, 600),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, f, _) => Container(
+                          height: math.max(4, (height - 4) * f),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: i == (highlight ?? values.length - 1)
+                                ? primary
+                                : primary.withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(labels[i], style: t, maxLines: 1, overflow: TextOverflow.clip),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(labels[i], style: t, maxLines: 1, overflow: TextOverflow.clip),
+                ],
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }
