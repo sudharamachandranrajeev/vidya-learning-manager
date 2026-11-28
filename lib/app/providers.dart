@@ -8,11 +8,13 @@ import 'package:http/http.dart' as http;
 
 import '../db/database.dart';
 import '../domain/achievements.dart';
+import '../domain/audio_rehearsal.dart' show defaultRehearsalPause, rehearsalPauseMax, rehearsalPauseMin;
 import '../domain/next_up.dart';
 import '../domain/quiz.dart';
 import '../domain/resources.dart';
 import '../domain/review.dart';
 import '../domain/stats.dart';
+import '../domain/time_fit.dart';
 import '../domain/udyoga_link.dart';
 import '../ui/hints.dart';
 import 'session.dart';
@@ -63,6 +65,40 @@ class Pace extends AsyncNotifier<ReviewPace> {
 }
 
 final reviewPaceProvider = AsyncNotifierProvider<Pace, ReviewPace>(Pace.new);
+
+/// Hands-free review's choices (C4): the pause between question and answer
+/// and whether it moves on by itself after the answer. Device-only.
+typedef RehearsalChoice = ({int pauseSeconds, bool autoAdvance});
+
+class RehearsalSettings extends AsyncNotifier<RehearsalChoice> {
+  static const _pauseKey = 'review.audioPause', _autoKey = 'review.audioAuto';
+
+  @override
+  Future<RehearsalChoice> build() async {
+    final db = ref.watch(sessionProvider).db;
+    final p = int.tryParse(await db.localSetting(_pauseKey) ?? '');
+    return (
+      pauseSeconds: (p ?? defaultRehearsalPause.inSeconds).clamp(rehearsalPauseMin, rehearsalPauseMax),
+      autoAdvance: await db.localSetting(_autoKey) == 'on',
+    );
+  }
+
+  Future<void> set({int? pauseSeconds, bool? autoAdvance}) async {
+    final now = state.value ?? (pauseSeconds: defaultRehearsalPause.inSeconds, autoAdvance: false);
+    final next = (
+      pauseSeconds: (pauseSeconds ?? now.pauseSeconds).clamp(rehearsalPauseMin, rehearsalPauseMax),
+      autoAdvance: autoAdvance ?? now.autoAdvance,
+    );
+    state = AsyncData(next);
+    final db = ref.read(sessionProvider).db;
+    await db.setLocalSetting(_pauseKey, '${next.pauseSeconds}');
+    await db.setLocalSetting(_autoKey, next.autoAdvance ? 'on' : 'off');
+  }
+}
+
+final rehearsalSettingsProvider = AsyncNotifierProvider<RehearsalSettings, RehearsalChoice>(
+  RehearsalSettings.new,
+);
 
 /// Achievements reached by the latest write, waiting to be celebrated.
 class Celebrations extends Notifier<List<Achievement>> {
@@ -156,6 +192,31 @@ final weekTargetProvider = FutureProvider<int>((ref) {
   return ref.watch(sessionProvider).book.weekTarget();
 });
 
+/// The review scheduler (a synced pref): FSRS unless SM-2 was picked.
+final reviewSchedulerProvider = FutureProvider<ReviewScheduler>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.reviewScheduler();
+});
+
+/// Leeches kept as they are (a synced pref): card id to lapses when kept.
+final keptLeechesProvider = FutureProvider<Map<String, int>>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.keptLeeches();
+});
+
+/// Every card's reviews, by card id, oldest first: what FSRS replays.
+final cardHistoriesProvider = FutureProvider<Map<String, List<CardReview>>>((ref) async {
+  final s = await ref.watch(statsProvider.future);
+  final by = <String, List<CardReview>>{};
+  for (final r in s.reviews) {
+    (by[r.cardId] ??= []).add(r);
+  }
+  for (final l in by.values) {
+    l.sort((a, b) => a.day != b.day ? a.day.compareTo(b.day) : a.hlc.compareTo(b.hlc));
+  }
+  return by;
+});
+
 /// The one thing to study next, across everything ([courseId] null) or in
 /// one course; null when nothing is waiting (see `nextUp`).
 final nextUpProvider = FutureProvider.family<NextUp?, String?>((ref, courseId) async {
@@ -169,6 +230,56 @@ final nextUpProvider = FutureProvider.family<NextUp?, String?>((ref, courseId) a
     quizPercents: lastQuizPercents(s.assessments),
     courseId: courseId,
   );
+});
+
+/// The dated goals, their outcomes, the criteria (for topic weights) and
+/// the weekly target, read again after every write (see time_fit.dart).
+final readyByProvider = FutureProvider<ReadyByData>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.readyByData();
+});
+
+/// How each dated goal fits today, soonest first.
+final timeFitsProvider = FutureProvider<List<TimeFit>>((ref) async {
+  final d = await ref.watch(readyByProvider.future);
+  final s = await ref.watch(statsProvider.future);
+  final items = await ref.watch(itemsProvider.future);
+  return [
+    for (final g in d.goals)
+      fitFor(
+        g,
+        today: s.today,
+        courses: s.courses,
+        topics: s.topics,
+        items: items,
+        criteria: d.criteria,
+        sessions: s.sessions,
+        weekMinutes: d.weekMinutes,
+      ),
+  ];
+});
+
+/// Each card's ready-by day (see `cardReadyBy`), by card id: a review
+/// graded now is kept before it.
+final cardLimitsProvider = FutureProvider<Map<String, String>>((ref) async {
+  final d = await ref.watch(readyByProvider.future);
+  final s = await ref.watch(statsProvider.future);
+  return cardLimits(s.cards, goals: d.goals, courses: s.courses);
+});
+
+/// Pulls reviews that would land on or after a ready-by day in before it,
+/// when the app opens and after every write or sync that brings changes
+/// (see `pullReviewsBefore`; a rerun moves nothing). Gives how many moved.
+final reviewPullProvider = FutureProvider<int>((ref) async {
+  ref.watch(revisionProvider);
+  final n = await ref.watch(sessionProvider).book.pullReviewsBefore(ref.watch(todayProvider));
+  if (n > 0) {
+    Future.microtask(() {
+      ref.read(revisionProvider.notifier).bump();
+      ref.read(syncProvider.notifier).soon();
+    });
+  }
+  return n;
 });
 
 /// The criteria plans brought, per program, in plan order.

@@ -15,6 +15,7 @@ import 'interview_pages.dart';
 import 'journey_page.dart';
 import 'plan_import.dart';
 import 'readiness_page.dart';
+import 'ready_by_card.dart';
 import 'resource_search.dart';
 import 'zen.dart';
 
@@ -325,6 +326,7 @@ class ProgramPage extends ConsumerWidget {
                           trailing: '${(s.programProgress(p) * 100).round()}%',
                         ),
                         const SizedBox(height: 12),
+                        ReadyByCard(programId: id),
                         _ReadinessTile(id),
                         JourneyTile(id),
                         FrameworkTile(id),

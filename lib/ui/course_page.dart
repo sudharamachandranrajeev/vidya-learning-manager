@@ -17,6 +17,7 @@ import 'dialogs.dart';
 import 'focus_page.dart';
 import 'next_up_card.dart';
 import 'resource_search.dart';
+import 'ready_by_card.dart';
 import 'topic_page.dart';
 import 'zen.dart';
 
@@ -131,6 +132,8 @@ class CoursePage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       NextUpCard(courseId: id),
+                      if (c.programId == null || !s.programs.any((p) => p.id == c.programId))
+                        ReadyByCard(courseId: id),
                       SectionCard(
                         title: 'Topics',
                         trailing: IconButton(

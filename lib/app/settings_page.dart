@@ -31,6 +31,7 @@ class SettingsPage extends StatelessWidget {
       _StreaksCard(),
       _WeekTargetCard(),
       _PaceCard(),
+      _SchedulerCard(),
       _RemindersCard(),
       _CareerFileCard(),
       _VideoTakesCard(),
@@ -354,6 +355,34 @@ class _PaceCard extends ConsumerWidget {
   }
 }
 
+/// Which algorithm spaces reviews. Synced, so every device agrees.
+/// Switching rewrites nothing: due days stay, and either way the other
+/// algorithm's numbers are kept up to date.
+class _SchedulerCard extends ConsumerWidget {
+  const _SchedulerCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final by = ref.watch(reviewSchedulerProvider).value ?? ReviewScheduler.fsrs;
+    return SectionCard(
+      title: 'Review scheduler',
+      padding: const EdgeInsets.only(bottom: 8),
+      child: RadioGroup<ReviewScheduler>(
+        groupValue: by,
+        onChanged: (s) {
+          if (s != null && s != by) ref.mutate((x) => x.book.setReviewScheduler(s), report: false);
+        },
+        child: Column(
+          children: [
+            for (final s in ReviewScheduler.values)
+              RadioListTile<ReviewScheduler>(value: s, title: Text(s.label), subtitle: Text(s.about)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Review reminders: on this device only, at a time and a weekly limit the
 /// learner sets once. Each is tied to cards that are due.
 class _RemindersCard extends ConsumerWidget {
@@ -454,7 +483,8 @@ class _WeekTargetCard extends ConsumerWidget {
       child: ListTile(
         title: Text(target == 0 ? 'No target' : '${minutesText(target)} a week'),
         subtitle: const Text(
-          'Home shows how far you are since Monday. No streaks, nothing lost for a quiet week.',
+          'Home shows how far you are since Monday. No streaks, nothing lost for a quiet week. '
+          'Ready-by dates count these hours (3.5 h a week when not set).',
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => weekTargetDialog(context, ref, target),

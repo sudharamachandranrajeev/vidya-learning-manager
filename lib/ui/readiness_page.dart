@@ -12,6 +12,7 @@ import '../app/providers.dart';
 import '../db/database.dart';
 import '../domain/interview.dart';
 import '../domain/readiness.dart';
+import '../domain/time_fit.dart' show ReadyByOutcome, TimeFitBook, calibrationText;
 import 'common.dart';
 import 'capstone_page.dart' show openCapstone;
 import 'dialogs.dart';
@@ -56,6 +57,22 @@ final homeReadinessProvider = FutureProvider<ReadinessView?>((ref) async {
     program: p,
     readiness: await book.readiness(p.id, today: ref.watch(todayProvider)),
     topics: const <Topic>[],
+  );
+});
+
+/// Readiness checked against real results (C5): the program's exam
+/// questions seen before, and its logged outcomes, oldest first.
+typedef CalibrationView = ({SeenBefore seen, List<ReadyByOutcome> outcomes});
+
+final calibrationProvider = FutureProvider.family<CalibrationView, String>((ref, id) async {
+  ref.watch(revisionProvider);
+  final book = ref.watch(sessionProvider).book;
+  return (
+    seen: await book.readinessRepeats(id),
+    outcomes: [
+      for (final o in await book.readyByOutcomes())
+        if (o.goalId == id) o,
+    ],
   );
 });
 
@@ -165,6 +182,7 @@ class ReadinessPage extends ConsumerWidget {
                       Text(r.summary.text(day), key: const Key('readiness-summary'), style: text.titleMedium),
                       const SizedBox(height: 12),
                       if (r.rows.isNotEmpty) _Counts(r.summary),
+                      _Calibration(programId),
                       DatePick(
                         label: 'Interview date',
                         value: r.summary.interviewDate,
@@ -241,6 +259,72 @@ class ReadinessPage extends ConsumerWidget {
       },
     ),
   );
+}
+
+/// The "seen before" warning on today's readiness, then each logged
+/// outcome against what readiness said when it was logged. Nothing when
+/// there is neither.
+class _Calibration extends ConsumerWidget {
+  const _Calibration(this.programId);
+  final String programId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final v = ref.watch(calibrationProvider(programId)).value;
+    if (v == null) return const SizedBox.shrink();
+    final t = Theme.of(context).textTheme;
+    final warn = inflationText(v.seen);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (warn != null)
+          Card(
+            key: const Key('readiness-inflated'),
+            color: Theme.of(context).colorScheme.tertiaryContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.history, color: Theme.of(context).colorScheme.onTertiaryContainer),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      warn,
+                      style: t.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onTertiaryContainer),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (v.outcomes.isNotEmpty)
+          SectionCard(
+            title: 'Against real results',
+            hint:
+                'Each real outcome you logged, next to the share of criteria readiness showed as covered '
+                'when you logged it. A big gap says the criteria or the evidence need another look.',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final o in v.outcomes)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text('${niceDate(o.target)} · ${o.result.label}', style: t.titleSmall),
+                        const SizedBox(height: 2),
+                        Text(calibrationText(o), style: t.bodyMedium),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 /// The summary as number tiles that roll to new counts as evidence comes

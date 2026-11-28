@@ -17,6 +17,7 @@ import '../domain/import.dart';
 import '../domain/review.dart';
 import '../domain/stats.dart';
 import '../domain/udyoga_link.dart';
+import 'audio_rehearsal_page.dart';
 import 'charts.dart';
 import 'common.dart';
 import 'zen.dart';
@@ -173,10 +174,21 @@ class _Body extends ConsumerWidget {
                               ],
                               if (due.isNotEmpty) ...[
                                 const SizedBox(height: 12),
-                                FilledButton.icon(
-                                  onPressed: () => startReview(context),
-                                  icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Begin review'),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    FilledButton.icon(
+                                      onPressed: () => startReview(context),
+                                      icon: const Icon(Icons.play_arrow),
+                                      label: const Text('Begin review'),
+                                    ),
+                                    OutlinedButton.icon(
+                                      onPressed: () => startAudioRehearsal(context),
+                                      icon: const Icon(Icons.headphones_outlined),
+                                      label: const Text('Listen hands-free'),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ],
@@ -194,6 +206,7 @@ class _Body extends ConsumerWidget {
                     message: 'Add a card with a question on the front and the answer on the back.',
                   )
                 else ...[
+                  const _LeechList(),
                   SectionCard(
                     title: 'The week ahead',
                     child: BarChart(
@@ -299,6 +312,26 @@ extension on String {
   String ifEmpty(String other) => isEmpty ? other : this;
 }
 
+/// Records grade [g] for [c] through the normal review path (the pace,
+/// the scheduler and the card's ready-by cap all apply). Gives the card
+/// with its new schedule when it is due again today, else null. Shared by
+/// the typed review and hands-free review.
+Future<Flashcard?> recordGrade(WidgetRef ref, Flashcard c, Grade g) async {
+  final day = today();
+  final pace = await ref.read(reviewPaceProvider.future);
+  final limit = (await ref.read(cardLimitsProvider.future))[c.id];
+  final by = await ref.read(reviewSchedulerProvider.future);
+  final history = await ref.read(sessionProvider).book.cardHistory(c.id);
+  await ref.mutate(
+    (s) => s.book.reviewCard(c, g, today: day, pace: pace, readyBy: limit, scheduler: by),
+    report: false,
+  );
+  final n = nextSchedule(c, g, day, pace: pace, readyBy: limit, scheduler: by, history: history);
+  return n.due == day
+      ? c.copyWith(interval: n.interval, ease: n.ease, reps: n.reps, lapses: n.lapses, due: n.due)
+      : null;
+}
+
 Future<void> startReview(BuildContext context, {String? deck}) =>
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReviewSession(deck: deck)));
 
@@ -355,24 +388,26 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
   Future<void> _grade(Flashcard c, Grade g) async {
     if (_busy) return;
     setState(() => _busy = true);
-    final day = today();
-    final pace = await ref.read(reviewPaceProvider.future);
-    await ref.mutate((s) => s.book.reviewCard(c, g, today: day, pace: pace), report: false);
-    final n = nextSchedule(c, g, day, pace: pace);
+    final again = await recordGrade(ref, c, g);
     setState(() {
       _queue!.removeAt(0);
       // Forgotten: see it again, with its new schedule, before finishing.
-      if (n.due == day) {
-        _queue!.add(
-          c.copyWith(interval: n.interval, ease: n.ease, reps: n.reps, lapses: n.lapses, due: n.due),
-        );
-      }
+      if (again != null) _queue!.add(again);
       _done++;
       _shown = false;
       _matched = null;
       _typed.clear();
       _busy = false;
     });
+  }
+
+  /// Re-reads the card in front after it was rewritten or split.
+  Future<void> _reload() async {
+    final q = _queue;
+    if (q == null || q.isEmpty) return;
+    final db = ref.read(sessionProvider).db;
+    final fresh = await (db.select(db.learnCards)..where((c) => c.id.equals(q.first.id))).getSingleOrNull();
+    if (fresh != null && mounted) setState(() => q[0] = fresh);
   }
 
   @override
@@ -421,7 +456,15 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
                                   context: context,
                                   builder: (context) => AlertDialog(
                                     title: const Text('Why this card now?'),
-                                    content: Text(dueReason(card, today())),
+                                    content: Text(
+                                      dueReason(
+                                        card,
+                                        today(),
+                                        scheduler:
+                                            ref.read(reviewSchedulerProvider).value ?? ReviewScheduler.fsrs,
+                                        history: ref.read(cardHistoriesProvider).value?[card.id] ?? const [],
+                                      ),
+                                    ),
                                     actions: [
                                       TextButton(
                                         onPressed: () => Navigator.pop(context),
@@ -436,6 +479,7 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
                             ],
                           ),
                           const SizedBox(height: 4),
+                          LeechBanner(card, onChanged: _reload),
                           Expanded(
                             child: Card(
                               child: Padding(
@@ -561,7 +605,16 @@ class _GradeButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pace = ref.watch(reviewPaceProvider).value ?? ReviewPace.standard;
-    final days = nextSchedule(card, grade, today(), pace: pace).interval;
+    final limit = ref.watch(cardLimitsProvider).value?[card.id];
+    final days = nextSchedule(
+      card,
+      grade,
+      today(),
+      pace: pace,
+      readyBy: limit,
+      scheduler: ref.watch(reviewSchedulerProvider).value ?? ReviewScheduler.fsrs,
+      history: ref.watch(cardHistoriesProvider).value?[card.id] ?? const [],
+    ).interval;
     final when = days == 0 ? 'today' : '${days}d';
     final child = Column(
       mainAxisSize: MainAxisSize.min,
@@ -582,5 +635,117 @@ class _GradeButton extends ConsumerWidget {
             style: OutlinedButton.styleFrom(padding: pad),
             child: child,
           );
+  }
+}
+
+/// Cards forgotten [leechLapses] times or more and not kept as they are.
+List<Flashcard> leeches(List<Flashcard> cards, Map<String, int> kept) => [
+  for (final c in cards)
+    if (isLeech(c, keptAt: kept[c.id] ?? 0)) c,
+]..sort((a, b) => b.lapses.compareTo(a.lapses));
+
+/// The leeches, each with what can be done about it. Hidden when none.
+class _LeechList extends ConsumerWidget {
+  const _LeechList();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cards = ref.watch(statsProvider).value?.cards ?? const <Flashcard>[];
+    final list = leeches(cards, ref.watch(keptLeechesProvider).value ?? const {});
+    if (list.isEmpty) return const SizedBox.shrink();
+    return SectionCard(
+      title: 'Hard to remember',
+      trailing: Text('${list.length}', style: TextStyle(color: muted(context))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Forgotten $leechLapses times or more. More reviews rarely help such a card: rewriting it, '
+            'or splitting it into two smaller ones, usually does. Nothing is set aside without you.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted(context)),
+          ),
+          for (final c in list)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(c.front, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  LeechBanner(c, compact: true),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// On a leech: says so and offers Rewrite (edit it), Split (add a copy to
+/// edit into a second card, then edit both) or Keep (leave it be until
+/// [leechLapses] more lapses). Never suspends the card. Shows nothing on
+/// other cards. [onChanged] runs after a rewrite or split.
+class LeechBanner extends ConsumerWidget {
+  const LeechBanner(this.card, {super.key, this.onChanged, this.compact = false});
+  final Flashcard card;
+  final VoidCallback? onChanged;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final kept = ref.watch(keptLeechesProvider).value ?? const {};
+    if (!isLeech(card, keptAt: kept[card.id] ?? 0)) return const SizedBox.shrink();
+    final actions = Wrap(
+      spacing: 8,
+      children: [
+        TextButton.icon(
+          onPressed: () async {
+            await cardDialog(context, ref, card: card);
+            onChanged?.call();
+          },
+          icon: const Icon(Icons.edit_outlined, size: 18),
+          label: const Text('Rewrite'),
+        ),
+        TextButton.icon(
+          onPressed: () => _split(context, ref),
+          icon: const Icon(Icons.call_split, size: 18),
+          label: const Text('Split'),
+        ),
+        TextButton(
+          onPressed: () => ref.mutate((s) => s.book.keepLeech(card), report: false),
+          child: const Text('Keep'),
+        ),
+      ],
+    );
+    if (compact) return actions;
+    return Card(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Forgotten ${card.lapses} times. This card may be too big or unclear: rewrite it, or split it '
+              'into two smaller cards. It is not set aside.',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer),
+            ),
+            actions,
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Adds a copy, then opens this card and the copy to edit in turn.
+  Future<void> _split(BuildContext context, WidgetRef ref) async {
+    final id = await ref.mutate((s) => s.book.splitCard(card, today: today()), report: false);
+    if (!context.mounted) return;
+    notify(context, 'A copy was added. Edit this card into the first part, then the copy into the second.');
+    await cardDialog(context, ref, card: card);
+    final db = ref.read(sessionProvider).db;
+    final copy = await (db.select(db.learnCards)..where((c) => c.id.equals(id))).getSingleOrNull();
+    if (copy != null && context.mounted) await cardDialog(context, ref, card: copy);
+    onChanged?.call();
   }
 }

@@ -196,3 +196,43 @@ Future<Map<String, Object?>> readLocalJson(SyncedDatabase db, String key) async 
 /// switches on this device.
 const roundSettingsKey = 'interview.round';
 const coachPrefsKey = 'interview.coach';
+
+/// The voice for hands-free review (C4): Kokoro, on this device, the same
+/// model the spoken interviewer uses. Only the voice: no microphone, no
+/// transcriber. Tests override [rehearsalVoiceProvider] with a fake.
+abstract class RehearsalVoiceSource {
+  /// The voice model when it is not on this device yet, else null.
+  Future<SpeechModel?> missing();
+
+  /// Downloads [m] (after the learner agreed to its size).
+  Future<void> download(SpeechModel m, {void Function(double share)? progress});
+
+  /// Loads the voice; [texts] are what it will read, so its word list
+  /// covers every word.
+  Future<InterviewerVoice> open(List<String> texts);
+}
+
+class KokoroRehearsalVoice implements RehearsalVoiceSource {
+  KokoroRehearsalVoice(this.models, {this.voiceCache});
+  final ModelManager models;
+  final Directory? voiceCache;
+
+  SpeechModel get _model => speechModel(voiceModelId);
+
+  @override
+  Future<SpeechModel?> missing() async => await models.installed(_model) ? null : _model;
+
+  @override
+  Future<void> download(SpeechModel m, {void Function(double share)? progress}) =>
+      models.download(m, onProgress: (got, total) => progress?.call(got / total));
+
+  @override
+  Future<InterviewerVoice> open(List<String> texts) =>
+      KokoroVoice.open(models.folder(_model), texts: texts, cacheDir: voiceCache);
+}
+
+final rehearsalVoiceProvider = FutureProvider<RehearsalVoiceSource>((ref) async {
+  final mm = await ref.watch(modelManagerProvider.future);
+  final base = await getApplicationSupportDirectory();
+  return KokoroRehearsalVoice(mm, voiceCache: Directory('${base.path}/voice-cache'));
+});

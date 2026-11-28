@@ -53,7 +53,7 @@ import 'package:drift/drift.dart';
 import '../db/database.dart';
 import 'book.dart';
 import 'capstone.dart';
-import 'exam.dart' show ExamResult;
+import 'exam.dart' show ExamResult, examAttempts;
 import 'framework.dart';
 import 'interview.dart';
 import 'quiz.dart' show isQuizResult, percentOf;
@@ -420,6 +420,107 @@ class Readiness {
     for (final r in rows)
       if (!r.essential) r,
   ];
+}
+
+// ---- calibration (C5) ----
+
+/// How many of the exam questions behind readiness had been asked before:
+/// per topic whose latest quiz result is an exam attempt, the questions of
+/// that attempt ([asked]) and how many of them came up in an earlier
+/// attempt on the topic ([repeats]).
+typedef SeenBefore = ({int repeats, int asked});
+
+/// See [SeenBefore]. Practice quizzes are left out: only exam attempts
+/// keep the questions asked.
+SeenBefore examRepeats(Iterable<Assessment> tests) {
+  final latest = latestQuizzes(tests);
+  var repeats = 0, asked = 0;
+  for (final MapEntry(key: topic, value: q) in latest.entries) {
+    if (q.exam == null) continue;
+    final attempts = [for (final a in examAttempts(tests, topic)) ?ExamResult.of(a)];
+    if (attempts.isEmpty) continue;
+    final last = attempts.last;
+    final before = {for (final r in attempts.take(attempts.length - 1)) ...r.asked};
+    repeats += last.asked.where(before.contains).length;
+    asked += last.asked.length;
+  }
+  return (repeats: repeats, asked: asked);
+}
+
+/// Whether readiness rests largely (half or more) on exam questions seen
+/// before, so it may be inflated.
+bool possiblyInflated(SeenBefore s) => s.asked > 0 && s.repeats * 2 >= s.asked;
+
+/// The warning for [s], or null when it is not [possiblyInflated].
+String? inflationText(SeenBefore s) => !possiblyInflated(s)
+    ? null
+    : 'Possibly inflated: ${s.repeats} of ${s.asked} exam questions behind this readiness were asked in an '
+          'earlier attempt. A remembered answer can look like knowledge; a fresh question pool tells more.';
+
+/// What readiness showed when a real outcome was logged: [covered] of
+/// [total] criteria (the essential ones when there are any, else all), and
+/// the exam questions behind it seen before. Kept in the outcome's detail
+/// so the result can be compared with it later.
+class ReadinessSnapshot {
+  const ReadinessSnapshot({
+    required this.covered,
+    required this.total,
+    required this.essential,
+    this.repeats = 0,
+    this.asked = 0,
+  });
+
+  final int covered, total;
+
+  /// The counts are of essential criteria (else of every criterion).
+  final bool essential;
+  final int repeats, asked;
+
+  /// The share covered, as the percent compared with a result. Readiness
+  /// itself is shown as counts; this is that count as a percent.
+  int get percent => total == 0 ? 0 : (covered * 100 / total).round();
+
+  SeenBefore get seen => (repeats: repeats, asked: asked);
+
+  String get countsText => '$covered of $total ${essential ? 'essential ' : ''}criteria covered';
+
+  /// From [r] and [seen]; null when the program has no criteria.
+  static ReadinessSnapshot? of(Readiness r, SeenBefore seen) {
+    if (r.rows.isEmpty) return null;
+    final s = r.summary;
+    final essential = s.essential > 0;
+    return ReadinessSnapshot(
+      covered: essential
+          ? s.essentialCovered
+          : r.rows.where((x) => x.status == ReadinessStatus.covered).length,
+      total: essential ? s.essential : r.rows.length,
+      essential: essential,
+      repeats: seen.repeats,
+      asked: seen.asked,
+    );
+  }
+
+  Map<String, Object> toJson() => {
+    'covered': covered,
+    'total': total,
+    'essential': essential,
+    'repeats': repeats,
+    'asked': asked,
+  };
+
+  static ReadinessSnapshot? fromJson(Object? j) {
+    if (j is! Map) return null;
+    int? n(String k) => j[k] is num ? (j[k] as num).round() : null;
+    final covered = n('covered'), total = n('total');
+    if (covered == null || total == null || total <= 0 || covered < 0 || covered > total) return null;
+    return ReadinessSnapshot(
+      covered: covered,
+      total: total,
+      essential: j['essential'] == true,
+      repeats: (n('repeats') ?? 0).clamp(0, 1 << 20),
+      asked: (n('asked') ?? 0).clamp(0, 1 << 20),
+    );
+  }
 }
 
 // ---- building the rows ----
@@ -818,6 +919,21 @@ extension JobReadiness on LearningBook {
       capstones: latestOnItems(tests, CapstoneSitting.parse),
     );
   }
+
+  /// The program's exam questions seen before (see [examRepeats]).
+  Future<SeenBefore> readinessRepeats(String programId) async {
+    final (:topics, drills: _) = await programDrills(programId);
+    final ids = [for (final t in topics) t.id];
+    if (ids.isEmpty) return (repeats: 0, asked: 0);
+    return examRepeats(
+      await (db.select(db.learnAssessments)..where((a) => a.deleted.not() & a.topicId.isIn(ids))).get(),
+    );
+  }
+
+  /// What readiness shows on [today] for the program, to keep with an
+  /// outcome; null when it has no criteria.
+  Future<ReadinessSnapshot?> readinessSnapshot(String programId, {required String today}) async =>
+      ReadinessSnapshot.of(await readiness(programId, today: today), await readinessRepeats(programId));
 
   /// Adds (no [id]) or changes one of the learner's own criteria for a
   /// program, typed in from a person specification, and sets which of the
