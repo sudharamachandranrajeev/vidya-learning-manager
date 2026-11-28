@@ -333,7 +333,7 @@ Future<void> editCourseDialog(BuildContext context, WidgetRef ref, Course c) asy
 }
 
 /// The weekly time target choices, in minutes (0: no target).
-const weekTargets = [0, 30, 60, 90, 120, 180, 240, 300, 420, 600];
+const weekTargets = [0, 30, 60, 90, 120, 180, 210, 240, 300, 420, 600];
 
 /// Sets the weekly study target. It only shows progress: there is no
 /// streak, no penalty and no reminder about a missed week.
@@ -345,7 +345,8 @@ Future<void> weekTargetDialog(BuildContext context, WidgetRef ref, int current) 
     fields: (setState) => [
       const Text(
         'How much study a week feels right. Home shows how far you are since Monday; '
-        'a quiet week costs nothing.',
+        'a quiet week costs nothing. A plan\'s ready-by check counts these hours '
+        '(3.5 h a week when no target is set).',
       ),
       const SizedBox(height: 12),
       Choice<int>(

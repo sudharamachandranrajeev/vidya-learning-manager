@@ -16,6 +16,7 @@ import 'focus_page.dart';
 import 'next_up_card.dart';
 import 'notes_page.dart';
 import 'readiness_page.dart';
+import 'ready_by_card.dart';
 import 'review_page.dart';
 import 'zen.dart';
 
@@ -107,6 +108,7 @@ class _Body extends ConsumerWidget {
                 const _OfferedPlans(),
                 const BlurFadeIn(index: 1, child: NextUpCard()),
                 const BlurFadeIn(index: 2, child: ReadinessCard()),
+                const BlurFadeIn(index: 2, child: ReadyByHomeCard()),
                 BlurFadeIn(index: 3, child: _LevelCard(s, streaks: streaks)),
                 const SizedBox(height: 16),
                 BlurFadeIn(index: 4, child: _Quests(s)),

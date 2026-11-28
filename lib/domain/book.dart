@@ -14,6 +14,7 @@ import 'review.dart';
 import 'stats.dart';
 import 'study_items.dart';
 import 'templates.dart';
+import 'time_fit.dart' show isOutcomeRecord;
 
 const courseKinds = {
   'course': 'Course',
@@ -702,7 +703,7 @@ class LearningBook {
     items: await (db.select(db.learnItems)..where((r) => r.deleted.not())).get(),
     tests: [
       for (final a in await (db.select(db.learnAssessments)..where((r) => r.deleted.not())).get())
-        if (!isFrameworkRating(a)) a,
+        if (!isFrameworkRating(a) && !isOutcomeRecord(a)) a,
     ],
     sessions: await (db.select(db.learnSessions)..where((r) => r.deleted.not())).get(),
     notes: await (db.select(db.learnNotes)..where((r) => r.deleted.not())).get(),
@@ -1212,14 +1213,16 @@ class LearningBook {
     return added;
   }
 
-  /// Records a review and moves the card to its next due day.
+  /// Records a review and moves the card to its next due day, before
+  /// [readyBy] when the card has one (see `cardReadyBy`).
   Future<void> reviewCard(
     Flashcard c,
     Grade g, {
     required String today,
     ReviewPace pace = ReviewPace.standard,
+    String? readyBy,
   }) => db.transaction(() async {
-    final n = nextSchedule(c, g, today, pace: pace);
+    final n = nextSchedule(c, g, today, pace: pace, readyBy: readyBy);
     await save(
       db.learnCards,
       c.copyWith(interval: n.interval, ease: n.ease, reps: n.reps, lapses: n.lapses, due: n.due),
@@ -1245,10 +1248,11 @@ class LearningBook {
       courses: await (db.select(db.learnCourses)..where((r) => r.deleted.not())).get(),
       topics: await (db.select(db.learnTopics)..where((r) => r.deleted.not())).get(),
       sessions: await (db.select(db.learnSessions)..where((r) => r.deleted.not())).get(),
-      // Self-ratings are not tests: they earn nothing and skew no average.
+      // Self-ratings and real outcomes are not tests: they earn nothing and
+      // skew no average.
       assessments: [
         for (final a in await (db.select(db.learnAssessments)..where((r) => r.deleted.not())).get())
-          if (!isFrameworkRating(a)) a,
+          if (!isFrameworkRating(a) && !isOutcomeRecord(a)) a,
       ],
       skills: await (db.select(db.learnSkills)..where((r) => r.deleted.not())).get(),
       portfolio: await (db.select(db.learnPortfolio)..where((r) => r.deleted.not())).get(),

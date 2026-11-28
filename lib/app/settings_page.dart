@@ -454,7 +454,8 @@ class _WeekTargetCard extends ConsumerWidget {
       child: ListTile(
         title: Text(target == 0 ? 'No target' : '${minutesText(target)} a week'),
         subtitle: const Text(
-          'Home shows how far you are since Monday. No streaks, nothing lost for a quiet week.',
+          'Home shows how far you are since Monday. No streaks, nothing lost for a quiet week. '
+          'Ready-by dates count these hours (3.5 h a week when not set).',
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => weekTargetDialog(context, ref, target),

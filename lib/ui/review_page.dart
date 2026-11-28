@@ -357,8 +357,9 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
     setState(() => _busy = true);
     final day = today();
     final pace = await ref.read(reviewPaceProvider.future);
-    await ref.mutate((s) => s.book.reviewCard(c, g, today: day, pace: pace), report: false);
-    final n = nextSchedule(c, g, day, pace: pace);
+    final limit = (await ref.read(cardLimitsProvider.future))[c.id];
+    await ref.mutate((s) => s.book.reviewCard(c, g, today: day, pace: pace, readyBy: limit), report: false);
+    final n = nextSchedule(c, g, day, pace: pace, readyBy: limit);
     setState(() {
       _queue!.removeAt(0);
       // Forgotten: see it again, with its new schedule, before finishing.
@@ -561,7 +562,8 @@ class _GradeButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pace = ref.watch(reviewPaceProvider).value ?? ReviewPace.standard;
-    final days = nextSchedule(card, grade, today(), pace: pace).interval;
+    final limit = ref.watch(cardLimitsProvider).value?[card.id];
+    final days = nextSchedule(card, grade, today(), pace: pace, readyBy: limit).interval;
     final when = days == 0 ? 'today' : '${days}d';
     final child = Column(
       mainAxisSize: MainAxisSize.min,

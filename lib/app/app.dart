@@ -75,6 +75,7 @@ class _VidyaHomeState extends ConsumerState<VidyaHome> {
     // Video takes past their limit go at start and then daily.
     ref.watch(videoRetentionProvider);
     ref.watch(guideSplitProvider);
+    ref.watch(reviewPullProvider);
     ref.listen(careerFileAutoAddProvider, (_, next) {
       final titles = next.value ?? const <String>[];
       if (titles.isEmpty) return;

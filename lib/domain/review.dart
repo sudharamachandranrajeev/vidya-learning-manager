@@ -43,11 +43,60 @@ enum ReviewPace {
 
 /// A day-granular take on SM-2. A forgotten card comes back today and
 /// starts again; a remembered one waits longer each time, by its ease,
-/// scaled by the [pace].
-Schedule nextSchedule(Flashcard c, Grade g, String today, {ReviewPace pace = ReviewPace.standard}) {
+/// scaled by the [pace]. With [readyBy] (the card's interview or exam
+/// day) the result goes through [capSchedule], so no review lands on or
+/// after it.
+Schedule nextSchedule(
+  Flashcard c,
+  Grade g,
+  String today, {
+  ReviewPace pace = ReviewPace.standard,
+  String? readyBy,
+}) {
   final s = _sm2(c, g);
   final interval = s.interval == 0 ? 0 : math.max(1, (s.interval * pace.factor).round());
-  return (interval: interval, ease: s.ease, reps: s.reps, lapses: s.lapses, due: addDays(today, interval));
+  return capSchedule(
+    (interval: interval, ease: s.ease, reps: s.reps, lapses: s.lapses, due: addDays(today, interval)),
+    today: today,
+    readyBy: readyBy,
+    slot: dueSlot(c.id),
+  );
+}
+
+// ---- the ready-by limit ----
+//
+// The seam every scheduler shares: work out the interval as the algorithm
+// likes (SM-2 here, FSRS later), then pass the schedule through
+// [capSchedule]. Only the due day and the interval it implies change;
+// ease, reps and lapses (or any later memory state) are the algorithm's.
+
+/// How many days before the ready-by day pulled-in reviews spread over,
+/// so they do not all land on the eve.
+const capWindowDays = 7;
+
+/// A card's place in the spread (stable for a card, different across
+/// cards).
+int dueSlot(String cardId) => cardId.codeUnits.fold(0, (a, u) => (a * 31 + u) & 0x3fffffff);
+
+/// [due], pulled in when it lands on or after [readyBy]: to one of the
+/// last [capWindowDays] days before it (by [slot]), never today or
+/// earlier. No limit when [readyBy] is null, or is less than two days
+/// away (there is no day between tomorrow and it to move to), or when
+/// [due] is already before it.
+String capDue(String due, {required String today, String? readyBy, int slot = 0}) {
+  if (readyBy == null || due.compareTo(readyBy) < 0 || readyBy.compareTo(today) <= 0) return due;
+  final room = daysBetween(today, readyBy) - 1; // days from tomorrow to the eve
+  if (room < 1) return due;
+  final window = math.min(capWindowDays, room);
+  return addDays(readyBy, -1 - slot % window);
+}
+
+/// [s] with its due day limited by [capDue], and its interval set to the
+/// gap actually waited.
+Schedule capSchedule(Schedule s, {required String today, String? readyBy, int slot = 0}) {
+  final due = capDue(s.due, today: today, readyBy: readyBy, slot: slot);
+  if (due == s.due) return s;
+  return (interval: daysBetween(today, due), ease: s.ease, reps: s.reps, lapses: s.lapses, due: due);
 }
 
 /// Why [c] is due when it is, in plain words.

@@ -13,6 +13,7 @@ import '../domain/quiz.dart';
 import '../domain/resources.dart';
 import '../domain/review.dart';
 import '../domain/stats.dart';
+import '../domain/time_fit.dart';
 import '../domain/udyoga_link.dart';
 import '../ui/hints.dart';
 import 'session.dart';
@@ -169,6 +170,56 @@ final nextUpProvider = FutureProvider.family<NextUp?, String?>((ref, courseId) a
     quizPercents: lastQuizPercents(s.assessments),
     courseId: courseId,
   );
+});
+
+/// The dated goals, their outcomes, the criteria (for topic weights) and
+/// the weekly target, read again after every write (see time_fit.dart).
+final readyByProvider = FutureProvider<ReadyByData>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.readyByData();
+});
+
+/// How each dated goal fits today, soonest first.
+final timeFitsProvider = FutureProvider<List<TimeFit>>((ref) async {
+  final d = await ref.watch(readyByProvider.future);
+  final s = await ref.watch(statsProvider.future);
+  final items = await ref.watch(itemsProvider.future);
+  return [
+    for (final g in d.goals)
+      fitFor(
+        g,
+        today: s.today,
+        courses: s.courses,
+        topics: s.topics,
+        items: items,
+        criteria: d.criteria,
+        sessions: s.sessions,
+        weekMinutes: d.weekMinutes,
+      ),
+  ];
+});
+
+/// Each card's ready-by day (see `cardReadyBy`), by card id: a review
+/// graded now is kept before it.
+final cardLimitsProvider = FutureProvider<Map<String, String>>((ref) async {
+  final d = await ref.watch(readyByProvider.future);
+  final s = await ref.watch(statsProvider.future);
+  return cardLimits(s.cards, goals: d.goals, courses: s.courses);
+});
+
+/// Pulls reviews that would land on or after a ready-by day in before it,
+/// when the app opens and after every write or sync that brings changes
+/// (see `pullReviewsBefore`; a rerun moves nothing). Gives how many moved.
+final reviewPullProvider = FutureProvider<int>((ref) async {
+  ref.watch(revisionProvider);
+  final n = await ref.watch(sessionProvider).book.pullReviewsBefore(ref.watch(todayProvider));
+  if (n > 0) {
+    Future.microtask(() {
+      ref.read(revisionProvider.notifier).bump();
+      ref.read(syncProvider.notifier).soon();
+    });
+  }
+  return n;
 });
 
 /// The criteria plans brought, per program, in plan order.
