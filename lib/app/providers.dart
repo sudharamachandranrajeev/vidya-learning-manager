@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../db/database.dart';
 import '../domain/achievements.dart';
+import '../domain/audio_rehearsal.dart' show defaultRehearsalPause, rehearsalPauseMax, rehearsalPauseMin;
 import '../domain/next_up.dart';
 import '../domain/quiz.dart';
 import '../domain/resources.dart';
@@ -64,6 +65,40 @@ class Pace extends AsyncNotifier<ReviewPace> {
 }
 
 final reviewPaceProvider = AsyncNotifierProvider<Pace, ReviewPace>(Pace.new);
+
+/// Hands-free review's choices (C4): the pause between question and answer
+/// and whether it moves on by itself after the answer. Device-only.
+typedef RehearsalChoice = ({int pauseSeconds, bool autoAdvance});
+
+class RehearsalSettings extends AsyncNotifier<RehearsalChoice> {
+  static const _pauseKey = 'review.audioPause', _autoKey = 'review.audioAuto';
+
+  @override
+  Future<RehearsalChoice> build() async {
+    final db = ref.watch(sessionProvider).db;
+    final p = int.tryParse(await db.localSetting(_pauseKey) ?? '');
+    return (
+      pauseSeconds: (p ?? defaultRehearsalPause.inSeconds).clamp(rehearsalPauseMin, rehearsalPauseMax),
+      autoAdvance: await db.localSetting(_autoKey) == 'on',
+    );
+  }
+
+  Future<void> set({int? pauseSeconds, bool? autoAdvance}) async {
+    final now = state.value ?? (pauseSeconds: defaultRehearsalPause.inSeconds, autoAdvance: false);
+    final next = (
+      pauseSeconds: (pauseSeconds ?? now.pauseSeconds).clamp(rehearsalPauseMin, rehearsalPauseMax),
+      autoAdvance: autoAdvance ?? now.autoAdvance,
+    );
+    state = AsyncData(next);
+    final db = ref.read(sessionProvider).db;
+    await db.setLocalSetting(_pauseKey, '${next.pauseSeconds}');
+    await db.setLocalSetting(_autoKey, next.autoAdvance ? 'on' : 'off');
+  }
+}
+
+final rehearsalSettingsProvider = AsyncNotifierProvider<RehearsalSettings, RehearsalChoice>(
+  RehearsalSettings.new,
+);
 
 /// Achievements reached by the latest write, waiting to be celebrated.
 class Celebrations extends Notifier<List<Achievement>> {

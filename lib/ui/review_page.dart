@@ -17,6 +17,7 @@ import '../domain/import.dart';
 import '../domain/review.dart';
 import '../domain/stats.dart';
 import '../domain/udyoga_link.dart';
+import 'audio_rehearsal_page.dart';
 import 'charts.dart';
 import 'common.dart';
 import 'zen.dart';
@@ -173,10 +174,21 @@ class _Body extends ConsumerWidget {
                               ],
                               if (due.isNotEmpty) ...[
                                 const SizedBox(height: 12),
-                                FilledButton.icon(
-                                  onPressed: () => startReview(context),
-                                  icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Begin review'),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    FilledButton.icon(
+                                      onPressed: () => startReview(context),
+                                      icon: const Icon(Icons.play_arrow),
+                                      label: const Text('Begin review'),
+                                    ),
+                                    OutlinedButton.icon(
+                                      onPressed: () => startAudioRehearsal(context),
+                                      icon: const Icon(Icons.headphones_outlined),
+                                      label: const Text('Listen hands-free'),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ],
@@ -300,6 +312,26 @@ extension on String {
   String ifEmpty(String other) => isEmpty ? other : this;
 }
 
+/// Records grade [g] for [c] through the normal review path (the pace,
+/// the scheduler and the card's ready-by cap all apply). Gives the card
+/// with its new schedule when it is due again today, else null. Shared by
+/// the typed review and hands-free review.
+Future<Flashcard?> recordGrade(WidgetRef ref, Flashcard c, Grade g) async {
+  final day = today();
+  final pace = await ref.read(reviewPaceProvider.future);
+  final limit = (await ref.read(cardLimitsProvider.future))[c.id];
+  final by = await ref.read(reviewSchedulerProvider.future);
+  final history = await ref.read(sessionProvider).book.cardHistory(c.id);
+  await ref.mutate(
+    (s) => s.book.reviewCard(c, g, today: day, pace: pace, readyBy: limit, scheduler: by),
+    report: false,
+  );
+  final n = nextSchedule(c, g, day, pace: pace, readyBy: limit, scheduler: by, history: history);
+  return n.due == day
+      ? c.copyWith(interval: n.interval, ease: n.ease, reps: n.reps, lapses: n.lapses, due: n.due)
+      : null;
+}
+
 Future<void> startReview(BuildContext context, {String? deck}) =>
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReviewSession(deck: deck)));
 
@@ -356,24 +388,11 @@ class _ReviewSessionState extends ConsumerState<ReviewSession> {
   Future<void> _grade(Flashcard c, Grade g) async {
     if (_busy) return;
     setState(() => _busy = true);
-    final day = today();
-    final pace = await ref.read(reviewPaceProvider.future);
-    final limit = (await ref.read(cardLimitsProvider.future))[c.id];
-    final by = await ref.read(reviewSchedulerProvider.future);
-    final history = await ref.read(sessionProvider).book.cardHistory(c.id);
-    await ref.mutate(
-      (s) => s.book.reviewCard(c, g, today: day, pace: pace, readyBy: limit, scheduler: by),
-      report: false,
-    );
-    final n = nextSchedule(c, g, day, pace: pace, readyBy: limit, scheduler: by, history: history);
+    final again = await recordGrade(ref, c, g);
     setState(() {
       _queue!.removeAt(0);
       // Forgotten: see it again, with its new schedule, before finishing.
-      if (n.due == day) {
-        _queue!.add(
-          c.copyWith(interval: n.interval, ease: n.ease, reps: n.reps, lapses: n.lapses, due: n.due),
-        );
-      }
+      if (again != null) _queue!.add(again);
       _done++;
       _shown = false;
       _matched = null;
