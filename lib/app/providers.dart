@@ -157,6 +157,31 @@ final weekTargetProvider = FutureProvider<int>((ref) {
   return ref.watch(sessionProvider).book.weekTarget();
 });
 
+/// The review scheduler (a synced pref): FSRS unless SM-2 was picked.
+final reviewSchedulerProvider = FutureProvider<ReviewScheduler>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.reviewScheduler();
+});
+
+/// Leeches kept as they are (a synced pref): card id to lapses when kept.
+final keptLeechesProvider = FutureProvider<Map<String, int>>((ref) {
+  ref.watch(revisionProvider);
+  return ref.watch(sessionProvider).book.keptLeeches();
+});
+
+/// Every card's reviews, by card id, oldest first: what FSRS replays.
+final cardHistoriesProvider = FutureProvider<Map<String, List<CardReview>>>((ref) async {
+  final s = await ref.watch(statsProvider.future);
+  final by = <String, List<CardReview>>{};
+  for (final r in s.reviews) {
+    (by[r.cardId] ??= []).add(r);
+  }
+  for (final l in by.values) {
+    l.sort((a, b) => a.day != b.day ? a.day.compareTo(b.day) : a.hlc.compareTo(b.hlc));
+  }
+  return by;
+});
+
 /// The one thing to study next, across everything ([courseId] null) or in
 /// one course; null when nothing is waiting (see `nextUp`).
 final nextUpProvider = FutureProvider.family<NextUp?, String?>((ref, courseId) async {

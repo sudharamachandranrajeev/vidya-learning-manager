@@ -31,6 +31,7 @@ class SettingsPage extends StatelessWidget {
       _StreaksCard(),
       _WeekTargetCard(),
       _PaceCard(),
+      _SchedulerCard(),
       _RemindersCard(),
       _CareerFileCard(),
       _VideoTakesCard(),
@@ -347,6 +348,34 @@ class _PaceCard extends ConsumerWidget {
           children: [
             for (final p in ReviewPace.values)
               RadioListTile<ReviewPace>(value: p, title: Text(p.label), subtitle: Text(p.about)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Which algorithm spaces reviews. Synced, so every device agrees.
+/// Switching rewrites nothing: due days stay, and either way the other
+/// algorithm's numbers are kept up to date.
+class _SchedulerCard extends ConsumerWidget {
+  const _SchedulerCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final by = ref.watch(reviewSchedulerProvider).value ?? ReviewScheduler.fsrs;
+    return SectionCard(
+      title: 'Review scheduler',
+      padding: const EdgeInsets.only(bottom: 8),
+      child: RadioGroup<ReviewScheduler>(
+        groupValue: by,
+        onChanged: (s) {
+          if (s != null && s != by) ref.mutate((x) => x.book.setReviewScheduler(s), report: false);
+        },
+        child: Column(
+          children: [
+            for (final s in ReviewScheduler.values)
+              RadioListTile<ReviewScheduler>(value: s, title: Text(s.label), subtitle: Text(s.about)),
           ],
         ),
       ),

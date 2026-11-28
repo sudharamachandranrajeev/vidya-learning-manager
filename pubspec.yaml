@@ -35,6 +35,9 @@ dependencies:
   file_picker: ^13.3.2
   flutter:
     sdk: flutter
+  # FSRS spaced-repetition scheduler (open-spaced-repetition/dart-fsrs, MIT,
+  # pure Dart). Used day-granular: no learning steps, no fuzz (review.dart).
+  fsrs: ^2.0.1
   flutter_local_notifications: ^22.3.3
   flutter_riverpod: ^3.4.3
   # Free resource search: the catalogues' JSON APIs.

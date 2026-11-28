@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:brahma_core/brahma_core.dart';
 import 'package:drift/drift.dart';
 
@@ -1213,16 +1215,101 @@ class LearningBook {
     return added;
   }
 
+  // ---- review scheduler and leeches ----
+
+  /// The synced pref naming the review scheduler (`fsrs` or `sm2`).
+  static const schedulerKey = 'vidya.scheduler';
+
+  /// The synced pref holding leeches the learner chose to keep as they
+  /// are: a JSON map of card id to its lapse count at the time.
+  static const leechKeptKey = 'vidya.leechKept';
+
+  Future<String> _prefValue(String key) async {
+    final row = await (db.select(db.prefs)..where((p) => p.id.equals(key))).getSingleOrNull();
+    return row == null || row.deleted ? '' : row.value;
+  }
+
+  Future<void> _setPrefValue(String key, String value) =>
+      save(db.prefs, PrefsCompanion.insert(id: key, value: value, deleted: const Value(false)), key);
+
+  /// FSRS unless SM-2 was picked in Settings.
+  Future<ReviewScheduler> reviewScheduler() async => ReviewScheduler.named(await _prefValue(schedulerKey));
+
+  /// Switches scheduler. Nothing is rewritten: due days stay, SM-2's ease
+  /// and interval are always kept, and FSRS replays the review log.
+  Future<void> setReviewScheduler(ReviewScheduler s) => _setPrefValue(schedulerKey, s.name);
+
+  /// [cardId]'s reviews, oldest first.
+  Future<List<CardReview>> cardHistory(String cardId) =>
+      (db.select(db.learnReviews)
+            ..where((r) => r.cardId.equals(cardId) & r.deleted.not())
+            ..orderBy([(r) => OrderingTerm.asc(r.day), (r) => OrderingTerm.asc(r.hlc)]))
+          .get();
+
+  /// Leeches kept as they are: card id to lapses when kept.
+  Future<Map<String, int>> keptLeeches() async {
+    try {
+      final j = jsonDecode(await _prefValue(leechKeptKey));
+      if (j is! Map) return const {};
+      return {
+        for (final e in j.entries)
+          if (e.key is String && e.value is int) e.key as String: e.value as int,
+      };
+    } on FormatException {
+      return const {};
+    }
+  }
+
+  /// Keeps leech [c] as it is: it is flagged again only after
+  /// [leechLapses] more lapses. The card is never suspended.
+  Future<void> keepLeech(Flashcard c) async =>
+      _setPrefValue(leechKeptKey, jsonEncode({...await keptLeeches(), c.id: c.lapses}));
+
+  /// Splits [c]: a copy with the same text and media is added as a new
+  /// card (due today, fresh schedule, the learner's own), for the learner
+  /// to edit into the second half. [c] keeps its schedule and reviews.
+  /// Gives the copy's id.
+  Future<String> splitCard(Flashcard c, {required String today}) async {
+    final id = newId();
+    await save(
+      db.learnCards,
+      LearnCardsCompanion.insert(
+        id: id,
+        front: c.front,
+        back: c.back,
+        deck: Value(c.deck),
+        courseId: Value(c.courseId),
+        image: Value(c.image),
+        audio: Value(c.audio),
+        due: today,
+        created: today,
+      ),
+      id,
+    );
+    return id;
+  }
+
   /// Records a review and moves the card to its next due day, before
-  /// [readyBy] when the card has one (see `cardReadyBy`).
+  /// [readyBy] when the card has one (see `cardReadyBy`). [scheduler]
+  /// defaults to the one picked in Settings (FSRS unless changed).
   Future<void> reviewCard(
     Flashcard c,
     Grade g, {
     required String today,
     ReviewPace pace = ReviewPace.standard,
     String? readyBy,
+    ReviewScheduler? scheduler,
   }) => db.transaction(() async {
-    final n = nextSchedule(c, g, today, pace: pace, readyBy: readyBy);
+    final by = scheduler ?? await reviewScheduler();
+    final n = nextSchedule(
+      c,
+      g,
+      today,
+      pace: pace,
+      readyBy: readyBy,
+      scheduler: by,
+      history: by == ReviewScheduler.fsrs ? await cardHistory(c.id) : const [],
+    );
     await save(
       db.learnCards,
       c.copyWith(interval: n.interval, ease: n.ease, reps: n.reps, lapses: n.lapses, due: n.due),

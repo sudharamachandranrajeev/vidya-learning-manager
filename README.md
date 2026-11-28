@@ -79,8 +79,10 @@ progress. Status: **early test releases**. It needs no internet and no account.
 Experience comes from topics, study time (capped per day), tests, courses, programs (goals),
 skill levels, portfolio items, notes, cards and reviews (capped per day) and achievements. Level
 *n* starts at 50·n·(n−1) experience. Achievements unlock once and stay. Flashcards use a
-day-by-day SM-2 schedule: **Again** brings a card back today; **Good** and **Easy** push it
-further out each time.
+day-by-day FSRS schedule: **Again** brings a card back today; **Good** and **Easy** push it
+further out, to when you are about 90% likely to still remember it. The classic SM-2 schedule
+can be picked instead in Settings. A card forgotten 4 times is flagged as hard to remember, with
+an offer to rewrite or split it; it is never set aside on its own.
 </details>
 
 ## 📸 Screenshots

@@ -29,13 +29,13 @@ void main() {
       await book.saveCard('Q', 'A', today: today);
       var c = await card();
       expect(c.due, today);
-      await book.reviewCard(c, Grade.good, today: today);
+      await book.reviewCard(c, Grade.good, today: today, scheduler: ReviewScheduler.sm2);
       c = await card();
       expect((c.interval, c.due, c.reps), (1, '2026-10-25', 1));
-      await book.reviewCard(c, Grade.good, today: c.due);
+      await book.reviewCard(c, Grade.good, today: c.due, scheduler: ReviewScheduler.sm2);
       c = await card();
       expect((c.interval, c.due), (3, '2026-10-28'));
-      await book.reviewCard(c, Grade.good, today: c.due);
+      await book.reviewCard(c, Grade.good, today: c.due, scheduler: ReviewScheduler.sm2);
       c = await card();
       expect(c.interval, (3 * 2.5).round());
     });
@@ -66,7 +66,8 @@ void main() {
     test('pace stretches or shrinks remembered gaps, never a forgotten card', () async {
       await book.saveCard('Q', 'A', today: today);
       final c = (await card()).copyWith(reps: 3, interval: 10, ease: 2.5);
-      int gap(Grade g, ReviewPace p) => nextSchedule(c, g, today, pace: p).interval;
+      int gap(Grade g, ReviewPace p) =>
+          nextSchedule(c, g, today, pace: p, scheduler: ReviewScheduler.sm2).interval;
       expect(
         [for (final p in ReviewPace.values) gap(Grade.good, p)],
         [35, 25, 18], // 25 × 1.4, 25, 25 × 0.7
@@ -76,8 +77,23 @@ void main() {
         expect(gap(Grade.hard, p) <= gap(Grade.good, p) && gap(Grade.good, p) < gap(Grade.easy, p), isTrue);
       }
       // A new card's first gap is never shorter than a day.
-      expect(nextSchedule(await card(), Grade.good, today, pace: ReviewPace.intensive).interval, 1);
-      await book.reviewCard(await card(), Grade.good, today: today, pace: ReviewPace.light);
+      expect(
+        nextSchedule(
+          await card(),
+          Grade.good,
+          today,
+          pace: ReviewPace.intensive,
+          scheduler: ReviewScheduler.sm2,
+        ).interval,
+        1,
+      );
+      await book.reviewCard(
+        await card(),
+        Grade.good,
+        today: today,
+        pace: ReviewPace.light,
+        scheduler: ReviewScheduler.sm2,
+      );
       expect((await card()).due, '2026-10-25');
       expect(ReviewPace.named('nonsense'), ReviewPace.standard);
     });
@@ -96,7 +112,7 @@ void main() {
 
     test('editing a card keeps its schedule', () async {
       await book.saveCard('Q', 'A', today: today);
-      await book.reviewCard(await card(), Grade.good, today: today);
+      await book.reviewCard(await card(), Grade.good, today: today, scheduler: ReviewScheduler.sm2);
       await book.saveCard('Q2', 'A2', today: today, deck: 'Words', existing: await card());
       final c = await card();
       expect((c.front, c.deck, c.due, c.reps), ('Q2', 'Words', '2026-10-25', 1));
